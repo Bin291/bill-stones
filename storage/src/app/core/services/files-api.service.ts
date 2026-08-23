@@ -40,6 +40,11 @@ export class FilesApiService {
     return this.http.get<{ url: string }>(`${this.base}/${id}/preview-url`);
   }
 
+  /** HTML render sẵn cho docx/excel/text (xem trước nội dung). */
+  previewHtml(id: string): Observable<{ html: string }> {
+    return this.http.get<{ html: string }>(`${this.base}/${id}/preview-html`);
+  }
+
   rename(id: string, name: string): Observable<StoredFile> {
     return this.http.patch<StoredFile>(`${this.base}/${id}`, { name });
   }

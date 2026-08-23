@@ -1,0 +1,48 @@
+<div class="modal-backdrop" (click)="close()">
+  <div class="modal" style="max-width: 960px; background: #000" (click)="$event.stopPropagation()">
+    <div class="modal-head" style="background: var(--surface); color: var(--text)">
+      <span><span class="mi">movie</span> {{ fileName() }}</span>
+      <button class="btn btn-icon" type="button" (click)="close()">
+        <span class="mi">close</span>
+      </button>
+    </div>
+
+    <div style="position: relative; background: #000">
+      <video
+        #video
+        style="width: 100%; aspect-ratio: 16/9; background: #000; display: block"
+        controls
+        playsinline
+      ></video>
+
+      @if (phase() === 'loading' || phase() === 'processing') {
+        <div class="vp-overlay">
+          <span class="mi" style="font-size: 40px">hourglass_top</span>
+          <p>{{ phase() === 'processing' ? 'Đang xử lý video để phát trực tuyến…' : 'Đang tải…' }}</p>
+        </div>
+      }
+      @if (phase() === 'error') {
+        <div class="vp-overlay">
+          <span class="mi" style="font-size: 40px; color: var(--danger)">error_outline</span>
+          <p>{{ error() }}</p>
+        </div>
+      }
+    </div>
+
+    @if (phase() === 'playing' && levels().length) {
+      <div class="vp-controls">
+        <label>Chất lượng</label>
+        <select [value]="currentLevel()" (change)="setLevel($any($event.target).value)">
+          <option [value]="-1">Auto</option>
+          @for (l of levels(); track l.index) {
+            <option [value]="l.index">{{ l.height }}p</option>
+          }
+        </select>
+        <span class="spacer"></span>
+        <button class="btn btn-icon" type="button" title="Toàn màn hình" (click)="fullscreen()">
+          <span class="mi">fullscreen</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

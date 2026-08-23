@@ -11,6 +11,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService, CompletedPart } from '../storage/storage.service';
 import { FoldersService } from '../folders/folders.service';
 import { ThumbnailService } from '../thumbnail/thumbnail.service';
+import { HlsTranscodeService } from '../hls/hls-transcode.service';
+import { IndexingService } from '../search/indexing.service';
 import {
   resolveNameCollision,
   extractExtension,
@@ -35,6 +37,8 @@ export class UploadsService {
     private readonly storage: StorageService,
     private readonly folders: FoldersService,
     private readonly thumbnails: ThumbnailService,
+    private readonly hls: HlsTranscodeService,
+    private readonly indexing: IndexingService,
     config: ConfigService,
   ) {
     this.maxFileSize =
@@ -147,6 +151,14 @@ export class UploadsService {
     // Sinh thumbnail nền (không chặn response — mục 7.A).
     if (this.thumbnails.supports(updated.extension)) {
       this.thumbnails.generateInBackground(updated);
+    }
+    // Transcode HLS nền cho video (streaming + ABR).
+    if (this.hls.supports(updated.extension)) {
+      this.hls.transcodeInBackground(updated);
+    }
+    // Lập chỉ mục FTS nền cho tài liệu/text (tìm kiếm — mục 8.E).
+    if (this.indexing.supports(updated.extension)) {
+      this.indexing.indexInBackground(updated);
     }
     return updated;
   }

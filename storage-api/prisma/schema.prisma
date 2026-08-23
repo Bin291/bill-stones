@@ -48,6 +48,7 @@ model File {
   userId       String
   folderId     String? // null = nằm ở thư mục gốc
   status       String    @default("uploading") // uploading | processing | ready | failed | delete_pending
+  hlsStatus    String? // null=chưa xử lý | processing | ready | failed (video streaming HLS)
   errorMessage String? // lý do lỗi khi status = 'failed'
   isStarred    Boolean   @default(false)
   deletedAt    DateTime?

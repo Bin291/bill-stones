@@ -18,6 +18,7 @@ export interface StoredFile {
   userId: string;
   folderId: string | null;
   status: FileStatus;
+  hlsStatus: 'processing' | 'ready' | 'failed' | null;
   errorMessage: string | null;
   isStarred: boolean;
   deletedAt: string | null;

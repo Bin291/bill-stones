@@ -13,6 +13,8 @@ import { FoldersModule } from './modules/folders/folders.module';
 import { FilesModule } from './modules/files/files.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { ThumbnailModule } from './modules/thumbnail/thumbnail.module';
+import { HlsModule } from './modules/hls/hls.module';
+import { SearchModule } from './modules/search/search.module';
 import { TrashModule } from './modules/trash/trash.module';
 import { ShareModule } from './modules/share/share.module';
 import { NotificationModule } from './modules/notification/notification.module';
@@ -31,6 +33,8 @@ import { AppService } from './app.service';
     PrismaModule,
     StorageModule,
     ThumbnailModule,
+    HlsModule,
+    SearchModule,
     AuthModule,
     FoldersModule,
     FilesModule,
