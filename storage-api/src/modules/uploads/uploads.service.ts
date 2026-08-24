@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ForbiddenException,
@@ -85,7 +86,7 @@ export class UploadsService {
       data: {
         name: finalName,
         extension,
-        r2Key: 'pending', // đặt tạm, cập nhật sau khi có id
+        r2Key: `pending-${randomUUID()}`, // đặt tạm (duy nhất), cập nhật sau khi có id
         size,
         mimeType: mimeType ?? 'application/octet-stream',
         userId,
