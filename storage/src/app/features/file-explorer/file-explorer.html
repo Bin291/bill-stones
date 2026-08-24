@@ -17,6 +17,10 @@
           <a class="crumb" [class.current]="last" (click)="goCrumb(crumb)">{{ crumb.name }}</a>
         }
       </nav>
+    } @else if (mode() === 'tag') {
+      <h1 class="page-title" style="margin: 0; display: flex; align-items: center; gap: 10px">
+        <span class="tag-dot" [style.background]="tagColor()"></span>{{ tagName() }}
+      </h1>
     } @else {
       <h1 class="page-title" style="margin: 0">{{ title() | t }}</h1>
     }
@@ -24,7 +28,7 @@
     <span class="spacer"></span>
 
     <button class="btn" type="button" (click)="setSort('name')">
-      <span class="mi">sort_by_alpha</span> {{ 'sort.name' | t }}
+      <span style="font-weight: 600; letter-spacing: 0.5px">A-Z</span> {{ 'sort.name' | t }}
     </button>
     <button class="btn" type="button" (click)="setSort('updatedAt')">
       <span class="mi">schedule</span> {{ 'sort.date' | t }}
@@ -35,6 +39,16 @@
 
     <button class="btn btn-icon" type="button" (click)="settings.toggleView()" [title]="'view.grid' | t">
       <span class="mi">{{ settings.viewMode() === 'grid' ? 'view_list' : 'grid_view' }}</span>
+    </button>
+
+    <button
+      class="btn"
+      type="button"
+      [class.btn-primary]="selectionMode()"
+      (click)="toggleSelectionMode()"
+    >
+      <span class="mi">{{ selectionMode() ? 'check_box' : 'check_box_outline_blank' }}</span>
+      {{ 'select.enter' | t }}
     </button>
 
     @if (isFolderLens()) {
@@ -53,6 +67,42 @@
     </label>
   </div>
 
+  <!-- Thanh thao tác hàng loạt khi ở chế độ Chọn -->
+  @if (selectionMode()) {
+    <div class="select-bar">
+      <button class="btn btn-icon" type="button" (click)="selectAll()" [title]="'select.all' | t">
+        <span class="mi">{{ allSelected() ? 'check_box' : 'select_all' }}</span>
+      </button>
+      <span class="select-count">{{ 'select.count' | t: { n: selectedCount() } }}</span>
+
+      <span class="spacer"></span>
+
+      @if (confirmingBulkDelete()) {
+        <span class="select-confirm">{{ 'select.confirmDelete' | t: { n: selectedCount() } }}</span>
+        <button class="btn danger" type="button" [disabled]="bulkBusy()" (click)="bulkTrash()">
+          <span class="mi">delete</span> {{ 'select.confirmYes' | t }}
+        </button>
+        <button class="btn" type="button" (click)="confirmingBulkDelete.set(false)">
+          {{ 'action.cancel' | t }}
+        </button>
+      } @else {
+        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(true)">
+          <span class="mi">star</span> {{ 'action.star' | t }}
+        </button>
+        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(false)">
+          <span class="mi">star_border</span> {{ 'action.unstar' | t }}
+        </button>
+        <button class="btn danger" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkTrash()">
+          <span class="mi">delete</span> {{ 'action.delete' | t }}
+        </button>
+      }
+
+      <button class="btn btn-icon" type="button" (click)="toggleSelectionMode()" [title]="'select.clear' | t">
+        <span class="mi">close</span>
+      </button>
+    </div>
+  }
+
   @if (loading()) {
     <div class="empty">{{ 'files.loading' | t }}</div>
   } @else if (folders().length === 0 && files().length === 0) {
@@ -68,9 +118,15 @@
       @for (folder of folders(); track folder.id) {
         <div
           class="card"
+          [class.selected]="isSelected('folder', folder.id)"
           (click)="openFolder(folder)"
           (contextmenu)="openMenu($event, 'folder', folder)"
         >
+          @if (selectionMode()) {
+            <span class="card-check" [class.on]="isSelected('folder', folder.id)">
+              <span class="mi">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+            </span>
+          }
           @if (folder.isStarred) {
             <span class="mi card-star">star</span>
           }
@@ -84,9 +140,15 @@
       @for (file of files(); track file.id) {
         <div
           class="card"
+          [class.selected]="isSelected('file', file.id)"
           (click)="openFile(file)"
           (contextmenu)="openMenu($event, 'file', file)"
         >
+          @if (selectionMode()) {
+            <span class="card-check" [class.on]="isSelected('file', file.id)">
+              <span class="mi">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+            </span>
+          }
           @if (file.isStarred) {
             <span class="mi card-star">star</span>
           }
@@ -111,6 +173,13 @@
                 {{ file.folderPath[file.folderPath.length - 1].name }}
               </div>
             }
+            @if (file.tags && file.tags.length) {
+              <div class="card-tags">
+                @for (tg of file.tags; track tg.id) {
+                  <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                }
+              </div>
+            }
           </div>
         </div>
       }
@@ -126,15 +195,33 @@
       </thead>
       <tbody>
         @for (folder of folders(); track folder.id) {
-          <tr (click)="openFolder(folder)" (contextmenu)="openMenu($event, 'folder', folder)">
-            <td><span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}</td>
+          <tr
+            [class.selected]="isSelected('folder', folder.id)"
+            (click)="openFolder(folder)"
+            (contextmenu)="openMenu($event, 'folder', folder)"
+          >
+            <td>
+              @if (selectionMode()) {
+                <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+              }
+              <span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}
+            </td>
             <td>—</td>
             <td>{{ folder.updatedAt | date: 'short' }}</td>
           </tr>
         }
         @for (file of files(); track file.id) {
-          <tr (click)="openFile(file)" (contextmenu)="openMenu($event, 'file', file)">
-            <td><span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span> {{ file.name }}</td>
+          <tr
+            [class.selected]="isSelected('file', file.id)"
+            (click)="openFile(file)"
+            (contextmenu)="openMenu($event, 'file', file)"
+          >
+            <td>
+              @if (selectionMode()) {
+                <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+              }
+              <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span> {{ file.name }}
+            </td>
             <td>{{ formatBytes(file.size) }}</td>
             <td>{{ file.updatedAt | date: 'short' }}</td>
           </tr>
@@ -173,6 +260,11 @@
       <span class="mi">{{ m.isStarred ? 'star' : 'star_border' }}</span>
       {{ m.isStarred ? ('action.unstar' | t) : ('action.star' | t) }}
     </button>
+    @if (m.kind === 'file') {
+      <button class="menu-item" type="button" (click)="openTag()">
+        <span class="mi">sell</span> {{ 'action.tag' | t }}
+      </button>
+    }
     <button class="menu-item" type="button" (click)="openShare()">
       <span class="mi">share</span> Chia sẻ
     </button>
@@ -195,6 +287,16 @@
 <!-- Preview mọi loại file khác (ảnh/audio/PDF/text/...) -->
 @if (previewTarget(); as pf) {
   <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
+}
+
+<!-- Dialog gắn thẻ cho 1 file (thẻ tuỳ chỉnh) -->
+@if (tagTarget(); as tt) {
+  <app-tag-dialog
+    [fileId]="tt.fileId"
+    [assignedIds]="tt.assignedIds"
+    (changed)="load()"
+    (closed)="tagTarget.set(null)"
+  />
 }
 
 <!-- Upload panel (gộp theo mục, gọn, thu gọn được) -->

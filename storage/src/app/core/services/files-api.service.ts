@@ -17,6 +17,7 @@ export class FilesApiService {
       params = params.set('folderId', '');
     }
     if (query.extensions) params = params.set('extensions', query.extensions);
+    if (query.tagId) params = params.set('tagId', query.tagId);
     if (query.sort) params = params.set('sort', query.sort);
     if (query.order) params = params.set('order', query.order);
     if (query.starred) params = params.set('starred', 'true');

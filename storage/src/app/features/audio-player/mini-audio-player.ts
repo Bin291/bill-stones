@@ -11,7 +11,7 @@ import { firstValueFrom } from 'rxjs';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { FilesApiService } from '../../core/services/files-api.service';
 
-/** Mini-player âm thanh ghim góc dưới-phải, giữ chạy khi chuyển trang. */
+/** Mini-player âm thanh ghim góc dưới-trái, giữ chạy khi chuyển trang. */
 @Component({
   selector: 'app-mini-audio-player',
   templateUrl: './mini-audio-player.html',
@@ -28,11 +28,13 @@ export class MiniAudioPlayer {
   protected readonly current = signal(0);
   protected readonly duration = signal(0);
   protected readonly loading = signal(false);
+  protected readonly volume = signal(1);
+  protected readonly muted = signal(false);
 
   private lastId: string | null = null;
+  private prevVolume = 1;
 
   constructor() {
-    // Khi đổi bài -> lấy presigned URL mới rồi autoplay.
     effect(() => {
       const t = this.track();
       if (!t) {
@@ -61,9 +63,11 @@ export class MiniAudioPlayer {
   }
 
   onCanPlay(): void {
-    // Tự phát khi có dữ liệu.
     const el = this.audioRef()?.nativeElement;
-    if (el && el.paused) void el.play().catch(() => undefined);
+    if (!el) return;
+    el.volume = this.volume();
+    el.muted = this.muted();
+    if (el.paused) void el.play().catch(() => undefined);
   }
 
   onMeta(): void {
@@ -92,6 +96,36 @@ export class MiniAudioPlayer {
   seek(value: string): void {
     const el = this.audioRef()?.nativeElement;
     if (el) el.currentTime = Number(value);
+  }
+
+  // --- Âm lượng ---
+  setVolume(value: string): void {
+    this.applyVolume(Number(value));
+  }
+
+  private applyVolume(v: number): void {
+    const el = this.audioRef()?.nativeElement;
+    if (el) {
+      el.volume = v;
+      el.muted = v === 0;
+    }
+    this.volume.set(v);
+    this.muted.set(v === 0);
+  }
+
+  toggleMute(): void {
+    if (this.muted() || this.volume() === 0) {
+      this.applyVolume(this.prevVolume > 0 ? this.prevVolume : 1);
+    } else {
+      this.prevVolume = this.volume();
+      this.applyVolume(0);
+    }
+  }
+
+  volumeIcon(): string {
+    if (this.muted() || this.volume() === 0) return 'volume_off';
+    if (this.volume() < 0.5) return 'volume_down';
+    return 'volume_up';
   }
 
   close(): void {

@@ -26,6 +26,25 @@
       </a>
     }
 
+    <div class="nav-section-row">
+      <div class="nav-section-title">{{ 'nav.tags' | t }}</div>
+      <button class="tag-manage-btn" type="button" (click)="openTagManager()" [title]="'tags.manage' | t">
+        <span class="mi">tune</span>
+      </button>
+    </div>
+    @for (tag of tags(); track tag.id) {
+      <a class="nav-item" [routerLink]="['/tag', tag.id]" routerLinkActive="active">
+        <span class="tag-dot" [style.background]="tag.color"></span>
+        {{ tag.name }}
+        <span class="nav-count">{{ tag.fileCount || '' }}</span>
+      </a>
+    } @empty {
+      <button class="nav-item" type="button" (click)="openTagManager()" style="color: var(--ink-subtle)">
+        <span class="mi">add</span>
+        {{ 'tags.addNew' | t }}
+      </button>
+    }
+
     <div class="sidebar-foot">
       <a class="nav-item" routerLink="/profile" routerLinkActive="active">
         <span class="mi">account_circle</span>
@@ -83,3 +102,8 @@
 
 <!-- Mini-player âm thanh toàn cục — ĐẶT NGOÀI .shell để không phá lưới sidebar -->
 <app-mini-audio-player />
+
+<!-- Dialog quản lý thẻ (mở từ nút cài đặt cạnh mục "Thẻ") -->
+@if (tagDialogOpen()) {
+  <app-tag-dialog (changed)="loadTags()" (closed)="tagDialogOpen.set(false)" />
+}
