@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  computed,
   effect,
   inject,
   signal,
@@ -30,6 +31,13 @@ export class MiniAudioPlayer {
   protected readonly loading = signal(false);
   protected readonly volume = signal(1);
   protected readonly muted = signal(false);
+
+  // % lấp đầy cho thanh trượt (nền gradient) — để bar "đầy" chứ không thưa.
+  protected readonly seekFill = computed(() => {
+    const d = this.duration();
+    return d > 0 ? (this.current() / d) * 100 : 0;
+  });
+  protected readonly volFill = computed(() => (this.muted() ? 0 : this.volume() * 100));
 
   private lastId: string | null = null;
   private prevVolume = 1;

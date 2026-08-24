@@ -5,9 +5,14 @@
     (click)="$event.stopPropagation()"
     (mousemove)="flashControls()"
   >
-    <button class="vp-close" type="button" (click)="close()" title="Đóng">
-      <span class="mi">close</span>
-    </button>
+    <!-- Thanh trên: tên + dung lượng video (tự ẩn cùng điều khiển) -->
+    <div class="vp-topbar" [class.vp-bar--hidden]="phase() === 'playing' && !controlsVisible()">
+      <span class="mi vp-topbar-icon">movie</span>
+      <span class="vp-topbar-name" [title]="fileName()">{{ fileName() }}</span>
+      @if (fileSize()) {
+        <span class="vp-topbar-size">{{ formatBytes(fileSize()) }}</span>
+      }
+    </div>
 
     <video
       #video
@@ -70,12 +75,13 @@
               <span class="mi">{{ volumeIcon() }}</span>
             </button>
             <input
-              class="vp-vol-range"
+              class="vp-vol-range slider"
               type="range"
               min="0"
               max="1"
               step="0.05"
               [value]="muted() ? 0 : volume()"
+              [style.--fill]="(muted() ? 0 : volume() * 100) + '%'"
               (input)="setVolume($any($event.target).value)"
               aria-label="Âm lượng"
             />

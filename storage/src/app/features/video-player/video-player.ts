@@ -16,6 +16,7 @@ import Hls from 'hls.js';
 import { environment } from '../../../environments/environment';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { VideoApiService } from '../../core/services/video-api.service';
+import { formatBytes } from '../../core/util/file-types';
 
 interface LevelOpt {
   index: number;
@@ -39,7 +40,10 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
 
   readonly fileId = input.required<string>();
   readonly fileName = input<string>('');
+  readonly fileSize = input<string>('');
   readonly closed = output<void>();
+
+  protected readonly formatBytes = formatBytes;
 
   private readonly video = viewChild<ElementRef<HTMLVideoElement>>('video');
 

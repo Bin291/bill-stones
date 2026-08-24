@@ -49,7 +49,7 @@
                 </button>
               </div>
             } @else {
-              <div class="tag-row">
+              <div class="tag-row" [class.assigned]="assignMode() && isAssigned(tag.id)">
                 @if (assignMode()) {
                   <button
                     type="button"
@@ -65,6 +65,9 @@
                 }
                 <span class="tag-dot" [style.background]="tag.color"></span>
                 <span class="tag-name">{{ tag.name }}</span>
+                @if (assignMode() && isAssigned(tag.id)) {
+                  <span class="tag-assigned-badge"><span class="mi">check</span> {{ 'tags.assigned' | t }}</span>
+                }
                 <span class="card-sub tag-count">{{ tag.fileCount }}</span>
                 <button class="btn btn-icon" type="button" (click)="startEdit(tag)" title="Sửa">
                   <span class="mi">edit</span>
