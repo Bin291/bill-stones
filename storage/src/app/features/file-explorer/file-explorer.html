@@ -187,26 +187,68 @@
   <app-share-dialog [target]="t" (closed)="shareTarget.set(null); load()" />
 }
 
-<!-- Upload panel -->
+<!-- Video player (HLS streaming) -->
+@if (videoTarget(); as v) {
+  <app-video-player [fileId]="v.id" [fileName]="v.name" (closed)="videoTarget.set(null)" />
+}
+
+<!-- Preview mọi loại file khác (ảnh/audio/PDF/text/...) -->
+@if (previewTarget(); as pf) {
+  <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
+}
+
+<!-- Upload panel (gộp theo mục, gọn, thu gọn được) -->
 @if (hasActiveUploads()) {
   <div class="upload-panel">
     <div class="upload-head">
-      {{ 'upload.title' | t }}
-      <button class="nav-item" style="width: auto; padding: 0" type="button" (click)="dismissUploads()">
-        <span class="mi">close</span>
-      </button>
+      <span>
+        {{ uploadingCount() > 0 ? ('Đang tải ' + uploadingCount() + ' mục lên') : 'Đã tải lên xong' }}
+      </span>
+      <span class="row" style="gap: 2px">
+        <button class="btn btn-icon" style="padding: 2px" type="button" (click)="toggleUploadsCollapse()">
+          <span class="mi">{{ uploadsCollapsed() ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+        <button class="btn btn-icon" style="padding: 2px" type="button" (click)="dismissUploads()">
+          <span class="mi">close</span>
+        </button>
+      </span>
     </div>
-    @for (task of uploads(); track task.id) {
-      <div class="upload-item">
-        <div class="upload-name">{{ task.fileName }}</div>
-        <div class="progress"><div class="progress-bar" [style.width.%]="task.progress()"></div></div>
-        <div class="card-sub">
-          @switch (task.status()) {
-            @case ('done') { {{ 'upload.done' | t }} }
-            @case ('error') { {{ 'upload.error' | t }}: {{ task.error() }} }
-            @default { {{ task.progress() }}% }
-          }
-        </div>
+
+    @if (!uploadsCollapsed()) {
+      <div class="upload-list">
+        @for (b of uploadBatches(); track b.id) {
+          <div class="upload-item">
+            <span class="mi" style="flex: 0 0 auto; color: var(--text-muted)">
+              {{ b.isFolder ? 'folder' : 'draft' }}
+            </span>
+            <div class="upload-item-body">
+              <div class="upload-name" [title]="b.label">{{ b.label }}</div>
+              <div class="card-sub">
+                @if (b.isFolder) {
+                  {{ b.done() }} trong số {{ b.total }}
+                  @if (b.failed() > 0) { · {{ b.failed() }} lỗi }
+                } @else if (b.firstTask(); as tk) {
+                  {{ tk.progress() }}%
+                }
+              </div>
+            </div>
+            @switch (b.status()) {
+              @case ('done') {
+                <span class="mi" style="color: var(--success)">check_circle</span>
+              }
+              @case ('error') {
+                <span class="mi" style="color: var(--danger)">error</span>
+              }
+              @case ('canceled') {
+                <span class="card-sub">Đã huỷ</span>
+              }
+              @default {
+                <span class="up-spin"></span>
+                <button class="up-cancel" type="button" (click)="cancelBatch(b)">Hủy</button>
+              }
+            }
+          </div>
+        }
       </div>
     }
   </div>

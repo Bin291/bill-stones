@@ -1,0 +1,54 @@
+<div class="toolbar">
+  <h1 class="page-title" style="margin: 0">{{ 'search.title' | t }}</h1>
+  <span class="spacer"></span>
+  <button class="btn" type="button" (click)="reindex()" title="Lập chỉ mục lại tệp tài liệu">
+    <span class="mi">sync</span> Lập chỉ mục
+  </button>
+</div>
+
+<form class="search-bar" (submit)="submit($event)">
+  <span class="mi">search</span>
+  <input
+    class="search-input"
+    [placeholder]="'search.placeholder' | t"
+    [value]="query()"
+    (input)="query.set($any($event.target).value)"
+  />
+  <button class="btn btn-primary" type="submit">{{ 'nav.search' | t }}</button>
+</form>
+
+@if (note()) {
+  <p class="card-sub" style="margin-top: 12px">{{ note() }}</p>
+}
+
+@if (loading()) {
+  <div class="empty">{{ 'files.loading' | t }}</div>
+} @else if (searched() && results().length === 0) {
+  <div class="empty">
+    <span class="mi" style="font-size: 40px">search_off</span>
+    <p>Không tìm thấy kết quả</p>
+  </div>
+} @else if (results().length) {
+  <table class="file-list" style="margin-top: 16px">
+    <tbody>
+      @for (r of results(); track r.id) {
+        <tr (click)="open(r)">
+          <td style="width: 56px">
+            @if (r.thumbnailUrl) {
+              <img [src]="r.thumbnailUrl" [alt]="r.name" style="width: 40px; height: 40px; object-fit: cover" />
+            } @else {
+              <span class="mi" style="color: var(--text-muted)">{{ iconOf(r.extension) }}</span>
+            }
+          </td>
+          <td>
+            <div>{{ r.name }}</div>
+            @if (r.snippet) {
+              <div class="card-sub" style="white-space: normal">…{{ r.snippet }}…</div>
+            }
+          </td>
+          <td style="white-space: nowrap">{{ formatBytes(r.size) }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

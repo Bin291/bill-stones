@@ -1,0 +1,56 @@
+<div class="modal-backdrop" (click)="close()">
+  <div class="modal" style="max-width: 1000px" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <span>
+        <span class="mi">{{ iconOf(file().extension) }}</span>
+        {{ file().name }}
+      </span>
+      <span class="row" style="gap: 4px">
+        <button class="btn btn-icon" type="button" title="Tải xuống" (click)="download()">
+          <span class="mi">download</span>
+        </button>
+        <button class="btn btn-icon" type="button" (click)="close()">
+          <span class="mi">close</span>
+        </button>
+      </span>
+    </div>
+
+    <div class="preview-body">
+      @if (loading()) {
+        <div class="empty">Đang tải…</div>
+      } @else if (error()) {
+        <div class="empty">{{ error() }}</div>
+      } @else {
+        @switch (kind()) {
+          @case ('image') {
+            <img [src]="url()" [alt]="file().name" class="preview-img" />
+          }
+          @case ('audio') {
+            <div class="preview-audio">
+              <span class="mi" style="font-size: 56px; color: var(--primary)">music_note</span>
+              <audio controls [src]="url()!" style="width: 100%"></audio>
+            </div>
+          }
+          @case ('pdf') {
+            <iframe [src]="safeUrl()!" class="preview-frame" title="PDF"></iframe>
+          }
+          @case ('doc') {
+            <div class="doc-view" [innerHTML]="html()"></div>
+          }
+          @default {
+            <div class="preview-other">
+              <span class="mi" style="font-size: 56px; color: var(--text-muted)">
+                {{ iconOf(file().extension) }}
+              </span>
+              <p>{{ file().name }}</p>
+              <p class="card-sub">{{ formatBytes(file().size) }} · Không xem trước được loại này</p>
+              <button class="btn btn-primary" type="button" (click)="download()">
+                <span class="mi">download</span> Tải xuống
+              </button>
+            </div>
+          }
+        }
+      }
+    </div>
+  </div>
+</div>

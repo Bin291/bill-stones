@@ -228,6 +228,8 @@ export class FilesService {
       this.storage.thumbnailKey(userId, fileId),
       this.storage.artifactKey(userId, fileId),
     ]);
+    // Dọn cây HLS nếu có (video streaming).
+    await this.storage.deletePrefix(`${userId}/${fileId}/hls`).catch(() => undefined);
     // Prisma cascade tự xoá DocumentChunk con.
     await this.prisma.file.delete({ where: { id: fileId } });
   }

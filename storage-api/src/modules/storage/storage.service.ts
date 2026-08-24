@@ -4,6 +4,7 @@ import {
   CreateMultipartUploadCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
   S3Client,
@@ -163,6 +164,7 @@ export class StorageService {
     key: string,
     body: Buffer | Uint8Array | string,
     contentType?: string,
+    cacheControl?: string,
   ): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
@@ -170,6 +172,7 @@ export class StorageService {
         Key: key,
         Body: body,
         ContentType: contentType,
+        CacheControl: cacheControl,
       }),
     );
   }
@@ -190,6 +193,24 @@ export class StorageService {
       );
     }
     return Buffer.concat(chunks);
+  }
+
+  /** Liệt kê + xoá mọi object dưới 1 prefix (VD dọn cây HLS khi xoá video). */
+  async deletePrefix(prefix: string): Promise<void> {
+    let token: string | undefined;
+    const keys: string[] = [];
+    do {
+      const res = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix.endsWith('/') ? prefix : `${prefix}/`,
+          ContinuationToken: token,
+        }),
+      );
+      for (const o of res.Contents ?? []) if (o.Key) keys.push(o.Key);
+      token = res.IsTruncated ? res.NextContinuationToken : undefined;
+    } while (token);
+    await this.deleteObjects(keys);
   }
 
   /** Tải object về file tạm (cho ffmpeg đọc frame video — mục 7.C). */

@@ -1,60 +1,62 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { SearchApiService, SearchResult } from '../../core/services/search-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { formatBytes, iconOf } from '../../core/util/file-types';
 
 /**
- * Trang tìm kiếm AI (mục 8). UI đã dựng; nhánh gọi RPC hybrid search sẽ nối ở
- * phase AI (backend `/search` + match_document_chunks). Hiện chỉ dựng khung.
+ * Tìm kiếm (mục 8.E — nhánh FTS, accent-insensitive). Nhấn Enter để tìm
+ * (không debounce — tiết kiệm tài nguyên, khớp mục 8.C).
  */
 @Component({
   selector: 'app-search',
   imports: [TranslatePipe],
-  template: `
-    <h1 class="page-title">{{ 'search.title' | t }}</h1>
-    <form class="search-bar" (submit)="submit($event)">
-      <span class="mi">search</span>
-      <input
-        class="search-input"
-        [placeholder]="'search.placeholder' | t"
-        [value]="query()"
-        (input)="query.set($any($event.target).value)"
-      />
-    </form>
-    @if (note()) {
-      <p class="empty">{{ note() }}</p>
-    }
-  `,
-  styles: [
-    `
-      .search-bar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        padding: 10px 18px;
-        max-width: 640px;
-      }
-      .search-input {
-        border: none;
-        background: none;
-        color: var(--text);
-        font-size: 16px;
-        flex: 1;
-        outline: none;
-      }
-    `,
-  ],
+  templateUrl: './search.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Search {
+  private readonly api = inject(SearchApiService);
+  private readonly router = inject(Router);
+
   readonly query = signal('');
+  readonly results = signal<SearchResult[]>([]);
+  readonly loading = signal(false);
+  readonly searched = signal(false);
   readonly note = signal<string | null>(null);
 
-  submit(event: Event): void {
+  readonly iconOf = iconOf;
+  readonly formatBytes = formatBytes;
+
+  async submit(event: Event): Promise<void> {
     event.preventDefault();
-    if (this.query().trim().length < 2) return;
-    // Sẽ nối API hybrid search ở phase AI.
-    this.note.set('AI Search sẽ được kích hoạt ở giai đoạn tích hợp AI.');
+    const q = this.query().trim();
+    if (q.length < 2) {
+      this.note.set('Nhập ít nhất 2 ký tự.');
+      return;
+    }
+    this.note.set(null);
+    this.loading.set(true);
+    try {
+      const res = await firstValueFrom(this.api.search(q));
+      this.results.set(res.results);
+      this.searched.set(true);
+    } catch {
+      this.results.set([]);
+      this.note.set('Tìm kiếm lỗi.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async reindex(): Promise<void> {
+    const { queued } = await firstValueFrom(this.api.reindex());
+    this.note.set(`Đang lập chỉ mục ${queued} tệp… thử tìm lại sau vài giây.`);
+  }
+
+  open(r: SearchResult): void {
+    // Mở thư mục chứa tệp để xem/preview trong ngữ cảnh.
+    if (r.folderId) void this.router.navigate(['/files/folder', r.folderId]);
+    else void this.router.navigate(['/files']);
   }
 }

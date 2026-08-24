@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  WritableSignal,
   computed,
   inject,
   signal,
@@ -14,9 +15,12 @@ import { FilesApiService } from '../../core/services/files-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
 import { UploadService, UploadTask } from '../../core/services/upload.service';
 import { RefreshService } from '../../core/services/refresh.service';
+import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ShareDialog, ShareTarget } from '../share/share-dialog';
+import { VideoPlayer } from '../video-player/video-player';
+import { FilePreview } from '../file-preview/file-preview';
 import {
   BreadcrumbCrumb,
   Folder,
@@ -36,9 +40,24 @@ interface ContextMenu {
   isStarred: boolean;
 }
 
+/** Một mục tải lên: 1 thư mục (nhiều file) hoặc 1 file lẻ. */
+interface UploadBatch {
+  id: string;
+  label: string;
+  isFolder: boolean;
+  total: number;
+  done: WritableSignal<number>;
+  failed: WritableSignal<number>;
+  status: WritableSignal<'uploading' | 'done' | 'error' | 'canceled'>;
+  firstTask: WritableSignal<UploadTask | null>; // cho file lẻ hiện %
+  tasks: UploadTask[];
+  files: File[];
+  canceled: boolean;
+}
+
 @Component({
   selector: 'app-file-explorer',
-  imports: [TranslatePipe, DatePipe, ShareDialog],
+  imports: [TranslatePipe, DatePipe, ShareDialog, VideoPlayer, FilePreview],
   templateUrl: './file-explorer.html',
   host: { class: 'explorer-host' },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,6 +69,7 @@ export class FileExplorer {
   private readonly foldersApi = inject(FoldersApiService);
   private readonly uploadService = inject(UploadService);
   private readonly refresh = inject(RefreshService);
+  private readonly audioSvc = inject(AudioPlayerService);
   protected readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -66,9 +86,16 @@ export class FileExplorer {
   protected readonly sort = signal<ListFilesQuery['sort']>('createdAt');
   protected readonly order = signal<ListFilesQuery['order']>('desc');
 
-  protected readonly uploads = signal<UploadTask[]>([]);
+  protected readonly uploadBatches = signal<UploadBatch[]>([]);
+  protected readonly uploadsCollapsed = signal(false);
+  protected readonly uploadingCount = computed(
+    () => this.uploadBatches().filter((b) => b.status() === 'uploading').length,
+  );
+  readonly hasActiveUploads = computed(() => this.uploadBatches().length > 0);
   protected readonly menu = signal<ContextMenu | null>(null);
   protected readonly shareTarget = signal<ShareTarget | null>(null);
+  protected readonly videoTarget = signal<{ id: string; name: string } | null>(null);
+  protected readonly previewTarget = signal<StoredFile | null>(null);
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
@@ -215,10 +242,17 @@ export class FileExplorer {
   }
 
   // --- Download / mở file ---
-  async openFile(file: StoredFile): Promise<void> {
+  openFile(file: StoredFile): void {
     if (file.status !== 'ready') return;
-    const { url } = await firstValueFrom(this.filesApi.previewUrl(file.id));
-    window.open(url, '_blank');
+    const cat = categoryOf(file.extension);
+    // Video -> player HLS; Âm thanh -> mini-player góc dưới; còn lại -> preview modal.
+    if (cat === 'video') {
+      this.videoTarget.set({ id: file.id, name: file.name });
+    } else if (cat === 'audio') {
+      this.audioSvc.play({ id: file.id, name: file.name });
+    } else {
+      this.previewTarget.set(file);
+    }
   }
 
   async download(file: StoredFile): Promise<void> {
@@ -327,31 +361,93 @@ export class FileExplorer {
     if (files && files.length) void this.uploadFileList(Array.from(files));
   }
 
-  /** Upload nhiều file; giữ cấu trúc thư mục nếu có webkitRelativePath (mục 2.1). */
-  private async uploadFileList(files: File[]): Promise<void> {
-    if (!this.isFolderLens()) {
-      // Ở lăng kính Loại/Starred/Recent, upload về thư mục gốc.
-    }
+  /**
+   * Upload: gộp mỗi thư mục thành 1 "mục" hiện "X trong số N", mỗi file lẻ 1 mục.
+   * Giữ cấu trúc thư mục qua webkitRelativePath (mục 2.1).
+   */
+  private uploadFileList(files: File[]): void {
     const rootId = this.isFolderLens() ? this.folderId() : null;
+
+    // Nhóm theo thư mục gốc; file lẻ đứng riêng.
+    const folderGroups = new Map<string, File[]>();
+    const loose: File[] = [];
+    for (const file of files) {
+      const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath ?? '';
+      if (rel && rel.includes('/')) {
+        const top = rel.split('/')[0];
+        const arr = folderGroups.get(top) ?? [];
+        arr.push(file);
+        folderGroups.set(top, arr);
+      } else {
+        loose.push(file);
+      }
+    }
+
+    const batches: UploadBatch[] = [];
+    for (const [name, groupFiles] of folderGroups) {
+      batches.push(this.makeBatch(name, true, groupFiles));
+    }
+    for (const f of loose) {
+      batches.push(this.makeBatch(f.name, false, [f]));
+    }
+
+    this.uploadBatches.update((list) => [...batches, ...list]);
+    this.uploadsCollapsed.set(false);
+    for (const batch of batches) void this.runBatch(batch, rootId);
+  }
+
+  private makeBatch(label: string, isFolder: boolean, files: File[]): UploadBatch {
+    return {
+      id: crypto.randomUUID(),
+      label,
+      isFolder,
+      total: files.length,
+      done: signal(0),
+      failed: signal(0),
+      status: signal<'uploading' | 'done' | 'error' | 'canceled'>('uploading'),
+      firstTask: signal<UploadTask | null>(null),
+      tasks: [],
+      files,
+      canceled: false,
+    };
+  }
+
+  private async runBatch(batch: UploadBatch, rootId: string | null): Promise<void> {
     const folderCache = new Map<string, string | null>();
     folderCache.set('', rootId);
 
-    for (const file of files) {
+    for (const file of batch.files) {
+      if (batch.canceled) break;
       const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath ?? '';
       let targetFolderId = rootId;
       if (rel && rel.includes('/')) {
-        const segments = rel.split('/').slice(0, -1); // bỏ tên file
+        const segments = rel.split('/').slice(0, -1);
         targetFolderId = await this.ensureFolderPath(segments, rootId, folderCache);
       }
       const task = this.uploadService.createTask(file);
-      this.uploads.update((list) => [...list, task]);
-      void this.uploadService.run(task, file, targetFolderId).then((result) => {
-        if (result) {
-          void this.load();
-          this.refresh.bump(); // cập nhật số đếm sidebar
-        }
-      });
+      batch.tasks.push(task);
+      if (!batch.isFolder) batch.firstTask.set(task);
+      const result = await this.uploadService.run(task, file, targetFolderId);
+      if (result) batch.done.update((v) => v + 1);
+      else if (task.status() !== 'canceled') batch.failed.update((v) => v + 1);
     }
+
+    if (batch.canceled) batch.status.set('canceled');
+    else if (batch.failed() > 0) batch.status.set('error');
+    else batch.status.set('done');
+
+    void this.load();
+    this.refresh.bump();
+  }
+
+  cancelBatch(batch: UploadBatch): void {
+    batch.canceled = true;
+    for (const t of batch.tasks) t.cancel();
+    batch.status.set('canceled');
+  }
+
+  toggleUploadsCollapse(): void {
+    this.uploadsCollapsed.update((v) => !v);
   }
 
   /** Tạo/tìm chuỗi thư mục lồng nhau, trả id thư mục lá. */
@@ -378,10 +474,8 @@ export class FileExplorer {
   }
 
   dismissUploads(): void {
-    this.uploads.set([]);
+    this.uploadBatches.set([]);
   }
-
-  hasActiveUploads = computed(() => this.uploads().length > 0);
 
   /** Tra file trong danh sách hiện tại theo id (dùng cho menu download). */
   fileById(id: string): StoredFile {

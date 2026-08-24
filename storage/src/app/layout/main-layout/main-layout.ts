@@ -20,6 +20,7 @@ import { NotificationService, AppNotification } from '../../core/services/notifi
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { CATEGORIES, CategoryKey, categoryOf } from '../../core/util/file-types';
 import { ExtensionStat } from '../../core/models/file.model';
+import { MiniAudioPlayer } from '../../features/audio-player/mini-audio-player';
 
 interface NavItem {
   icon: string;
@@ -29,7 +30,7 @@ interface NavItem {
 
 @Component({
   selector: 'app-main-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, MiniAudioPlayer],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

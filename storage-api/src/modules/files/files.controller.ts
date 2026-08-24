@@ -16,10 +16,14 @@ import {
   StarFileDto,
 } from './dto/file-mutation.dto';
 import { FilesService } from './files.service';
+import { DocPreviewService } from './doc-preview.service';
 
 @Controller('files')
 export class FilesController {
-  constructor(private readonly files: FilesService) {}
+  constructor(
+    private readonly files: FilesService,
+    private readonly docPreview: DocPreviewService,
+  ) {}
 
   /** GET /files — lăng kính Thư mục (folderId) hoặc Loại (extensions), sort/filter. */
   @Get()
@@ -36,6 +40,14 @@ export class FilesController {
   @Get(':id')
   get(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.files.get(userId, id);
+  }
+
+  /** Render nội dung docx/excel/text thành HTML để xem trước. */
+  @Get(':id/preview-html')
+  async previewHtml(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    const file = await this.files.assertOwned(id, userId);
+    const html = await this.docPreview.renderHtml(file);
+    return { html };
   }
 
   @Get(':id/download-url')

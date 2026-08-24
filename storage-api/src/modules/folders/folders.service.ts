@@ -242,6 +242,10 @@ export class FoldersService {
       keys.push(this.storage.artifactKey(f.userId, f.id));
     }
     await this.storage.deleteObjects(keys);
+    // Dọn cây HLS của từng video con (nếu có).
+    for (const f of files) {
+      await this.storage.deletePrefix(`${f.userId}/${f.id}/hls`).catch(() => undefined);
+    }
     // Xoá folder gốc — cascade tự xoá folder/file/chunk con.
     await this.prisma.folder.delete({ where: { id: folderId } });
   }
