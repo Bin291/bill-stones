@@ -21,8 +21,8 @@ export class Login {
     this.googleError.set(null);
     this.googleLoading.set(true);
     try {
-      const redirect = new URLSearchParams(location.search).get('redirect') || '/files';
-      await this.auth.signInWithGoogle(redirect);
+      // Luôn về trang chính sau khi đăng nhập.
+      await this.auth.signInWithGoogle('/files');
       // Trình duyệt điều hướng sang Google; không cần tắt loading.
     } catch (err) {
       this.googleError.set(err instanceof Error ? err.message : 'auth.loginFailed');

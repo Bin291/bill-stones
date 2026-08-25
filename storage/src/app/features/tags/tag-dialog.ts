@@ -98,11 +98,23 @@ export class TagDialog implements OnInit {
       this.newColor.set(PRESET_COLORS[0]);
       await this.load();
       this.refresh.bumpTags();
-    } catch {
-      this.error.set('Không tạo được thẻ (có thể trùng tên).');
+    } catch (e) {
+      this.error.set(this.tagError(e, 'Không tạo được thẻ.'));
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** Thông báo lỗi chính xác: 409 = trùng tên; còn lại = lỗi kết nối/máy chủ. */
+  private tagError(e: unknown, fallback: string): string {
+    const status = e && typeof e === 'object' && 'status' in e ? (e as { status: number }).status : 0;
+    if (status === 409) return 'Đã có thẻ trùng tên.';
+    if (status === 0) return 'Không kết nối được máy chủ. Thử lại.';
+    const msg =
+      e && typeof e === 'object' && 'error' in e
+        ? (e as { error?: { message?: string } }).error?.message
+        : undefined;
+    return msg || fallback;
   }
 
   startEdit(tag: TagWithCount): void {
@@ -126,8 +138,8 @@ export class TagDialog implements OnInit {
       this.editingId.set(null);
       await this.load();
       this.notify();
-    } catch {
-      this.error.set('Không lưu được thẻ (có thể trùng tên).');
+    } catch (e) {
+      this.error.set(this.tagError(e, 'Không lưu được thẻ.'));
     } finally {
       this.busy.set(false);
     }

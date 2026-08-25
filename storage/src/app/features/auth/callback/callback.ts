@@ -43,8 +43,8 @@ export class AuthCallback {
       if (this.navigated) return;
       if (this.auth.ready() && this.auth.isAuthenticated()) {
         this.navigated = true;
-        const target = new URLSearchParams(location.search).get('redirect') || '/files';
-        void this.router.navigateByUrl(target);
+        // Luôn về trang chính sau khi đăng nhập (không quay lại trang của phiên trước).
+        void this.router.navigateByUrl('/files');
       }
     });
 
