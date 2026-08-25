@@ -379,8 +379,13 @@
 @if (hasActiveUploads()) {
   <div class="upload-panel">
     <div class="upload-head">
-      <span>
-        {{ uploadingCount() > 0 ? ('Đang tải ' + uploadingCount() + ' mục lên') : 'Đã tải lên xong' }}
+      <span class="upload-head-title">
+        <span>
+          {{ uploadingCount() > 0 ? ('Đang tải ' + uploadingCount() + ' mục lên') : 'Đã tải lên xong' }}
+        </span>
+        <span class="upload-head-sub">
+          Đã tải {{ uploadDoneItems() }}/{{ uploadTotalItems() }} mục · {{ uploadPercent() }}%
+        </span>
       </span>
       <span class="row" style="gap: 2px">
         <button class="btn btn-icon" style="padding: 2px" type="button" (click)="toggleUploadsCollapse()">

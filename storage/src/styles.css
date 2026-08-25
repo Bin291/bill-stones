@@ -553,7 +553,19 @@ body {
   border-bottom: 1px solid var(--hairline);
   display: flex;
   justify-content: space-between;
+  align-items: center;
   background: var(--surface-1);
+}
+.upload-head-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.upload-head-sub {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--ink-subtle);
 }
 .upload-list {
   max-height: 260px;

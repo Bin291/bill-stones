@@ -123,6 +123,17 @@ export class FileExplorer {
   protected readonly uploadingCount = computed(
     () => this.uploadBatches().filter((b) => b.status() === 'uploading').length,
   );
+  // Tổng số mục con (file) + số đã xử lý (xong/lỗi) + % — hiện dưới tiêu đề panel.
+  protected readonly uploadTotalItems = computed(() =>
+    this.uploadBatches().reduce((s, b) => s + b.total, 0),
+  );
+  protected readonly uploadDoneItems = computed(() =>
+    this.uploadBatches().reduce((s, b) => s + b.done() + b.failed(), 0),
+  );
+  protected readonly uploadPercent = computed(() => {
+    const total = this.uploadTotalItems();
+    return total > 0 ? Math.round((this.uploadDoneItems() / total) * 100) : 0;
+  });
   readonly hasActiveUploads = computed(() => this.uploadBatches().length > 0);
   protected readonly menu = signal<ContextMenu | null>(null);
   protected readonly shareTarget = signal<ShareTarget | null>(null);
