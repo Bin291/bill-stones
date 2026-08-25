@@ -1701,6 +1701,13 @@ body {
   padding: 4px 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
+/* Dropdown "Tải lên": bằng đúng chiều rộng nút, canh phải để không tràn trang */
+.upload-menu .sort-pop {
+  width: 100%;
+  min-width: 0;
+  left: auto;
+  right: 0;
+}
 .sort-item {
   display: flex;
   align-items: center;
