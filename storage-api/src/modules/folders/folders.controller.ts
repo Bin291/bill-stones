@@ -7,7 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
+import { ZipArchive } from 'archiver'; // archiver v8: dùng class thay factory
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import {
   CreateFolderDto,
@@ -16,10 +19,38 @@ import {
   StarDto,
 } from './dto/folder.dto';
 import { FoldersService } from './folders.service';
+import { StorageService } from '../storage/storage.service';
 
 @Controller('folders')
 export class FoldersController {
-  constructor(private readonly folders: FoldersService) {}
+  constructor(
+    private readonly folders: FoldersService,
+    private readonly storage: StorageService,
+  ) {}
+
+  /** GET /folders/:id/download — tải cả thư mục dưới dạng .zip (stream, mục 5.E). */
+  @Get(':id/download')
+  async download(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { name, entries } = await this.folders.collectFilesForZip(userId, id);
+    const safe = (name || 'folder').replace(/[^\p{L}\p{N}._ -]/gu, '_');
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(safe)}.zip"`,
+    });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
+    archive.on('warning', () => undefined);
+    archive.on('error', () => res.destroy());
+    archive.pipe(res);
+    for (const e of entries) {
+      const stream = await this.storage.getObjectStream(e.r2Key);
+      archive.append(stream, { name: e.path });
+    }
+    await archive.finalize();
+  }
 
   /** GET /folders?parentId=... — con trực tiếp (lazy load cây, mục 11.C). */
   @Get()

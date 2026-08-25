@@ -349,6 +349,20 @@ export class FileExplorer {
     a.click();
   }
 
+  /** Tải cả thư mục dạng .zip (mục 5.E). */
+  async downloadFolder(): Promise<void> {
+    const m = this.menu();
+    if (!m || m.kind !== 'folder') return;
+    this.menu.set(null);
+    const blob = await firstValueFrom(this.foldersApi.downloadZip(m.id));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${m.name}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // --- Context menu ---
   openMenu(event: MouseEvent, kind: 'file' | 'folder', item: StoredFile | Folder): void {
     event.preventDefault();

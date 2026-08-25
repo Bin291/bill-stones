@@ -275,6 +275,10 @@
       <button class="menu-item" type="button" (click)="download(fileById(m.id))">
         <span class="mi">download</span> {{ 'action.download' | t }}
       </button>
+    } @else {
+      <button class="menu-item" type="button" (click)="downloadFolder()">
+        <span class="mi">download</span> {{ 'action.download' | t }}
+      </button>
     }
     <button class="menu-item" type="button" (click)="renameItem()">
       <span class="mi">edit</span> {{ 'action.rename' | t }}

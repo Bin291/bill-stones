@@ -31,6 +31,11 @@ export class FoldersApiService {
     return this.http.post<Folder>(`${this.base}/${id}/move`, { targetParentId });
   }
 
+  /** Tải cả thư mục dưới dạng .zip (blob, mục 5.E). */
+  downloadZip(id: string): Observable<Blob> {
+    return this.http.get(`${this.base}/${id}/download`, { responseType: 'blob' });
+  }
+
   star(id: string, isStarred: boolean): Observable<Folder> {
     return this.http.patch<Folder>(`${this.base}/${id}/star`, { isStarred });
   }
