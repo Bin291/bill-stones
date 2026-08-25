@@ -81,14 +81,13 @@ export class SupabaseJwtService {
       if (typeof sub !== 'string' || !sub) {
         throw new Error('Token thiếu sub');
       }
-      // Tách tài khoản theo phương thức đăng nhập: đăng nhập bằng OAuth (Google)
-      // là KHO RIÊNG, dù trùng email với đăng nhập bằng mã email. Đăng nhập email
-      // (otp/password) giữ nguyên `sub` để không mất dữ liệu hiện có.
-      const oauth = this.isOAuthSession(payload);
+      // Mỗi user Supabase = 1 `sub` riêng. Email-login và Google-login (kể cả trùng
+      // email) là các user khác nhau ⇒ đã tách sẵn theo `sub`. KHÔNG suffix để tránh
+      // treo dữ liệu của tài khoản google-primary (data nằm dưới `sub` gốc).
       return {
-        id: oauth ? `${sub}__oauth` : sub,
+        id: sub,
         sub,
-        provider: oauth ? 'oauth' : 'email',
+        provider: this.isOAuthSession(payload) ? 'oauth' : 'email',
         email: typeof payload['email'] === 'string' ? (payload['email'] as string) : undefined,
         role: typeof payload['role'] === 'string' ? (payload['role'] as string) : undefined,
       };
