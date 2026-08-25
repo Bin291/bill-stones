@@ -1,7 +1,6 @@
 import { Injectable, effect, signal } from '@angular/core';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
-export type Density = 'comfortable' | 'compact';
 export type ViewMode = 'grid' | 'list';
 
 /**
@@ -11,21 +10,16 @@ export type ViewMode = 'grid' | 'list';
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   readonly theme = signal<ThemeMode>(this.read('app.theme', 'system') as ThemeMode);
-  readonly density = signal<Density>(this.read('app.density', 'comfortable') as Density);
   readonly viewMode = signal<ViewMode>(this.read('app.viewMode', 'grid') as ViewMode);
 
   constructor() {
     effect(() => this.applyTheme(this.theme()));
-    effect(() => this.persist('app.density', this.density()));
     effect(() => this.persist('app.viewMode', this.viewMode()));
   }
 
   setTheme(v: ThemeMode) {
     this.theme.set(v);
     this.persist('app.theme', v);
-  }
-  setDensity(v: Density) {
-    this.density.set(v);
   }
   setViewMode(v: ViewMode) {
     this.viewMode.set(v);
