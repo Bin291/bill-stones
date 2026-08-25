@@ -27,6 +27,10 @@ interface RawRow {
 
 const RRF_K = 60; // hằng số Reciprocal Rank Fusion (mục 8.E)
 const RERANK_TOP = 20; // số ứng viên đưa vào reranker
+// Ngưỡng khoảng cách cosine tối đa cho nhánh dense: chỉ giữ mục ĐỦ liên quan,
+// tránh trả về mọi ảnh/tài liệu khi query không thật sự khớp (đo thực nghiệm:
+// mục liên quan ~0.36–0.42, không liên quan ~0.48+). Chỉnh qua env nếu cần.
+const DENSE_MAX_DIST = Number(process.env.SEARCH_DENSE_MAX_DIST ?? '0.45');
 
 /**
  * Hybrid Search (mục 8.E): fuse nhánh **FTS** (accent-insensitive, không cần key)
@@ -122,6 +126,7 @@ export class SearchService {
           AND f."deletedAt" IS NULL
           AND f.status = 'ready'
           AND dc.embedding IS NOT NULL
+          AND (dc.embedding <=> ${lit}::vector) < ${DENSE_MAX_DIST}
         ORDER BY f.id, dist ASC
       ) t
       ORDER BY t.dist ASC
