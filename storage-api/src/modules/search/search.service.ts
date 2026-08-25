@@ -27,10 +27,10 @@ interface RawRow {
 
 const RRF_K = 60; // hằng số Reciprocal Rank Fusion (mục 8.E)
 const RERANK_TOP = 20; // số ứng viên đưa vào reranker
-// Ngưỡng khoảng cách cosine tối đa cho nhánh dense: chỉ giữ mục ĐỦ liên quan,
-// tránh trả về mọi ảnh/tài liệu khi query không thật sự khớp (đo thực nghiệm:
-// mục liên quan ~0.36–0.42, không liên quan ~0.48+). Chỉnh qua env nếu cần.
-const DENSE_MAX_DIST = Number(process.env.SEARCH_DENSE_MAX_DIST ?? '0.45');
+// Ngưỡng khoảng cách cosine tối đa cho nhánh dense: chỉ giữ mục ĐỦ liên quan.
+// Đo với embedding bất đối xứng (RETRIEVAL_QUERY vs RETRIEVAL_DOCUMENT): mục liên
+// quan ~0.29–0.40, không liên quan ~0.44+. Chỉnh qua env nếu muốn nới/siết.
+const DENSE_MAX_DIST = Number(process.env.SEARCH_DENSE_MAX_DIST ?? '0.42');
 
 /**
  * Hybrid Search (mục 8.E): fuse nhánh **FTS** (accent-insensitive, không cần key)
@@ -55,7 +55,7 @@ export class SearchService {
 
     // Nhánh 2: dense (nếu có key). Fuse RRF.
     let ranked: RawRow[];
-    const qvec = this.ai.enabled() ? await this.ai.embedOne(q) : null;
+    const qvec = this.ai.enabled() ? await this.ai.embedQuery(q) : null;
     if (qvec) {
       const denseRows = await this.denseSearch(userId, qvec);
       ranked = this.rrfFuse(ftsRows, denseRows);

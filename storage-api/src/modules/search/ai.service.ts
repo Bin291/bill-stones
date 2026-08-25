@@ -46,8 +46,15 @@ export class AiService {
     return v.map((x) => x / n);
   }
 
-  /** Embed nhiều đoạn text -> vector 768d (đã chuẩn hoá). null nếu không có key/lỗi. */
-  async embed(texts: string[]): Promise<number[][] | null> {
+  /**
+   * Embed nhiều đoạn text -> vector 768d (đã chuẩn hoá). null nếu không có key/lỗi.
+   * taskType bất đối xứng: RETRIEVAL_DOCUMENT khi index, RETRIEVAL_QUERY khi tìm —
+   * đây là chìa khoá để retrieval đúng ngữ cảnh & đa ngôn ngữ.
+   */
+  async embed(
+    texts: string[],
+    taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY' = 'RETRIEVAL_DOCUMENT',
+  ): Promise<number[][] | null> {
     const key = this.geminiKey();
     if (!key || texts.length === 0) return null;
     const model = this.embedModel();
@@ -59,6 +66,7 @@ export class AiService {
           requests: batch.map((t) => ({
             model: `models/${model}`,
             content: { parts: [{ text: t.slice(0, 8000) }] },
+            taskType,
             outputDimensionality: EMBED_DIM,
           })),
         };
@@ -80,9 +88,9 @@ export class AiService {
     }
   }
 
-  /** Embed 1 câu (query). */
-  async embedOne(text: string): Promise<number[] | null> {
-    const r = await this.embed([text]);
+  /** Embed 1 câu truy vấn (dùng taskType RETRIEVAL_QUERY). */
+  async embedQuery(text: string): Promise<number[] | null> {
+    const r = await this.embed([text], 'RETRIEVAL_QUERY');
     return r ? r[0] : null;
   }
 
