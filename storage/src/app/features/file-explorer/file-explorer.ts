@@ -24,6 +24,7 @@ import { FilePreview } from '../file-preview/file-preview';
 import { TagDialog } from '../tags/tag-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { PromptDialog } from '../ui/prompt-dialog';
+import { MoveDialog, MoveItem } from './move-dialog';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import {
   BreadcrumbCrumb,
@@ -82,6 +83,7 @@ interface UploadBatch {
     TagDialog,
     ConfirmDialog,
     PromptDialog,
+    MoveDialog,
   ],
   templateUrl: './file-explorer.html',
   host: { class: 'explorer-host' },
@@ -128,6 +130,7 @@ export class FileExplorer {
   protected readonly previewTarget = signal<StoredFile | null>(null);
   protected readonly tagTarget = signal<TagTarget | null>(null);
   protected readonly dialog = signal<ExplorerDialog | null>(null);
+  protected readonly moveTarget = signal<MoveItem[] | null>(null);
 
   // --- Chọn nhiều (multi-select) để thao tác hàng loạt ---
   protected readonly selectionMode = signal(false);
@@ -450,6 +453,36 @@ export class FileExplorer {
     } finally {
       this.bulkBusy.set(false);
     }
+  }
+
+  /** Mở dialog "Chuyển đến" cho 1 mục từ context menu. */
+  openMove(): void {
+    const m = this.menu();
+    if (!m) return;
+    this.moveTarget.set([{ kind: m.kind, id: m.id, name: m.name }]);
+    this.menu.set(null);
+  }
+
+  /** Mở dialog "Chuyển đến" cho toàn bộ mục đang chọn (bulk). */
+  bulkMove(): void {
+    if (this.selectedCount() === 0) return;
+    const items: MoveItem[] = [
+      ...this.folders()
+        .filter((f) => this.selectedFolderIds().has(f.id))
+        .map((f) => ({ kind: 'folder' as const, id: f.id, name: f.name })),
+      ...this.files()
+        .filter((f) => this.selectedFileIds().has(f.id))
+        .map((f) => ({ kind: 'file' as const, id: f.id, name: f.name })),
+    ];
+    this.moveTarget.set(items);
+  }
+
+  /** Sau khi chuyển xong: đóng dialog, bỏ chọn, nạp lại. */
+  onMoved(): void {
+    this.moveTarget.set(null);
+    this.clearSelection();
+    void this.load();
+    this.refresh.bump();
   }
 
   /** Mở dialog gắn thẻ cho file đang chọn trong context menu. */

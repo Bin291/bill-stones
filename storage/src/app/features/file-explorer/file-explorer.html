@@ -112,6 +112,9 @@
         <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(false)">
           <span class="mi">star_border</span> {{ 'action.unstar' | t }}
         </button>
+        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkMove()">
+          <span class="mi">drive_file_move</span> {{ 'action.move' | t }}
+        </button>
         <button class="btn danger" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkTrash()">
           <span class="mi">delete</span> {{ 'action.delete' | t }}
         </button>
@@ -276,6 +279,9 @@
     <button class="menu-item" type="button" (click)="renameItem()">
       <span class="mi">edit</span> {{ 'action.rename' | t }}
     </button>
+    <button class="menu-item" type="button" (click)="openMove()">
+      <span class="mi">drive_file_move</span> {{ 'action.move' | t }}
+    </button>
     <button class="menu-item" type="button" (click)="toggleStar()">
       <span class="mi">{{ m.isStarred ? 'star' : 'star_border' }}</span>
       {{ m.isStarred ? ('action.unstar' | t) : ('action.star' | t) }}
@@ -312,6 +318,11 @@
 <!-- Preview mọi loại file khác (ảnh/audio/PDF/text/...) -->
 @if (previewTarget(); as pf) {
   <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
+}
+
+<!-- Dialog chuyển đến thư mục -->
+@if (moveTarget(); as mt) {
+  <app-move-dialog [items]="mt" (moved)="onMoved()" (cancelled)="moveTarget.set(null)" />
 }
 
 <!-- Dialog gắn thẻ cho 1 file (thẻ tuỳ chỉnh) -->
