@@ -1498,6 +1498,65 @@ body {
   color: var(--danger);
 }
 
+/* ===== Trình xem trang chia sẻ công khai ===== */
+.ps-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.ps-viewer-stage {
+  max-width: 94vw;
+  max-height: 90vh;
+  display: flex;
+}
+.ps-viewer-img {
+  max-width: 94vw;
+  max-height: 90vh;
+  object-fit: contain;
+  display: block;
+}
+.ps-viewer-frame {
+  width: 90vw;
+  height: 90vh;
+  border: none;
+  background: #fff;
+}
+.ps-viewer-video {
+  max-width: 94vw;
+  max-height: 90vh;
+  background: #000;
+}
+.ps-viewer-audio {
+  background: var(--canvas);
+  padding: 32px 40px;
+  text-align: center;
+  border: 1px solid var(--hairline);
+}
+.ps-viewer-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.ps-viewer-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
 /* ===== Nút Sắp xếp (dropdown) ===== */
 .sort-menu {
   position: relative;
