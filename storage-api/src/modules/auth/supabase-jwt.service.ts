@@ -81,13 +81,16 @@ export class SupabaseJwtService {
       if (typeof sub !== 'string' || !sub) {
         throw new Error('Token thiếu sub');
       }
-      // Mỗi user Supabase = 1 `sub` riêng. Email-login và Google-login (kể cả trùng
-      // email) là các user khác nhau ⇒ đã tách sẵn theo `sub`. KHÔNG suffix để tránh
-      // treo dữ liệu của tài khoản google-primary (data nằm dưới `sub` gốc).
+      // Supabase tự LIÊN KẾT Google vào tài khoản email trùng địa chỉ (cùng `sub`)
+      // ⇒ 2 cách đăng nhập chung dữ liệu. Tách: nếu phiên là Google (amr=oauth) NHƯNG
+      // tài khoản gốc tạo bằng email (provider='email') → đây là "Google phụ" ⇒ dùng
+      // kho riêng `sub__oauth`. Đăng nhập email giữ `sub` (dữ liệu gốc). Tài khoản
+      // gốc-Google (provider='google') giữ `sub` để KHÔNG treo dữ liệu của họ.
+      const separateOAuth = this.isOAuthSession(payload) && this.primaryProvider(payload) === 'email';
       return {
-        id: sub,
+        id: separateOAuth ? `${sub}__oauth` : sub,
         sub,
-        provider: this.isOAuthSession(payload) ? 'oauth' : 'email',
+        provider: separateOAuth ? 'oauth' : 'email',
         email: typeof payload['email'] === 'string' ? (payload['email'] as string) : undefined,
         role: typeof payload['role'] === 'string' ? (payload['role'] as string) : undefined,
       };
@@ -97,17 +100,18 @@ export class SupabaseJwtService {
     }
   }
 
-  /**
-   * Phiên có phải OAuth (Google) không — dựa vào `amr` (method='oauth') hoặc
-   * `app_metadata.provider` khác 'email'. Dùng để tách kho theo phương thức.
-   */
+  /** Phiên hiện tại có đăng nhập bằng OAuth (Google) không — dựa vào `amr`. */
   private isOAuthSession(payload: Record<string, unknown>): boolean {
     const amr = Array.isArray(payload['amr'])
       ? (payload['amr'] as { method?: string }[])
       : [];
-    if (amr.some((a) => a && a.method === 'oauth')) return true;
+    return amr.some((a) => a && a.method === 'oauth');
+  }
+
+  /** Provider tạo tài khoản (sign-up) — 'email' | 'google' | ... */
+  private primaryProvider(payload: Record<string, unknown>): string {
     const meta = payload['app_metadata'] as { provider?: string } | undefined;
-    return !!meta?.provider && meta.provider !== 'email';
+    return meta?.provider ?? 'email';
   }
 
   private verifyHs256(token: string, secret: string): Record<string, unknown> {
