@@ -19,17 +19,42 @@
           <button class="auth-btn" type="submit">Mở khoá</button>
         </form>
       } @else if (m.kind === 'file') {
-        <div class="card-preview" style="height: 140px; border-radius: 8px; margin-bottom: 16px">
-          <span class="mi" style="font-size: 56px; color: var(--text-muted)">
-            {{ iconOf(m.extension || '') }}
-          </span>
-        </div>
+        @if (inline(); as v) {
+          <!-- Xem ngay trên trang: ảnh/pdf/video/audio -->
+          <div class="ps-inline">
+            @switch (v.kind) {
+              @case ('image') {
+                <img [src]="v.url" [alt]="v.name" class="ps-inline-img" />
+              }
+              @case ('pdf') {
+                <iframe [src]="v.safeUrl" class="ps-inline-frame" title="PDF"></iframe>
+              }
+              @case ('video') {
+                <video [src]="v.url" class="ps-inline-video" controls autoplay playsinline></video>
+              }
+              @case ('audio') {
+                <div class="ps-viewer-audio">
+                  <span class="mi" style="font-size: 56px; color: var(--primary)">music_note</span>
+                  <audio [src]="v.url" controls style="width: 100%; max-width: 360px"></audio>
+                </div>
+              }
+            }
+          </div>
+        } @else {
+          <div class="card-preview" style="height: 140px; border-radius: 8px; margin-bottom: 16px">
+            <span class="mi" style="font-size: 56px; color: var(--text-muted)">
+              {{ iconOf(m.extension || '') }}
+            </span>
+          </div>
+        }
         <h1 class="auth-title" style="font-size: 18px">{{ m.name }}</h1>
         <p class="auth-sub">{{ formatBytes(m.size || '0') }}</p>
         <div class="row" style="gap: 8px; margin-top: 8px">
-          <button class="btn" type="button" (click)="view(undefined, m.name, m.extension)">
-            <span class="mi">visibility</span> Xem
-          </button>
+          @if (!inline()) {
+            <button class="btn" type="button" (click)="view(undefined, m.name, m.extension)">
+              <span class="mi">open_in_new</span> Mở
+            </button>
+          }
           @if (m.allowDownload) {
             <button class="btn btn-primary" type="button" (click)="download(undefined, m.name)">
               <span class="mi">download</span> Tải xuống

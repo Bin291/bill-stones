@@ -58,7 +58,8 @@ export class MainLayout implements OnInit {
   protected readonly notifications = inject(NotificationService);
 
   protected readonly profile = this.auth.profile;
-  protected readonly categories = CATEGORIES;
+  // Bỏ mục "Khác" khỏi sidebar theo yêu cầu (vẫn giữ trong CATEGORIES cho nơi khác).
+  protected readonly categories = CATEGORIES.filter((c) => c.key !== 'other');
   protected readonly notifOpen = signal(false);
   protected readonly tags = signal<TagWithCount[]>([]);
   protected readonly tagDialogOpen = signal(false);

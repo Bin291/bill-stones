@@ -32,18 +32,20 @@
         <span class="mi">tune</span>
       </button>
     </div>
-    @for (tag of tags(); track tag.id) {
-      <a class="nav-item" [routerLink]="['/tag', tag.id]" routerLinkActive="active">
-        <span class="tag-dot" [style.background]="tag.color"></span>
-        {{ tag.name }}
-        <span class="nav-count">{{ tag.fileCount || '' }}</span>
-      </a>
-    } @empty {
-      <button class="nav-item" type="button" (click)="openTagManager()" style="color: var(--ink-subtle)">
-        <span class="mi">add</span>
-        {{ 'tags.addNew' | t }}
-      </button>
-    }
+    <div class="tag-scroll">
+      @for (tag of tags(); track tag.id) {
+        <a class="nav-item" [routerLink]="['/tag', tag.id]" routerLinkActive="active">
+          <span class="tag-dot" [style.background]="tag.color"></span>
+          {{ tag.name }}
+          <span class="nav-count">{{ tag.fileCount || '' }}</span>
+        </a>
+      } @empty {
+        <button class="nav-item" type="button" (click)="openTagManager()" style="color: var(--ink-subtle)">
+          <span class="mi">add</span>
+          {{ 'tags.addNew' | t }}
+        </button>
+      }
+    </div>
 
     <div class="sidebar-foot">
       <a class="nav-item" routerLink="/profile" routerLinkActive="active">

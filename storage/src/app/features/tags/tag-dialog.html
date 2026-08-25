@@ -56,7 +56,6 @@
                     class="tag-check"
                     [class.on]="isAssigned(tag.id)"
                     (click)="toggleAssign(tag)"
-                    [disabled]="busy()"
                     [attr.aria-pressed]="isAssigned(tag.id)"
                     [attr.aria-label]="tag.name"
                   >

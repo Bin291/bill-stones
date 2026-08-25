@@ -39,6 +39,8 @@ export class PublicShare implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly loading = signal(true);
   protected readonly viewer = signal<ViewerState | null>(null);
+  // Xem NGAY trên trang cho link 1 file ảnh/pdf/video/audio (không cần bấm "Xem").
+  protected readonly inline = signal<ViewerState | null>(null);
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
@@ -56,6 +58,8 @@ export class PublicShare implements OnInit {
       this.meta.set(meta);
       if (!meta.requiresPassword && meta.kind === 'folder') {
         this.listing.set(await firstValueFrom(this.api.list(this.token, this.session)));
+      } else if (!meta.requiresPassword && meta.kind === 'file') {
+        await this.prepareInline(meta);
       }
     } catch {
       this.error.set('Link không tồn tại hoặc đã hết hạn.');
@@ -74,6 +78,26 @@ export class PublicShare implements OnInit {
       await this.loadMeta();
     } catch {
       this.error.set('Mật khẩu không đúng.');
+    }
+  }
+
+  /** Chuẩn bị nội dung xem ngay trên trang cho link 1 file (nếu xem được). */
+  private async prepareInline(meta: ShareMeta): Promise<void> {
+    const kind = this.viewKind(meta.extension);
+    if (!kind) {
+      this.inline.set(null);
+      return;
+    }
+    try {
+      const { url } = await firstValueFrom(this.api.contentUrl(this.token, this.session, undefined));
+      this.inline.set({
+        name: meta.name ?? '',
+        kind,
+        url,
+        safeUrl: kind === 'pdf' ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null,
+      });
+    } catch {
+      this.inline.set(null);
     }
   }
 

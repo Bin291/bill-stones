@@ -162,6 +162,15 @@ export class FileExplorer {
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
 
+  /** Số chấm màu thẻ hiện trực tiếp trên card; dư ra gộp thành "+N" (hover xem). */
+  private readonly MAX_TAG_DOTS = 5;
+  protected visibleTags(tags: StoredFile['tags']): NonNullable<StoredFile['tags']> {
+    return (tags ?? []).slice(0, this.MAX_TAG_DOTS);
+  }
+  protected overflowTags(tags: StoredFile['tags']): NonNullable<StoredFile['tags']> {
+    return (tags ?? []).slice(this.MAX_TAG_DOTS);
+  }
+
   protected readonly title = computed(() => {
     switch (this.mode()) {
       case 'type': {

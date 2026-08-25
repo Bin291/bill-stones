@@ -242,8 +242,14 @@ body {
   border-right: 1px solid var(--hairline);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden; /* chỉ danh sách thẻ (.tag-scroll) cuộn, không cuộn cả sidebar */
   padding: 8px 0;
+}
+/* Danh sách thẻ trong sidebar tự cuộn khi quá nhiều — không kéo theo cả sidebar */
+.tag-scroll {
+  flex: 1 1 auto;
+  min-height: 40px;
+  overflow-y: auto;
 }
 .brand {
   font-size: 18px;
@@ -448,10 +454,14 @@ body {
   background: var(--canvas);
   border: 1px solid var(--hairline);
   border-radius: 0;
-  overflow: hidden;
+  /* overflow visible để khung "+N" thoát ra ngoài card; ảnh vẫn được .card-preview cắt */
+  overflow: visible;
   cursor: pointer;
   transition: background 0.1s;
   position: relative;
+}
+.card:hover {
+  z-index: 10; /* nâng card đang hover để khung thẻ dư không bị card khác che */
 }
 .card:hover {
   background: var(--surface-1);
@@ -704,11 +714,19 @@ body {
   border: 1px solid var(--hairline);
   border-radius: 0;
   width: 100%;
-  max-width: 540px;
+  max-width: 600px;
   max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+/* Hàng sửa thẻ: màu không xuống dòng, ô tên co lại để mọi thứ nằm 1 hàng */
+.tag-row--edit .tag-swatches {
+  flex-wrap: nowrap;
+}
+.tag-row--edit .tag-edit-name {
+  flex: 1 1 100px;
+  min-width: 90px;
 }
 .modal-head {
   display: flex;
@@ -1402,6 +1420,9 @@ body {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
+  /* Chỉ CUỘN trong danh sách thẻ khi quá nhiều — không cuộn cả dialog */
+  max-height: 320px;
+  overflow-y: auto;
 }
 .tag-row {
   display: flex;
@@ -1414,7 +1435,7 @@ body {
   border-bottom: none;
 }
 .tag-row--edit {
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* input + màu + nút Lưu/Huỷ nằm cùng hàng, không xuống dòng */
 }
 .tag-name {
   flex: 1;
@@ -1486,11 +1507,69 @@ body {
 }
 
 /* Chấm màu thẻ trên card file */
+/* Dòng "dung lượng + thẻ" trên card — thẻ nằm cùng hàng với dung lượng */
+.card-metarow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  min-width: 0;
+}
+.card-size {
+  font-size: 12px;
+  letter-spacing: 0.32px;
+  color: var(--ink-subtle);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
 .card-tags {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* xếp dài ra 1 hàng; dư thì gộp "+N" */
+  min-width: 0;
+  overflow: visible;
+}
+/* Chip "+N" — di chuột vào hiện khung chứa thẻ dư */
+.card-tag-more {
+  position: relative;
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ink-muted);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 2px 6px;
+  cursor: default;
+}
+.card-tag-pop {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 150px;
+  max-height: 168px; /* ~5 dòng; dư nữa thì cuộn */
+  overflow-y: auto;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+  padding: 6px;
+}
+.card-tag-more:hover .card-tag-pop {
+  display: block;
+}
+.card-tag-pop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  white-space: nowrap;
+}
+.card-tag-pop-name {
+  font-size: 12px;
+  color: var(--ink);
 }
 .card-tag-dot {
   width: 8px;
@@ -1579,6 +1658,32 @@ body {
 }
 .ps-viewer-close:hover {
   background: rgba(0, 0, 0, 0.8);
+}
+
+/* Xem nội dung NGAY trên trang chia sẻ (không cần bấm "Xem") */
+.ps-inline {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+}
+.ps-inline-img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  display: block;
+}
+.ps-inline-frame {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  background: #fff;
+}
+.ps-inline-video {
+  max-width: 100%;
+  max-height: 70vh;
+  background: #000;
 }
 
 /* ===== Nút Sắp xếp (dropdown) ===== */

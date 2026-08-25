@@ -200,23 +200,38 @@
           </div>
           <div class="card-meta">
             <div class="card-name" [title]="file.name">{{ file.name }}</div>
-            <div class="card-sub">
-              {{ formatBytes(file.size) }}
-              @if (file.status !== 'ready') {
-                · {{ file.status }}
+            <div class="card-metarow">
+              <span class="card-size">
+                {{ formatBytes(file.size) }}
+                @if (file.status !== 'ready') {
+                  · {{ file.status }}
+                }
+              </span>
+              @if (file.tags && file.tags.length) {
+                <span class="card-tags">
+                  @for (tg of visibleTags(file.tags); track tg.id) {
+                    <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                  }
+                  @if (overflowTags(file.tags).length) {
+                    <span class="card-tag-more" (click)="$event.stopPropagation()">
+                      +{{ overflowTags(file.tags).length }}
+                      <span class="card-tag-pop">
+                        @for (tg of overflowTags(file.tags); track tg.id) {
+                          <span class="card-tag-pop-item">
+                            <span class="card-tag-dot" [style.background]="tg.color"></span>
+                            <span class="card-tag-pop-name">{{ tg.name }}</span>
+                          </span>
+                        }
+                      </span>
+                    </span>
+                  }
+                </span>
               }
             </div>
             @if (file.folderPath && file.folderPath.length) {
               <div class="card-path" (click)="goToFilePath(file); $event.stopPropagation()">
                 <span class="mi" style="font-size: 13px">folder</span>
                 {{ file.folderPath[file.folderPath.length - 1].name }}
-              </div>
-            }
-            @if (file.tags && file.tags.length) {
-              <div class="card-tags">
-                @for (tg of file.tags; track tg.id) {
-                  <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
-                }
               </div>
             }
           </div>
