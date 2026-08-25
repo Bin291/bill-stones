@@ -1,5 +1,8 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Session } from '@supabase/supabase-js';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { SupabaseService } from './supabase.service';
 
 export interface AuthProfile {
@@ -44,6 +47,9 @@ export class AuthService {
 
   readonly accessToken = computed(() => this._session()?.access_token ?? null);
 
+  private readonly http = inject(HttpClient);
+  private readonly apiBase = `${environment.apiUrl}/auth`;
+
   constructor(private readonly supabase: SupabaseService) {
     void this.init();
   }
@@ -87,12 +93,81 @@ export class AuthService {
     this._session.set(data.session);
   }
 
-  async signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }> {
-    const { data, error } = await this.supabase.signUp(email, password);
+  /**
+   * Đăng nhập bằng TÊN ĐĂNG NHẬP hoặc EMAIL + mật khẩu.
+   * - Có '@' → coi là email, đăng nhập trực tiếp qua Supabase.
+   * - Không có '@' → nhờ backend tra email theo username rồi cấp session (password grant).
+   */
+  async signInWithLogin(login: string, password: string): Promise<void> {
+    const id = login.trim();
+    if (id.includes('@')) {
+      await this.signIn(id, password);
+      return;
+    }
+    const tokens = await firstValueFrom(
+      this.http.post<{ access_token: string; refresh_token: string }>(
+        `${this.apiBase}/username-login`,
+        { username: id, password },
+      ),
+    );
+    const { data, error } = await this.supabase.setSession(
+      tokens.access_token,
+      tokens.refresh_token,
+    );
     if (error) throw error;
-    // Nếu Supabase bật email confirmation, session sẽ null cho tới khi xác nhận.
+    this._session.set(data.session);
+  }
+
+  /** Kiểm tra tên đăng nhập còn trống không (gọi backend). */
+  async isUsernameAvailable(username: string): Promise<boolean> {
+    const res = await firstValueFrom(
+      this.http.get<{ available: boolean }>(
+        `${this.apiBase}/username-available`,
+        { params: { u: username.trim() } },
+      ),
+    );
+    return res.available;
+  }
+
+  /**
+   * Đăng ký: tạo user Supabase (email + password, kèm username trong metadata) rồi
+   * đăng ký hồ sơ username ở backend để đăng nhập bằng username về sau.
+   * Bật xác nhận email ⇒ session null cho tới khi bấm link xác nhận.
+   */
+  async register(
+    username: string,
+    email: string,
+    password: string,
+  ): Promise<{ needsConfirmation: boolean }> {
+    const { data, error } = await this.supabase.signUp(email, password, {
+      username: username.trim(),
+      display_name: username.trim(),
+    });
+    if (error) throw error;
+    const userId = data.user?.id;
+    if (userId) {
+      await firstValueFrom(
+        this.http.post(`${this.apiBase}/register-profile`, {
+          userId,
+          username: username.trim(),
+          email: email.trim(),
+        }),
+      );
+    }
     this._session.set(data.session);
     return { needsConfirmation: data.session === null };
+  }
+
+  /** Gửi email đặt lại mật khẩu (Quên mật khẩu). */
+  async sendPasswordReset(email: string): Promise<void> {
+    const { error } = await this.supabase.resetPasswordForEmail(email.trim());
+    if (error) throw error;
+  }
+
+  /** Đặt mật khẩu mới (trang /auth/reset sau khi bấm link trong email). */
+  async updatePassword(password: string): Promise<void> {
+    const { error } = await this.supabase.updatePassword(password);
+    if (error) throw error;
   }
 
   /**

@@ -1,0 +1,53 @@
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1 class="auth-title">{{ 'app.title' | t }}</h1>
+    <p class="auth-sub">{{ 'auth.resetTitle' | t }}</p>
+
+    @switch (status()) {
+      @case ('waiting') {
+        <p class="auth-sub">{{ 'auth.processing' | t }}</p>
+      }
+      @case ('invalid') {
+        <div class="auth-error">{{ 'auth.resetInvalid' | t }}</div>
+        <p class="auth-foot">
+          <a routerLink="/login" class="auth-link">{{ 'auth.backToLogin' | t }}</a>
+        </p>
+      }
+      @case ('ready') {
+        @if (error()) {
+          <div class="auth-error">{{ error() }}</div>
+        }
+        @if (info()) {
+          <div class="auth-info">{{ info() }}</div>
+        }
+        <form (submit)="submit($event)">
+          <label class="auth-label">{{ 'auth.newPassword' | t }}</label>
+          <input
+            class="auth-input"
+            type="password"
+            autocomplete="new-password"
+            [placeholder]="'auth.newPassword' | t"
+            [value]="password()"
+            (input)="password.set($any($event.target).value)"
+            required
+          />
+
+          <label class="auth-label">{{ 'auth.confirmPassword' | t }}</label>
+          <input
+            class="auth-input"
+            type="password"
+            autocomplete="new-password"
+            [placeholder]="'auth.confirmPassword' | t"
+            [value]="confirm()"
+            (input)="confirm.set($any($event.target).value)"
+            required
+          />
+
+          <button class="auth-btn" type="submit" [disabled]="loading()">
+            {{ loading() ? ('auth.sending' | t) : ('auth.updatePassword' | t) }}
+          </button>
+        </form>
+      }
+    }
+  </div>
+</div>

@@ -136,8 +136,9 @@ body {
   outline-offset: -2px;
 }
 .auth-btn {
+  width: 100%; /* kéo dài hết chiều ngang thẻ, dài hơn cảm giác so với ô nhập */
   margin-top: 28px;
-  padding: 12px 16px;
+  padding: 14px 16px;
   border: none;
   border-radius: 0;
   display: flex;
@@ -146,10 +147,9 @@ body {
   background: var(--primary);
   color: var(--on-primary);
   font-weight: 400;
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: 0.16px;
   cursor: pointer;
-  text-align: left;
 }
 .auth-btn:hover {
   background: var(--primary-hover);
@@ -399,8 +399,10 @@ body {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 14px;
+  height: 38px; /* cùng chiều cao để mọi nút trên toolbar thẳng hàng */
+  padding: 0 14px;
   border-radius: 0;
   border: 1px solid var(--hairline);
   background: var(--canvas);
@@ -410,6 +412,8 @@ body {
   letter-spacing: 0.16px;
   cursor: pointer;
   font-family: inherit;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 .btn:hover {
   background: var(--surface-1);

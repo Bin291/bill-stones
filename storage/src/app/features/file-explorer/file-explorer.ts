@@ -117,6 +117,7 @@ export class FileExplorer {
   protected readonly sort = signal<ListFilesQuery['sort']>('createdAt');
   protected readonly order = signal<ListFilesQuery['order']>('desc');
   protected readonly sortMenuOpen = signal(false);
+  protected readonly uploadMenuOpen = signal(false);
 
   protected readonly uploadBatches = signal<UploadBatch[]>([]);
   protected readonly uploadsCollapsed = signal(false);
@@ -587,10 +588,16 @@ export class FileExplorer {
   }
 
   // --- Upload ---
+  toggleUploadMenu(event: Event): void {
+    event.stopPropagation();
+    this.uploadMenuOpen.update((v) => !v);
+  }
+
   onPick(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files) void this.uploadFileList(Array.from(input.files));
     input.value = '';
+    this.uploadMenuOpen.set(false);
   }
 
   // Đếm depth để overlay không nhấp nháy khi rê qua các card con.

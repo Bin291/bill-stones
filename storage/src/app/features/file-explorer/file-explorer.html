@@ -4,7 +4,7 @@
   (dragover)="onDragOver($event)"
   (dragleave)="onDragLeave()"
   (drop)="onDrop($event)"
-  (click)="closeMenu(); sortMenuOpen.set(false)"
+  (click)="closeMenu(); sortMenuOpen.set(false); uploadMenuOpen.set(false)"
 >
   <div class="toolbar">
     @if (isFolderLens()) {
@@ -79,10 +79,26 @@
       </button>
     }
 
-    <label class="btn btn-primary" style="cursor: pointer">
-      <span class="mi">upload</span> {{ 'action.upload' | t }}
-      <input type="file" multiple hidden (change)="onPick($event)" />
-    </label>
+    <div class="sort-menu">
+      <button class="btn btn-primary" type="button" (click)="toggleUploadMenu($event)">
+        <span class="mi">upload</span> {{ 'action.upload' | t }}
+        <span class="mi" style="font-size: 18px">{{ uploadMenuOpen() ? 'expand_less' : 'expand_more' }}</span>
+      </button>
+      @if (uploadMenuOpen()) {
+        <div class="sort-pop" (click)="$event.stopPropagation()">
+          <label class="sort-item" style="cursor: pointer">
+            <span class="mi">upload_file</span>
+            <span class="sort-item-label">{{ 'upload.file' | t }}</span>
+            <input type="file" multiple hidden (change)="onPick($event)" />
+          </label>
+          <label class="sort-item" style="cursor: pointer">
+            <span class="mi">drive_folder_upload</span>
+            <span class="sort-item-label">{{ 'upload.folder' | t }}</span>
+            <input type="file" webkitdirectory hidden (change)="onPick($event)" />
+          </label>
+        </div>
+      }
+    </div>
   </div>
 
   <!-- Thanh thao tác hàng loạt khi ở chế độ Chọn -->
