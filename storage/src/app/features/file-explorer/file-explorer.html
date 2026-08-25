@@ -4,7 +4,7 @@
   (dragover)="onDragOver($event)"
   (dragleave)="onDragLeave()"
   (drop)="onDrop($event)"
-  (click)="closeMenu()"
+  (click)="closeMenu(); sortMenuOpen.set(false)"
 >
   <div class="toolbar">
     @if (isFolderLens()) {
@@ -27,15 +27,37 @@
 
     <span class="spacer"></span>
 
-    <button class="btn" type="button" (click)="setSort('name')">
-      <span style="font-weight: 600; letter-spacing: 0.5px">A-Z</span> {{ 'sort.name' | t }}
-    </button>
-    <button class="btn" type="button" (click)="setSort('updatedAt')">
-      <span class="mi">schedule</span> {{ 'sort.date' | t }}
-    </button>
-    <button class="btn" type="button" (click)="setSort('size')">
-      <span class="mi">data_usage</span> {{ 'sort.size' | t }}
-    </button>
+    <div class="sort-menu">
+      <button class="btn" type="button" (click)="toggleSortMenu($event)">
+        <span class="mi">swap_vert</span> {{ 'sort.label' | t }}
+        <span class="mi" style="font-size: 18px">{{ sortMenuOpen() ? 'expand_less' : 'expand_more' }}</span>
+      </button>
+      @if (sortMenuOpen()) {
+        <div class="sort-pop" (click)="$event.stopPropagation()">
+          <button class="sort-item" type="button" [class.on]="sort() === 'name'" (click)="setSort('name')">
+            <span class="mi">sort_by_alpha</span>
+            <span class="sort-item-label">{{ 'sort.name' | t }}</span>
+            @if (sort() === 'name') {
+              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
+            }
+          </button>
+          <button class="sort-item" type="button" [class.on]="sort() === 'createdAt'" (click)="setSort('createdAt')">
+            <span class="mi">schedule</span>
+            <span class="sort-item-label">{{ 'sort.date' | t }}</span>
+            @if (sort() === 'createdAt') {
+              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
+            }
+          </button>
+          <button class="sort-item" type="button" [class.on]="sort() === 'size'" (click)="setSort('size')">
+            <span class="mi">data_usage</span>
+            <span class="sort-item-label">{{ 'sort.size' | t }}</span>
+            @if (sort() === 'size') {
+              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
+            }
+          </button>
+        </div>
+      }
+    </div>
 
     <button class="btn btn-icon" type="button" (click)="settings.toggleView()" [title]="'view.grid' | t">
       <span class="mi">{{ settings.viewMode() === 'grid' ? 'view_list' : 'grid_view' }}</span>
@@ -60,10 +82,6 @@
     <label class="btn btn-primary" style="cursor: pointer">
       <span class="mi">upload</span> {{ 'action.upload' | t }}
       <input type="file" multiple hidden (change)="onPick($event)" />
-    </label>
-    <label class="btn" style="cursor: pointer" title="Folder">
-      <span class="mi">drive_folder_upload</span>
-      <input type="file" webkitdirectory hidden (change)="onPick($event)" />
     </label>
   </div>
 

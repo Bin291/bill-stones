@@ -33,6 +33,15 @@ export class HlsController {
   @Get(':id/hls/status')
   async status(@CurrentUser('id') userId: string, @Param('id') id: string) {
     const file = await this.files.assertOwned(id, userId);
+    // Tự phục hồi: nếu kẹt ở 'processing' mà không có job đang chạy (VD backend
+    // restart làm transcode chết giữa chừng) thì kích hoạt lại — tránh treo mãi.
+    if (
+      file.hlsStatus === 'processing' &&
+      this.hls.supports(file.extension) &&
+      !this.hls.isInProgress(id)
+    ) {
+      this.hls.transcodeInBackground(file);
+    }
     return { hlsStatus: file.hlsStatus ?? null };
   }
 

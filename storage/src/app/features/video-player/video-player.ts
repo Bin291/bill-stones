@@ -144,7 +144,11 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
       this.hls.loadSource(master);
       this.hls.attachMedia(el);
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        this.levels.set(this.hls!.levels.map((l, i) => ({ index: i, height: l.height })));
+        this.levels.set(
+          this.hls!.levels
+            .map((l, i) => ({ index: i, height: l.height }))
+            .sort((a, b) => b.height - a.height), // 1080p ở trên cùng
+        );
         void el.play().catch(() => undefined);
       });
       this.hls.on(Hls.Events.LEVEL_SWITCHED, (_e, d) =>

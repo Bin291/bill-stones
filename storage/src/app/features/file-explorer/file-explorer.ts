@@ -114,6 +114,7 @@ export class FileExplorer {
 
   protected readonly sort = signal<ListFilesQuery['sort']>('createdAt');
   protected readonly order = signal<ListFilesQuery['order']>('desc');
+  protected readonly sortMenuOpen = signal(false);
 
   protected readonly uploadBatches = signal<UploadBatch[]>([]);
   protected readonly uploadsCollapsed = signal(false);
@@ -290,7 +291,12 @@ export class FileExplorer {
     else void this.router.navigate(['/files']);
   }
 
-  // --- Sort ---
+  // --- Sort (gộp vào 1 nút dropdown) ---
+  toggleSortMenu(event: Event): void {
+    event.stopPropagation();
+    this.sortMenuOpen.update((v) => !v);
+  }
+
   setSort(field: NonNullable<ListFilesQuery['sort']>): void {
     if (this.sort() === field) {
       this.order.set(this.order() === 'asc' ? 'desc' : 'asc');
