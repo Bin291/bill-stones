@@ -4,7 +4,7 @@
   (dragover)="onDragOver($event)"
   (dragleave)="onDragLeave()"
   (drop)="onDrop($event)"
-  (click)="closeMenu()"
+  (click)="closeMenu(); sortMenuOpen.set(false)"
 >
   <div class="toolbar">
     @if (isFolderLens()) {
@@ -17,24 +17,60 @@
           <a class="crumb" [class.current]="last" (click)="goCrumb(crumb)">{{ crumb.name }}</a>
         }
       </nav>
+    } @else if (mode() === 'tag') {
+      <h1 class="page-title" style="margin: 0; display: flex; align-items: center; gap: 10px">
+        <span class="tag-dot" [style.background]="tagColor()"></span>{{ tagName() }}
+      </h1>
     } @else {
       <h1 class="page-title" style="margin: 0">{{ title() | t }}</h1>
     }
 
     <span class="spacer"></span>
 
-    <button class="btn" type="button" (click)="setSort('name')">
-      <span class="mi">sort_by_alpha</span> {{ 'sort.name' | t }}
-    </button>
-    <button class="btn" type="button" (click)="setSort('updatedAt')">
-      <span class="mi">schedule</span> {{ 'sort.date' | t }}
-    </button>
-    <button class="btn" type="button" (click)="setSort('size')">
-      <span class="mi">data_usage</span> {{ 'sort.size' | t }}
-    </button>
+    <div class="sort-menu">
+      <button class="btn" type="button" (click)="toggleSortMenu($event)">
+        <span class="mi">swap_vert</span> {{ 'sort.label' | t }}
+        <span class="mi" style="font-size: 18px">{{ sortMenuOpen() ? 'expand_less' : 'expand_more' }}</span>
+      </button>
+      @if (sortMenuOpen()) {
+        <div class="sort-pop" (click)="$event.stopPropagation()">
+          <button class="sort-item" type="button" [class.on]="sort() === 'name'" (click)="setSort('name')">
+            <span class="mi">sort_by_alpha</span>
+            <span class="sort-item-label">{{ 'sort.name' | t }}</span>
+            @if (sort() === 'name') {
+              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
+            }
+          </button>
+          <button class="sort-item" type="button" [class.on]="sort() === 'createdAt'" (click)="setSort('createdAt')">
+            <span class="mi">schedule</span>
+            <span class="sort-item-label">{{ 'sort.date' | t }}</span>
+            @if (sort() === 'createdAt') {
+              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
+            }
+          </button>
+          <button class="sort-item" type="button" [class.on]="sort() === 'size'" (click)="setSort('size')">
+            <span class="mi">data_usage</span>
+            <span class="sort-item-label">{{ 'sort.size' | t }}</span>
+            @if (sort() === 'size') {
+              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
+            }
+          </button>
+        </div>
+      }
+    </div>
 
     <button class="btn btn-icon" type="button" (click)="settings.toggleView()" [title]="'view.grid' | t">
       <span class="mi">{{ settings.viewMode() === 'grid' ? 'view_list' : 'grid_view' }}</span>
+    </button>
+
+    <button
+      class="btn"
+      type="button"
+      [class.btn-primary]="selectionMode()"
+      (click)="toggleSelectionMode()"
+    >
+      <span class="mi">{{ selectionMode() ? 'check_box' : 'check_box_outline_blank' }}</span>
+      {{ 'select.enter' | t }}
     </button>
 
     @if (isFolderLens()) {
@@ -47,11 +83,48 @@
       <span class="mi">upload</span> {{ 'action.upload' | t }}
       <input type="file" multiple hidden (change)="onPick($event)" />
     </label>
-    <label class="btn" style="cursor: pointer" title="Folder">
-      <span class="mi">drive_folder_upload</span>
-      <input type="file" webkitdirectory hidden (change)="onPick($event)" />
-    </label>
   </div>
+
+  <!-- Thanh thao tác hàng loạt khi ở chế độ Chọn -->
+  @if (selectionMode()) {
+    <div class="select-bar">
+      <button class="btn btn-icon" type="button" (click)="selectAll()" [title]="'select.all' | t">
+        <span class="mi">{{ allSelected() ? 'check_box' : 'select_all' }}</span>
+      </button>
+      <span class="select-count">{{ 'select.count' | t: { n: selectedCount() } }}</span>
+
+      <span class="spacer"></span>
+
+      @if (confirmingBulkDelete()) {
+        <span class="select-confirm">{{ 'select.confirmDelete' | t: { n: selectedCount() } }}</span>
+        <button class="btn danger" type="button" [disabled]="bulkBusy()" (click)="bulkTrash()">
+          <span class="mi">delete</span> {{ 'select.confirmYes' | t }}
+        </button>
+        <button class="btn" type="button" (click)="confirmingBulkDelete.set(false)">
+          {{ 'action.cancel' | t }}
+        </button>
+      } @else {
+        @if (mode() !== 'starred') {
+          <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(true)">
+            <span class="mi">star</span> {{ 'action.star' | t }}
+          </button>
+        }
+        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(false)">
+          <span class="mi">star_border</span> {{ 'action.unstar' | t }}
+        </button>
+        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkMove()">
+          <span class="mi">drive_file_move</span> {{ 'action.move' | t }}
+        </button>
+        <button class="btn danger" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkTrash()">
+          <span class="mi">delete</span> {{ 'action.delete' | t }}
+        </button>
+      }
+
+      <button class="btn btn-icon" type="button" (click)="toggleSelectionMode()" [title]="'select.clear' | t">
+        <span class="mi">close</span>
+      </button>
+    </div>
+  }
 
   @if (loading()) {
     <div class="empty">{{ 'files.loading' | t }}</div>
@@ -68,9 +141,15 @@
       @for (folder of folders(); track folder.id) {
         <div
           class="card"
+          [class.selected]="isSelected('folder', folder.id)"
           (click)="openFolder(folder)"
           (contextmenu)="openMenu($event, 'folder', folder)"
         >
+          @if (selectionMode()) {
+            <span class="card-check" [class.on]="isSelected('folder', folder.id)">
+              <span class="mi">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+            </span>
+          }
           @if (folder.isStarred) {
             <span class="mi card-star">star</span>
           }
@@ -84,9 +163,15 @@
       @for (file of files(); track file.id) {
         <div
           class="card"
+          [class.selected]="isSelected('file', file.id)"
           (click)="openFile(file)"
           (contextmenu)="openMenu($event, 'file', file)"
         >
+          @if (selectionMode()) {
+            <span class="card-check" [class.on]="isSelected('file', file.id)">
+              <span class="mi">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+            </span>
+          }
           @if (file.isStarred) {
             <span class="mi card-star">star</span>
           }
@@ -111,6 +196,13 @@
                 {{ file.folderPath[file.folderPath.length - 1].name }}
               </div>
             }
+            @if (file.tags && file.tags.length) {
+              <div class="card-tags">
+                @for (tg of file.tags; track tg.id) {
+                  <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                }
+              </div>
+            }
           </div>
         </div>
       }
@@ -126,15 +218,33 @@
       </thead>
       <tbody>
         @for (folder of folders(); track folder.id) {
-          <tr (click)="openFolder(folder)" (contextmenu)="openMenu($event, 'folder', folder)">
-            <td><span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}</td>
+          <tr
+            [class.selected]="isSelected('folder', folder.id)"
+            (click)="openFolder(folder)"
+            (contextmenu)="openMenu($event, 'folder', folder)"
+          >
+            <td>
+              @if (selectionMode()) {
+                <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+              }
+              <span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}
+            </td>
             <td>—</td>
             <td>{{ folder.updatedAt | date: 'short' }}</td>
           </tr>
         }
         @for (file of files(); track file.id) {
-          <tr (click)="openFile(file)" (contextmenu)="openMenu($event, 'file', file)">
-            <td><span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span> {{ file.name }}</td>
+          <tr
+            [class.selected]="isSelected('file', file.id)"
+            (click)="openFile(file)"
+            (contextmenu)="openMenu($event, 'file', file)"
+          >
+            <td>
+              @if (selectionMode()) {
+                <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+              }
+              <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span> {{ file.name }}
+            </td>
             <td>{{ formatBytes(file.size) }}</td>
             <td>{{ file.updatedAt | date: 'short' }}</td>
           </tr>
@@ -165,14 +275,26 @@
       <button class="menu-item" type="button" (click)="download(fileById(m.id))">
         <span class="mi">download</span> {{ 'action.download' | t }}
       </button>
+    } @else {
+      <button class="menu-item" type="button" (click)="downloadFolder()">
+        <span class="mi">download</span> {{ 'action.download' | t }}
+      </button>
     }
     <button class="menu-item" type="button" (click)="renameItem()">
       <span class="mi">edit</span> {{ 'action.rename' | t }}
+    </button>
+    <button class="menu-item" type="button" (click)="openMove()">
+      <span class="mi">drive_file_move</span> {{ 'action.move' | t }}
     </button>
     <button class="menu-item" type="button" (click)="toggleStar()">
       <span class="mi">{{ m.isStarred ? 'star' : 'star_border' }}</span>
       {{ m.isStarred ? ('action.unstar' | t) : ('action.star' | t) }}
     </button>
+    @if (m.kind === 'file') {
+      <button class="menu-item" type="button" (click)="openTag()">
+        <span class="mi">sell</span> {{ 'action.tag' | t }}
+      </button>
+    }
     <button class="menu-item" type="button" (click)="openShare()">
       <span class="mi">share</span> Chia sẻ
     </button>
@@ -189,12 +311,68 @@
 
 <!-- Video player (HLS streaming) -->
 @if (videoTarget(); as v) {
-  <app-video-player [fileId]="v.id" [fileName]="v.name" (closed)="videoTarget.set(null)" />
+  <app-video-player
+    [fileId]="v.id"
+    [fileName]="v.name"
+    [fileSize]="v.size"
+    (closed)="videoTarget.set(null)"
+  />
 }
 
 <!-- Preview mọi loại file khác (ảnh/audio/PDF/text/...) -->
 @if (previewTarget(); as pf) {
   <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
+}
+
+<!-- Dialog chuyển đến thư mục -->
+@if (moveTarget(); as mt) {
+  <app-move-dialog [items]="mt" (moved)="onMoved()" (cancelled)="moveTarget.set(null)" />
+}
+
+<!-- Dialog gắn thẻ cho 1 file (thẻ tuỳ chỉnh) -->
+@if (tagTarget(); as tt) {
+  <app-tag-dialog
+    [fileId]="tt.fileId"
+    [assignedIds]="tt.assignedIds"
+    (changed)="load()"
+    (closed)="tagTarget.set(null)"
+  />
+}
+
+<!-- Hộp thoại tạo thư mục / đổi tên / xác nhận xoá (thay prompt/confirm trình duyệt) -->
+@if (dialog(); as d) {
+  @switch (d.type) {
+    @case ('newFolder') {
+      <app-prompt-dialog
+        [title]="'action.newFolder' | t"
+        [label]="'files.name' | t"
+        [placeholder]="'action.newFolder' | t"
+        [confirmLabel]="'action.confirm' | t"
+        (confirmed)="submitNewFolder($event)"
+        (cancelled)="dialog.set(null)"
+      />
+    }
+    @case ('rename') {
+      <app-prompt-dialog
+        [title]="'action.rename' | t"
+        [label]="'files.name' | t"
+        [initialValue]="d.name"
+        [confirmLabel]="'action.save' | t"
+        (confirmed)="submitRename($event)"
+        (cancelled)="dialog.set(null)"
+      />
+    }
+    @case ('confirmDelete') {
+      <app-confirm-dialog
+        [title]="'action.delete' | t"
+        [message]="'Bạn có chắc chắn chuyển “' + d.name + '” vào Thùng rác?'"
+        [confirmLabel]="'action.delete' | t"
+        [danger]="true"
+        (confirmed)="confirmDelete()"
+        (cancelled)="dialog.set(null)"
+      />
+    }
+  }
 }
 
 <!-- Upload panel (gộp theo mục, gọn, thu gọn được) -->

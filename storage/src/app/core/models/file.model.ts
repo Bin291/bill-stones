@@ -7,6 +7,21 @@ export interface BreadcrumbCrumb {
   name: string;
 }
 
+/** Thẻ (tag) tuỳ chỉnh — kiểu Finder: tên + màu. */
+export interface Tag {
+  id: string;
+  userId: string;
+  name: string;
+  color: string; // "#rrggbb"
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Thẻ kèm số file đang gắn (dùng cho sidebar/quản lý). */
+export interface TagWithCount extends Tag {
+  fileCount: number;
+}
+
 export interface StoredFile {
   id: string;
   name: string;
@@ -26,6 +41,8 @@ export interface StoredFile {
   updatedAt: string;
   // Chỉ có khi list ở lăng kính Loại (withPath=true)
   folderPath?: BreadcrumbCrumb[];
+  // Thẻ đang gắn cho file (luôn kèm khi list).
+  tags?: Tag[];
 }
 
 export interface Folder {
@@ -48,6 +65,7 @@ export interface ExtensionStat {
 export interface ListFilesQuery {
   folderId?: string | null;
   extensions?: string;
+  tagId?: string;
   sort?: 'name' | 'createdAt' | 'updatedAt' | 'size';
   order?: 'asc' | 'desc';
   starred?: boolean;

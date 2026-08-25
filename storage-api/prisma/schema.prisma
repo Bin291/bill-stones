@@ -58,10 +58,39 @@ model File {
   folder Folder?         @relation(fields: [folderId], references: [id], onDelete: Cascade)
   chunks DocumentChunk[]
   shares Share[]
+  tags   FileTag[]
 
   @@index([userId, folderId, deletedAt])
   @@index([userId, deletedAt, status])
   @@index([folderId])
+}
+
+// Thẻ (tag) tuỳ chỉnh kiểu Finder — người dùng tự đặt tên + màu, gán cho nhiều
+// file để đánh dấu/phân loại ngang (mục 11 — lăng kính tuỳ chỉnh).
+model Tag {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  color     String   @default("#8d8d8d") // mã màu hex hiển thị chấm màu
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  files FileTag[]
+
+  @@unique([userId, name]) // mỗi user không trùng tên thẻ
+  @@index([userId])
+}
+
+// Bảng nối N-N giữa File và Tag.
+model FileTag {
+  fileId String
+  tagId  String
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([fileId, tagId])
+  @@index([tagId])
 }
 
 model DocumentChunk {

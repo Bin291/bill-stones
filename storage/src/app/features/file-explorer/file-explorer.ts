@@ -21,6 +21,11 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ShareDialog, ShareTarget } from '../share/share-dialog';
 import { VideoPlayer } from '../video-player/video-player';
 import { FilePreview } from '../file-preview/file-preview';
+import { TagDialog } from '../tags/tag-dialog';
+import { ConfirmDialog } from '../ui/confirm-dialog';
+import { PromptDialog } from '../ui/prompt-dialog';
+import { MoveDialog, MoveItem } from './move-dialog';
+import { TagsApiService } from '../../core/services/tags-api.service';
 import {
   BreadcrumbCrumb,
   Folder,
@@ -29,7 +34,19 @@ import {
 } from '../../core/models/file.model';
 import { CATEGORIES, categoryByKey, categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
 
-type Mode = 'folder' | 'type' | 'starred' | 'recent';
+type Mode = 'folder' | 'type' | 'starred' | 'recent' | 'tag';
+
+/** Mục tiêu gắn thẻ cho 1 file (mở dialog tag từ context menu). */
+interface TagTarget {
+  fileId: string;
+  assignedIds: string[];
+}
+
+/** Hộp thoại tuỳ biến (thay prompt/confirm trình duyệt). */
+type ExplorerDialog =
+  | { type: 'newFolder' }
+  | { type: 'rename'; kind: 'file' | 'folder'; id: string; name: string }
+  | { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
 
 interface ContextMenu {
   x: number;
@@ -57,7 +74,17 @@ interface UploadBatch {
 
 @Component({
   selector: 'app-file-explorer',
-  imports: [TranslatePipe, DatePipe, ShareDialog, VideoPlayer, FilePreview],
+  imports: [
+    TranslatePipe,
+    DatePipe,
+    ShareDialog,
+    VideoPlayer,
+    FilePreview,
+    TagDialog,
+    ConfirmDialog,
+    PromptDialog,
+    MoveDialog,
+  ],
   templateUrl: './file-explorer.html',
   host: { class: 'explorer-host' },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,12 +97,16 @@ export class FileExplorer {
   private readonly uploadService = inject(UploadService);
   private readonly refresh = inject(RefreshService);
   private readonly audioSvc = inject(AudioPlayerService);
+  private readonly tagsApi = inject(TagsApiService);
   protected readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly mode = signal<Mode>('folder');
   protected readonly folderId = signal<string | null>(null);
   protected readonly category = signal<string | null>(null);
+  protected readonly tagId = signal<string | null>(null);
+  protected readonly tagName = signal<string>('');
+  protected readonly tagColor = signal<string>('#8d8d8d');
 
   protected readonly folders = signal<Folder[]>([]);
   protected readonly files = signal<StoredFile[]>([]);
@@ -85,6 +116,7 @@ export class FileExplorer {
 
   protected readonly sort = signal<ListFilesQuery['sort']>('createdAt');
   protected readonly order = signal<ListFilesQuery['order']>('desc');
+  protected readonly sortMenuOpen = signal(false);
 
   protected readonly uploadBatches = signal<UploadBatch[]>([]);
   protected readonly uploadsCollapsed = signal(false);
@@ -94,8 +126,26 @@ export class FileExplorer {
   readonly hasActiveUploads = computed(() => this.uploadBatches().length > 0);
   protected readonly menu = signal<ContextMenu | null>(null);
   protected readonly shareTarget = signal<ShareTarget | null>(null);
-  protected readonly videoTarget = signal<{ id: string; name: string } | null>(null);
+  protected readonly videoTarget = signal<{ id: string; name: string; size: string } | null>(null);
   protected readonly previewTarget = signal<StoredFile | null>(null);
+  protected readonly tagTarget = signal<TagTarget | null>(null);
+  protected readonly dialog = signal<ExplorerDialog | null>(null);
+  protected readonly moveTarget = signal<MoveItem[] | null>(null);
+
+  // --- Chọn nhiều (multi-select) để thao tác hàng loạt ---
+  protected readonly selectionMode = signal(false);
+  protected readonly selectedFileIds = signal<Set<string>>(new Set());
+  protected readonly selectedFolderIds = signal<Set<string>>(new Set());
+  protected readonly confirmingBulkDelete = signal(false);
+  protected readonly bulkBusy = signal(false);
+  protected readonly selectedCount = computed(
+    () => this.selectedFileIds().size + this.selectedFolderIds().size,
+  );
+  protected readonly allSelected = computed(
+    () =>
+      this.selectedCount() > 0 &&
+      this.selectedCount() === this.files().length + this.folders().length,
+  );
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
@@ -133,8 +183,24 @@ export class FileExplorer {
   private syncFromParams(): void {
     this.folderId.set(this.route.snapshot.paramMap.get('folderId'));
     this.category.set(this.route.snapshot.paramMap.get('category'));
+    const tagId = this.route.snapshot.paramMap.get('tagId');
+    this.tagId.set(tagId);
+    if (this.mode() === 'tag' && tagId) void this.loadTagMeta(tagId);
+    this.clearSelection();
     this.thumbRetries = 0;
     void this.load();
+  }
+
+  /** Nạp tên + màu thẻ để hiển thị tiêu đề lăng kính Thẻ. */
+  private async loadTagMeta(tagId: string): Promise<void> {
+    try {
+      const tags = await firstValueFrom(this.tagsApi.list());
+      const tag = tags.find((t) => t.id === tagId);
+      this.tagName.set(tag?.name ?? '');
+      this.tagColor.set(tag?.color ?? '#8d8d8d');
+    } catch {
+      this.tagName.set('');
+    }
   }
 
   /** Thumbnail sinh nền ở backend — nạp lại vài lần để card tự hiện khi có (mục 7). */
@@ -189,6 +255,8 @@ export class FileExplorer {
         const cat = categoryByKey((this.category() ?? 'other') as never);
         return { ...base, extensions: (cat?.extensions ?? []).join(','), withPath: true };
       }
+      case 'tag':
+        return { ...base, tagId: this.tagId() ?? '', withPath: true };
       case 'starred':
         return { ...base, starred: true, extensions: this.allExtensions(), withPath: true };
       case 'recent':
@@ -208,6 +276,10 @@ export class FileExplorer {
 
   // --- Điều hướng ---
   openFolder(folder: Folder): void {
+    if (this.selectionMode()) {
+      this.toggleSelect('folder', folder.id);
+      return;
+    }
     void this.router.navigate(['/files/folder', folder.id]);
   }
 
@@ -222,7 +294,12 @@ export class FileExplorer {
     else void this.router.navigate(['/files']);
   }
 
-  // --- Sort ---
+  // --- Sort (gộp vào 1 nút dropdown) ---
+  toggleSortMenu(event: Event): void {
+    event.stopPropagation();
+    this.sortMenuOpen.update((v) => !v);
+  }
+
   setSort(field: NonNullable<ListFilesQuery['sort']>): void {
     if (this.sort() === field) {
       this.order.set(this.order() === 'asc' ? 'desc' : 'asc');
@@ -233,21 +310,29 @@ export class FileExplorer {
     void this.load();
   }
 
-  // --- Tạo thư mục ---
-  async createFolder(): Promise<void> {
-    const name = window.prompt('Tên thư mục mới');
-    if (!name?.trim()) return;
+  // --- Tạo thư mục (hộp thoại tuỳ biến) ---
+  createFolder(): void {
+    this.dialog.set({ type: 'newFolder' });
+  }
+
+  async submitNewFolder(name: string): Promise<void> {
+    this.dialog.set(null);
     await firstValueFrom(this.foldersApi.create(name.trim(), this.folderId()));
     void this.load();
+    this.refresh.bump();
   }
 
   // --- Download / mở file ---
   openFile(file: StoredFile): void {
+    if (this.selectionMode()) {
+      this.toggleSelect('file', file.id);
+      return;
+    }
     if (file.status !== 'ready') return;
     const cat = categoryOf(file.extension);
     // Video -> player HLS; Âm thanh -> mini-player góc dưới; còn lại -> preview modal.
     if (cat === 'video') {
-      this.videoTarget.set({ id: file.id, name: file.name });
+      this.videoTarget.set({ id: file.id, name: file.name, size: file.size });
     } else if (cat === 'audio') {
       this.audioSvc.play({ id: file.id, name: file.name });
     } else {
@@ -262,6 +347,20 @@ export class FileExplorer {
     a.href = url;
     a.download = file.name;
     a.click();
+  }
+
+  /** Tải cả thư mục dạng .zip (mục 5.E). */
+  async downloadFolder(): Promise<void> {
+    const m = this.menu();
+    if (!m || m.kind !== 'folder') return;
+    this.menu.set(null);
+    const blob = await firstValueFrom(this.foldersApi.downloadZip(m.id));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${m.name}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // --- Context menu ---
@@ -289,35 +388,191 @@ export class FileExplorer {
     this.menu.set(null);
   }
 
-  async renameItem(): Promise<void> {
+  // --- Chọn nhiều & thao tác hàng loạt ---
+  toggleSelectionMode(): void {
+    this.selectionMode.update((v) => !v);
+    if (!this.selectionMode()) this.clearSelection();
+  }
+
+  clearSelection(): void {
+    this.selectedFileIds.set(new Set());
+    this.selectedFolderIds.set(new Set());
+    this.confirmingBulkDelete.set(false);
+  }
+
+  isSelected(kind: 'file' | 'folder', id: string): boolean {
+    return kind === 'file' ? this.selectedFileIds().has(id) : this.selectedFolderIds().has(id);
+  }
+
+  toggleSelect(kind: 'file' | 'folder', id: string, event?: Event): void {
+    event?.stopPropagation();
+    const sig = kind === 'file' ? this.selectedFileIds : this.selectedFolderIds;
+    sig.update((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    this.confirmingBulkDelete.set(false);
+  }
+
+  selectAll(): void {
+    if (this.allSelected()) {
+      this.clearSelection();
+      return;
+    }
+    this.selectedFileIds.set(new Set(this.files().map((f) => f.id)));
+    this.selectedFolderIds.set(new Set(this.folders().map((f) => f.id)));
+  }
+
+  /** Gắn/bỏ sao cho toàn bộ mục đang chọn — cập nhật tại chỗ, không nhấp nháy. */
+  async bulkStar(starred: boolean): Promise<void> {
+    if (this.bulkBusy() || this.selectedCount() === 0) return;
+    this.bulkBusy.set(true);
+    const fileIds = [...this.selectedFileIds()];
+    const folderIds = [...this.selectedFolderIds()];
+    try {
+      await Promise.all([
+        ...fileIds.map((id) => firstValueFrom(this.filesApi.star(id, starred))),
+        ...folderIds.map((id) => firstValueFrom(this.foldersApi.star(id, starred))),
+      ]);
+      for (const id of fileIds) this.applyStarLocally('file', id, starred);
+      for (const id of folderIds) this.applyStarLocally('folder', id, starred);
+      this.clearSelection();
+      this.refresh.bump();
+    } finally {
+      this.bulkBusy.set(false);
+    }
+  }
+
+  /** Chuyển toàn bộ mục đang chọn vào Thùng rác (xác nhận inline, không dùng hộp thoại trình duyệt). */
+  async bulkTrash(): Promise<void> {
+    if (!this.confirmingBulkDelete()) {
+      this.confirmingBulkDelete.set(true);
+      return;
+    }
+    if (this.bulkBusy() || this.selectedCount() === 0) return;
+    this.bulkBusy.set(true);
+    try {
+      const fileOps = [...this.selectedFileIds()].map((id) =>
+        firstValueFrom(this.filesApi.trash(id)),
+      );
+      const folderOps = [...this.selectedFolderIds()].map((id) =>
+        firstValueFrom(this.foldersApi.trash(id)),
+      );
+      await Promise.all([...fileOps, ...folderOps]);
+      this.clearSelection();
+      await this.load();
+      this.refresh.bump();
+    } finally {
+      this.bulkBusy.set(false);
+    }
+  }
+
+  /** Mở dialog "Chuyển đến" cho 1 mục từ context menu. */
+  openMove(): void {
     const m = this.menu();
     if (!m) return;
-    const name = window.prompt('Tên mới');
+    this.moveTarget.set([{ kind: m.kind, id: m.id, name: m.name }]);
     this.menu.set(null);
-    if (!name?.trim()) return;
-    if (m.kind === 'file') await firstValueFrom(this.filesApi.rename(m.id, name.trim()));
-    else await firstValueFrom(this.foldersApi.rename(m.id, name.trim()));
+  }
+
+  /** Mở dialog "Chuyển đến" cho toàn bộ mục đang chọn (bulk). */
+  bulkMove(): void {
+    if (this.selectedCount() === 0) return;
+    const items: MoveItem[] = [
+      ...this.folders()
+        .filter((f) => this.selectedFolderIds().has(f.id))
+        .map((f) => ({ kind: 'folder' as const, id: f.id, name: f.name })),
+      ...this.files()
+        .filter((f) => this.selectedFileIds().has(f.id))
+        .map((f) => ({ kind: 'file' as const, id: f.id, name: f.name })),
+    ];
+    this.moveTarget.set(items);
+  }
+
+  /** Sau khi chuyển xong: đóng dialog, bỏ chọn, nạp lại. */
+  onMoved(): void {
+    this.moveTarget.set(null);
+    this.clearSelection();
     void this.load();
+    this.refresh.bump();
+  }
+
+  /** Mở dialog gắn thẻ cho file đang chọn trong context menu. */
+  openTag(): void {
+    const m = this.menu();
+    if (!m || m.kind !== 'file') return;
+    const file = this.fileById(m.id);
+    this.tagTarget.set({
+      fileId: m.id,
+      assignedIds: (file?.tags ?? []).map((t) => t.id),
+    });
+    this.menu.set(null);
+  }
+
+  // --- Đổi tên (hộp thoại tuỳ biến) ---
+  renameItem(): void {
+    const m = this.menu();
+    if (!m) return;
+    this.menu.set(null);
+    this.dialog.set({ type: 'rename', kind: m.kind, id: m.id, name: m.name });
+  }
+
+  async submitRename(name: string): Promise<void> {
+    const d = this.dialog();
+    this.dialog.set(null);
+    if (d?.type !== 'rename') return;
+    if (d.kind === 'file') await firstValueFrom(this.filesApi.rename(d.id, name.trim()));
+    else await firstValueFrom(this.foldersApi.rename(d.id, name.trim()));
+    void this.load();
+  }
+
+  /** Cập nhật trạng thái sao ngay tại chỗ — KHÔNG reload để tránh nhấp nháy. */
+  private applyStarLocally(kind: 'file' | 'folder', id: string, starred: boolean): void {
+    // Ở lăng kính "Gắn sao": bỏ sao thì loại khỏi danh sách luôn.
+    if (this.mode() === 'starred' && !starred) {
+      if (kind === 'file') this.files.update((fs) => fs.filter((f) => f.id !== id));
+      else this.folders.update((fs) => fs.filter((f) => f.id !== id));
+      return;
+    }
+    if (kind === 'file') {
+      this.files.update((fs) => fs.map((f) => (f.id === id ? { ...f, isStarred: starred } : f)));
+    } else {
+      this.folders.update((fs) => fs.map((f) => (f.id === id ? { ...f, isStarred: starred } : f)));
+    }
   }
 
   async toggleStar(): Promise<void> {
     const m = this.menu();
     if (!m) return;
     this.menu.set(null);
-    if (m.kind === 'file') await firstValueFrom(this.filesApi.star(m.id, !m.isStarred));
-    else await firstValueFrom(this.foldersApi.star(m.id, !m.isStarred));
-    void this.load();
+    const next = !m.isStarred;
+    this.applyStarLocally(m.kind, m.id, next); // hiện luôn, không nhấp nháy
+    try {
+      if (m.kind === 'file') await firstValueFrom(this.filesApi.star(m.id, next));
+      else await firstValueFrom(this.foldersApi.star(m.id, next));
+      this.refresh.bump();
+    } catch {
+      this.applyStarLocally(m.kind, m.id, !next); // hoàn tác nếu lỗi
+    }
   }
 
-  async deleteItem(): Promise<void> {
+  deleteItem(): void {
     const m = this.menu();
     if (!m) return;
     this.menu.set(null);
-    if (!window.confirm('Chuyển vào Thùng rác?')) return;
-    if (m.kind === 'file') await firstValueFrom(this.filesApi.trash(m.id));
-    else await firstValueFrom(this.foldersApi.trash(m.id));
+    this.dialog.set({ type: 'confirmDelete', kind: m.kind, id: m.id, name: m.name });
+  }
+
+  async confirmDelete(): Promise<void> {
+    const d = this.dialog();
+    this.dialog.set(null);
+    if (d?.type !== 'confirmDelete') return;
+    if (d.kind === 'file') await firstValueFrom(this.filesApi.trash(d.id));
+    else await firstValueFrom(this.foldersApi.trash(d.id));
     void this.load();
-    this.refresh.bump(); // cập nhật số đếm sidebar
+    this.refresh.bump();
   }
 
   // --- Upload ---

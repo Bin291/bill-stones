@@ -14,6 +14,11 @@ export class ListFilesQueryDto {
   @IsString()
   extensions?: string; // "png,jpg,webp"
 
+  // Lăng kính Thẻ: chỉ lấy file được gắn thẻ này (cắt ngang mọi folder).
+  @IsOptional()
+  @IsString()
+  tagId?: string;
+
   @IsOptional()
   @IsIn(['name', 'createdAt', 'updatedAt', 'size'])
   sort?: 'name' | 'createdAt' | 'updatedAt' | 'size';

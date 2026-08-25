@@ -11,31 +11,52 @@
       (ended)="onEnded()"
     ></audio>
 
-    <button class="ma-btn ma-play" type="button" (click)="toggle()" [disabled]="loading()">
-      <span class="mi">{{ playing() ? 'pause' : 'play_arrow' }}</span>
-    </button>
-
-    <div class="ma-body">
-      <div class="ma-title" [title]="t.name">
-        <span class="mi" style="font-size: 14px; color: var(--primary)">music_note</span>
-        {{ t.name }}
-      </div>
-      <div class="ma-seek">
-        <span class="ma-time">{{ fmt(current()) }}</span>
-        <input
-          class="ma-range"
-          type="range"
-          min="0"
-          [max]="duration() || 0"
-          [value]="current()"
-          (input)="seek($any($event.target).value)"
-        />
-        <span class="ma-time">{{ fmt(duration()) }}</span>
+    <!-- 80%: play + thông tin + seek -->
+    <div class="ma-main">
+      <button class="ma-btn ma-play" type="button" (click)="toggle()" [disabled]="loading()">
+        <span class="mi">{{ playing() ? 'pause' : 'play_arrow' }}</span>
+      </button>
+      <div class="ma-body">
+        <div class="ma-title" [title]="t.name">
+          <span class="mi" style="font-size: 14px; color: var(--primary)">music_note</span>
+          {{ t.name }}
+        </div>
+        <div class="ma-seek">
+          <span class="ma-time">{{ fmt(current()) }}</span>
+          <input
+            class="ma-range slider"
+            type="range"
+            min="0"
+            [max]="duration() || 0"
+            [value]="current()"
+            [style.--fill]="seekFill() + '%'"
+            (input)="seek($any($event.target).value)"
+          />
+          <span class="ma-time">{{ fmt(duration()) }}</span>
+        </div>
       </div>
     </div>
 
-    <button class="ma-btn" type="button" (click)="close()" title="Đóng">
-      <span class="mi">close</span>
-    </button>
+    <!-- 20%: âm lượng + đóng -->
+    <div class="ma-side">
+      <div class="ma-vol">
+        <button class="ma-btn" type="button" (click)="toggleMute()" title="Âm lượng">
+          <span class="mi">{{ volumeIcon() }}</span>
+        </button>
+        <input
+          class="ma-vol-range slider"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          [value]="muted() ? 0 : volume()"
+          [style.--fill]="volFill() + '%'"
+          (input)="setVolume($any($event.target).value)"
+        />
+      </div>
+      <button class="ma-btn" type="button" (click)="close()" title="Đóng">
+        <span class="mi">close</span>
+      </button>
+    </div>
   </div>
 }

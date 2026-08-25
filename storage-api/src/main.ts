@@ -21,8 +21,18 @@ async function bootstrap() {
   app.use(json({ limit: '5mb' }));
   app.use(urlencoded({ extended: true, limit: '5mb' }));
 
+  // CORS: allowlist từ WEB_ORIGIN. Ở dev, chấp nhận mọi cổng localhost/127.0.0.1
+  // (preview/dev server dùng cổng động nên không thể liệt kê cứng).
+  const allowlist = config.get<string[]>('webOrigin') ?? ['http://localhost:4200'];
+  const isDev = config.get<string>('nodeEnv') !== 'production';
+  const localhostRe = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
   app.enableCors({
-    origin: config.get<string[]>('webOrigin') ?? ['http://localhost:4200'],
+    origin: (origin, cb) => {
+      // Không có origin (curl, server-to-server) hoặc nằm trong allowlist → cho phép.
+      if (!origin || allowlist.includes(origin)) return cb(null, true);
+      if (isDev && localhostRe.test(origin)) return cb(null, true);
+      return cb(new Error(`Origin không được phép bởi CORS: ${origin}`), false);
+    },
     credentials: true,
     exposedHeaders: ['ETag'],
   });

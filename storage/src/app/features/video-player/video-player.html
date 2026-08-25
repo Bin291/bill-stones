@@ -1,47 +1,148 @@
-<div class="modal-backdrop" (click)="close()">
-  <div class="modal" style="max-width: 960px; background: #000" (click)="$event.stopPropagation()">
-    <div class="modal-head" style="background: var(--surface); color: var(--text)">
-      <span><span class="mi">movie</span> {{ fileName() }}</span>
-      <button class="btn btn-icon" type="button" (click)="close()">
-        <span class="mi">close</span>
+<div class="vp-backdrop" (click)="close()">
+  <div
+    class="vp-stage"
+    [class.vp-stage--idle]="phase() === 'playing' && !controlsVisible()"
+    (click)="$event.stopPropagation()"
+    (mousemove)="flashControls()"
+  >
+    <!-- Thanh trên: tên + dung lượng video (tự ẩn cùng điều khiển) -->
+    <div class="vp-topbar" [class.vp-bar--hidden]="phase() === 'playing' && !controlsVisible()">
+      <span class="mi vp-topbar-icon">movie</span>
+      <span class="vp-topbar-name" [title]="fileName()">{{ fileName() }}</span>
+      @if (fileSize()) {
+        <span class="vp-topbar-size">{{ formatBytes(fileSize()) }}</span>
+      }
+    </div>
+
+    <video
+      #video
+      class="vp-video"
+      playsinline
+      (click)="togglePlay()"
+      (dblclick)="fullscreen()"
+      (play)="playing.set(true)"
+      (pause)="playing.set(false)"
+      (loadedmetadata)="onLoadedMeta()"
+      (timeupdate)="onTimeUpdate()"
+      (progress)="onProgress()"
+      (waiting)="buffering.set(true)"
+      (playing)="buffering.set(false)"
+      (volumechange)="onVolumeChange()"
+    ></video>
+
+    @if (phase() === 'playing' && buffering()) {
+      <div class="vp-spinner"><span class="mi">progress_activity</span></div>
+    }
+
+    @if (phase() === 'playing' && !playing() && !buffering()) {
+      <button class="vp-bigplay" type="button" (click)="togglePlay()" title="Phát">
+        <span class="mi">play_arrow</span>
       </button>
-    </div>
+    }
 
-    <div style="position: relative; background: #000">
-      <video
-        #video
-        style="width: 100%; aspect-ratio: 16/9; background: #000; display: block"
-        controls
-        playsinline
-      ></video>
-
-      @if (phase() === 'loading' || phase() === 'processing') {
-        <div class="vp-overlay">
-          <span class="mi" style="font-size: 40px">hourglass_top</span>
-          <p>{{ phase() === 'processing' ? 'Đang xử lý video để phát trực tuyến…' : 'Đang tải…' }}</p>
+    @if (phase() === 'playing') {
+      <div class="vp-bar" [class.vp-bar--hidden]="!controlsVisible()">
+        <!-- Thanh tua + buffer -->
+        <div
+          #track
+          class="vp-track"
+          (pointerdown)="onTrackDown($event, track)"
+          (pointermove)="onTrackMove($event, track)"
+          (pointerup)="onTrackUp()"
+          (pointercancel)="onTrackUp()"
+        >
+          <div class="vp-track-rail">
+            <div class="vp-track-buffer" [style.width.%]="bufferPct()"></div>
+            <div class="vp-track-fill" [style.width.%]="progressPct()"></div>
+          </div>
+          <div class="vp-track-thumb" [style.left.%]="progressPct()"></div>
         </div>
-      }
-      @if (phase() === 'error') {
-        <div class="vp-overlay">
-          <span class="mi" style="font-size: 40px; color: var(--danger)">error_outline</span>
-          <p>{{ error() }}</p>
-        </div>
-      }
-    </div>
 
-    @if (phase() === 'playing' && levels().length) {
-      <div class="vp-controls">
-        <label>Chất lượng</label>
-        <select [value]="currentLevel()" (change)="setLevel($any($event.target).value)">
-          <option [value]="-1">Auto</option>
-          @for (l of levels(); track l.index) {
-            <option [value]="l.index">{{ l.height }}p</option>
+        <!-- Hàng nút điều khiển -->
+        <div class="vp-controls">
+          <button class="vp-btn" type="button" (click)="togglePlay()" [title]="playing() ? 'Tạm dừng' : 'Phát'">
+            <span class="mi">{{ playing() ? 'pause' : 'play_arrow' }}</span>
+          </button>
+          <button class="vp-btn" type="button" (click)="skip(-10)" title="Lùi 10 giây">
+            <span class="mi">replay_10</span>
+          </button>
+          <button class="vp-btn" type="button" (click)="skip(10)" title="Tua 10 giây">
+            <span class="mi">forward_10</span>
+          </button>
+
+          <div class="vp-vol">
+            <button class="vp-btn" type="button" (click)="toggleMute()" title="Âm lượng">
+              <span class="mi">{{ volumeIcon() }}</span>
+            </button>
+            <input
+              class="vp-vol-range slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              [value]="muted() ? 0 : volume()"
+              [style.--fill]="(muted() ? 0 : volume() * 100) + '%'"
+              (input)="setVolume($any($event.target).value)"
+              aria-label="Âm lượng"
+            />
+          </div>
+
+          <span class="vp-time">{{ fmt(currentTime()) }} / {{ fmt(duration()) }}</span>
+
+          @if (fileName()) {
+            <span class="vp-title" [title]="fileName()">{{ fileName() }}</span>
           }
-        </select>
-        <span class="spacer"></span>
-        <button class="btn btn-icon" type="button" title="Toàn màn hình" (click)="fullscreen()">
-          <span class="mi">fullscreen</span>
-        </button>
+
+          <span class="vp-spacer"></span>
+
+          @if (levels().length) {
+            <div class="vp-menu">
+              <button class="vp-btn" type="button" (click)="toggleSettings()" title="Chất lượng">
+                <span class="mi">settings</span>
+              </button>
+              @if (settingsOpen()) {
+                <div class="vp-menu-pop">
+                  <div class="vp-menu-head">Chất lượng</div>
+                  <button
+                    class="vp-menu-item"
+                    type="button"
+                    [class.on]="currentLevel() === -1"
+                    (click)="setLevel('-1')"
+                  >
+                    Tự động
+                  </button>
+                  @for (l of levels(); track l.index) {
+                    <button
+                      class="vp-menu-item"
+                      type="button"
+                      [class.on]="currentLevel() === l.index"
+                      (click)="setLevel('' + l.index)"
+                    >
+                      {{ l.height }}p
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <button class="vp-btn" type="button" (click)="fullscreen()" title="Toàn màn hình">
+            <span class="mi">fullscreen</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (phase() === 'loading' || phase() === 'processing') {
+      <div class="vp-overlay">
+        <span class="mi" style="font-size: 40px">hourglass_top</span>
+        <p>{{ phase() === 'processing' ? 'Đang xử lý video để phát trực tuyến…' : 'Đang tải…' }}</p>
+      </div>
+    }
+    @if (phase() === 'error') {
+      <div class="vp-overlay">
+        <span class="mi" style="font-size: 40px; color: var(--danger)">error_outline</span>
+        <p>{{ error() }}</p>
       </div>
     }
   </div>
