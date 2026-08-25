@@ -81,8 +81,14 @@ export class SupabaseJwtService {
       if (typeof sub !== 'string' || !sub) {
         throw new Error('Token thiếu sub');
       }
+      // Tách tài khoản theo phương thức đăng nhập: đăng nhập bằng OAuth (Google)
+      // là KHO RIÊNG, dù trùng email với đăng nhập bằng mã email. Đăng nhập email
+      // (otp/password) giữ nguyên `sub` để không mất dữ liệu hiện có.
+      const oauth = this.isOAuthSession(payload);
       return {
-        id: sub,
+        id: oauth ? `${sub}__oauth` : sub,
+        sub,
+        provider: oauth ? 'oauth' : 'email',
         email: typeof payload['email'] === 'string' ? (payload['email'] as string) : undefined,
         role: typeof payload['role'] === 'string' ? (payload['role'] as string) : undefined,
       };
@@ -90,6 +96,19 @@ export class SupabaseJwtService {
       this.logger.debug(`Verify token thất bại: ${(err as Error).message}`);
       throw new UnauthorizedException('Token không hợp lệ');
     }
+  }
+
+  /**
+   * Phiên có phải OAuth (Google) không — dựa vào `amr` (method='oauth') hoặc
+   * `app_metadata.provider` khác 'email'. Dùng để tách kho theo phương thức.
+   */
+  private isOAuthSession(payload: Record<string, unknown>): boolean {
+    const amr = Array.isArray(payload['amr'])
+      ? (payload['amr'] as { method?: string }[])
+      : [];
+    if (amr.some((a) => a && a.method === 'oauth')) return true;
+    const meta = payload['app_metadata'] as { provider?: string } | undefined;
+    return !!meta?.provider && meta.provider !== 'email';
   }
 
   private verifyHs256(token: string, secret: string): Record<string, unknown> {
