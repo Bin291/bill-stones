@@ -14,14 +14,16 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 import { FilesApiService } from '../../core/services/files-api.service';
+import { TagsApiService } from '../../core/services/tags-api.service';
 import { LangService } from '../../core/i18n/lang.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { RefreshService } from '../../core/services/refresh.service';
 import { NotificationService, AppNotification } from '../../core/services/notification.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { CATEGORIES, CategoryKey, categoryOf } from '../../core/util/file-types';
-import { ExtensionStat } from '../../core/models/file.model';
+import { ExtensionStat, TagWithCount } from '../../core/models/file.model';
 import { MiniAudioPlayer } from '../../features/audio-player/mini-audio-player';
+import { TagDialog } from '../../features/tags/tag-dialog';
 
 interface NavItem {
   icon: string;
@@ -31,7 +33,15 @@ interface NavItem {
 
 @Component({
   selector: 'app-main-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, MiniAudioPlayer, NgOptimizedImage],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    TranslatePipe,
+    MiniAudioPlayer,
+    TagDialog,
+    NgOptimizedImage,
+  ],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +49,7 @@ interface NavItem {
 export class MainLayout implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly filesApi = inject(FilesApiService);
+  private readonly tagsApi = inject(TagsApiService);
   private readonly lang = inject(LangService);
   private readonly router = inject(Router);
   private readonly refresh = inject(RefreshService);
@@ -49,6 +60,8 @@ export class MainLayout implements OnInit {
   protected readonly profile = this.auth.profile;
   protected readonly categories = CATEGORIES;
   protected readonly notifOpen = signal(false);
+  protected readonly tags = signal<TagWithCount[]>([]);
+  protected readonly tagDialogOpen = signal(false);
 
   private readonly stats = signal<ExtensionStat[]>([]);
 
@@ -82,6 +95,11 @@ export class MainLayout implements OnInit {
       this.refresh.filesChanged();
       this.loadStats();
     });
+    // Nạp lại danh sách thẻ khi có thay đổi (tạo/sửa/xoá/gán).
+    effect(() => {
+      this.refresh.tagsChanged();
+      this.loadTags();
+    });
     // Nạp lại số đếm mỗi khi điều hướng (chuyển lăng kính/thư mục).
     this.router.events
       .pipe(
@@ -100,6 +118,17 @@ export class MainLayout implements OnInit {
       next: (s) => this.stats.set(s),
       error: () => this.stats.set([]),
     });
+  }
+
+  loadTags(): void {
+    this.tagsApi.list().subscribe({
+      next: (t) => this.tags.set(t),
+      error: () => this.tags.set([]),
+    });
+  }
+
+  openTagManager(): void {
+    this.tagDialogOpen.set(true);
   }
 
   toggleNotif(): void {

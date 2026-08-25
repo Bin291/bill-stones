@@ -49,6 +49,13 @@ export const routes: Routes = [
           import('./features/file-explorer/file-explorer').then((m) => m.FileExplorer),
         data: { mode: 'type' },
       },
+      // Lăng kính Thẻ (tag tuỳ chỉnh)
+      {
+        path: 'tag/:tagId',
+        loadComponent: () =>
+          import('./features/file-explorer/file-explorer').then((m) => m.FileExplorer),
+        data: { mode: 'tag' },
+      },
       {
         path: 'starred',
         loadComponent: () =>

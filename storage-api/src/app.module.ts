@@ -18,6 +18,7 @@ import { SearchModule } from './modules/search/search.module';
 import { TrashModule } from './modules/trash/trash.module';
 import { ShareModule } from './modules/share/share.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { TagsModule } from './modules/tags/tags.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -42,6 +43,7 @@ import { AppService } from './app.service';
     TrashModule,
     NotificationModule,
     ShareModule,
+    TagsModule,
   ],
   controllers: [AppController],
   providers: [

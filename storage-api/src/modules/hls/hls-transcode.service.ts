@@ -21,10 +21,14 @@ interface Rendition {
   buf: string;
 }
 
+// Thang bậc chất lượng: 144p → 1080p (không có 720p theo yêu cầu). Chỉ tạo các mức
+// ≤ độ cao nguồn (không upscale). Player tự liệt kê đúng các mức đã tạo.
 const LADDER: Rendition[] = [
   { name: '1080p', w: 1920, h: 1080, vb: '5000k', max: '5350k', buf: '7500k' },
-  { name: '720p', w: 1280, h: 720, vb: '2800k', max: '2996k', buf: '4200k' },
   { name: '480p', w: 854, h: 480, vb: '1400k', max: '1498k', buf: '2100k' },
+  { name: '360p', w: 640, h: 360, vb: '800k', max: '856k', buf: '1200k' },
+  { name: '240p', w: 426, h: 240, vb: '400k', max: '428k', buf: '600k' },
+  { name: '144p', w: 256, h: 144, vb: '150k', max: '160k', buf: '225k' },
 ];
 
 const VIDEO_EXT = new Set(['mp4', 'mov', 'webm', 'mkv', 'm4v', 'avi']);
@@ -47,6 +51,11 @@ export class HlsTranscodeService {
 
   supports(extension: string): boolean {
     return VIDEO_EXT.has(extension.toLowerCase());
+  }
+
+  /** Có job transcode đang chạy trong process này không (để tự phục hồi khi kẹt). */
+  isInProgress(fileId: string): boolean {
+    return this.inProgress.has(fileId);
   }
 
   hlsPrefix(userId: string, fileId: string): string {

@@ -6,11 +6,11 @@
         {{ file().name }}
       </span>
       <span class="row" style="gap: 4px">
+        @if (file().size) {
+          <span class="card-sub" style="align-self: center">{{ formatBytes(file().size) }}</span>
+        }
         <button class="btn btn-icon" type="button" title="Tải xuống" (click)="download()">
           <span class="mi">download</span>
-        </button>
-        <button class="btn btn-icon" type="button" (click)="close()">
-          <span class="mi">close</span>
         </button>
       </span>
     </div>

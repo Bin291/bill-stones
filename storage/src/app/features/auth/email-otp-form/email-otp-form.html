@@ -6,7 +6,7 @@
 }
 
 @if (step() === 'email') {
-  <form (submit)="sendCode($event)">
+  <form (submit)="sendLink($event)">
     <label class="auth-label">{{ 'auth.email' | t }}</label>
     <input
       class="auth-input"
@@ -19,27 +19,14 @@
       required
     />
     <button class="auth-btn" type="submit" [disabled]="loading()">
-      {{ loading() ? ('auth.sending' | t) : ('auth.sendCode' | t) }}
+      {{ loading() ? ('auth.sending' | t) : ('auth.sendLink' | t) }}
     </button>
   </form>
 } @else {
-  <form (submit)="verifyCode($event)">
-    <label class="auth-label">{{ 'auth.enterOtp' | t }}</label>
-    <input
-      class="auth-input"
-      style="letter-spacing: 8px; font-size: 20px; text-align: center"
-      type="text"
-      inputmode="numeric"
-      autocomplete="one-time-code"
-      maxlength="6"
-      placeholder="••••••"
-      [value]="otp()"
-      (input)="onOtpInput($any($event.target).value)"
-      required
-    />
-    <button class="auth-btn" type="submit" [disabled]="loading() || otp().length < 6">
-      {{ loading() ? ('auth.verifying' | t) : ('auth.verify' | t) }}
-    </button>
+  <div class="auth-sent">
+    <span class="mi auth-sent-icon">mark_email_read</span>
+    <p class="auth-sent-text">{{ 'auth.linkSent' | t }}</p>
+    <p class="auth-sent-email">{{ email() }}</p>
 
     <div class="row" style="justify-content: space-between; margin-top: 14px">
       <button
@@ -60,7 +47,5 @@
         {{ 'auth.changeEmail' | t }}
       </button>
     </div>
-
-    <p class="auth-sub" style="margin-top: 16px">{{ 'auth.magicHint' | t }}</p>
-  </form>
+  </div>
 }

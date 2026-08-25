@@ -271,6 +271,46 @@ export class FoldersService {
     return crumbs;
   }
 
+  /**
+   * Gom mọi file trong cây thư mục kèm đường dẫn tương đối để nén zip (mục 5.E).
+   * Trả về tên folder gốc (đặt tên file zip) + danh sách {path, r2Key}.
+   */
+  async collectFilesForZip(
+    userId: string,
+    folderId: string,
+  ): Promise<{ name: string; entries: { path: string; r2Key: string }[] }> {
+    const root = await this.assertOwned(folderId, userId);
+    const ids = [folderId, ...(await this.collectDescendantFolderIds(folderId))];
+    const folders = await this.prisma.folder.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, parentId: true },
+    });
+    const byId = new Map(folders.map((f) => [f.id, f]));
+
+    // Đường dẫn tương đối của 1 folder so với folder gốc ('' = chính gốc).
+    const relCache = new Map<string, string>();
+    const relOf = (id: string): string => {
+      if (id === folderId) return '';
+      if (relCache.has(id)) return relCache.get(id)!;
+      const f = byId.get(id);
+      if (!f) return '';
+      const parentRel = f.parentId ? relOf(f.parentId) : '';
+      const rel = parentRel ? `${parentRel}/${f.name}` : f.name;
+      relCache.set(id, rel);
+      return rel;
+    };
+
+    const files = await this.prisma.file.findMany({
+      where: { folderId: { in: ids }, deletedAt: null, status: 'ready' },
+      select: { name: true, folderId: true, r2Key: true },
+    });
+    const entries = files.map((f) => {
+      const dir = f.folderId ? relOf(f.folderId) : '';
+      return { path: dir ? `${dir}/${f.name}` : f.name, r2Key: f.r2Key };
+    });
+    return { name: root.name, entries };
+  }
+
   /** Tập id mọi folder hậu duệ (không gồm chính nó). Duyệt BFS theo parentId. */
   async collectDescendantFolderIds(folderId: string): Promise<Set<string>> {
     const result = new Set<string>();

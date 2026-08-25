@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { File, Prisma } from '@prisma/client';
+import { File, Prisma, Tag } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { FoldersService, BreadcrumbCrumb } from '../folders/folders.service';
@@ -14,6 +14,7 @@ import { ListFilesQueryDto } from './dto/file-query.dto';
 
 export interface FileWithPath extends File {
   folderPath?: BreadcrumbCrumb[];
+  tags?: Tag[];
 }
 
 export interface ExtensionStat {
@@ -58,8 +59,10 @@ export class FilesService {
   async list(userId: string, q: ListFilesQueryDto): Promise<FileWithPath[]> {
     const where: Prisma.FileWhereInput = { userId, deletedAt: null };
 
-    // Lăng kính Loại (extensions) cắt ngang mọi folder; ngược lại lọc theo folder.
-    if (q.extensions) {
+    // Lăng kính Thẻ / Loại cắt ngang mọi folder; ngược lại lọc theo folder.
+    if (q.tagId) {
+      where.tags = { some: { tagId: q.tagId } };
+    } else if (q.extensions) {
       const exts = q.extensions
         .split(',')
         .map((e) => e.trim().toLowerCase())
@@ -77,15 +80,18 @@ export class FilesService {
     const files = await this.prisma.file.findMany({
       where,
       orderBy: { [sortField]: order },
+      include: { tags: { include: { tag: true } } },
     });
 
-    // Đính presigned thumbnail URL cho mọi file; kèm breadcrumb nếu withPath.
+    // Đính presigned thumbnail URL + thẻ cho mọi file; kèm breadcrumb nếu withPath.
     const cache = new Map<string, BreadcrumbCrumb[]>();
     const result: FileWithPath[] = [];
     for (const f of files) {
-      const withThumb = await this.withThumb(f);
+      const { tags, ...bare } = f;
+      const withThumb = await this.withThumb(bare);
+      const flatTags = tags.map((ft) => ft.tag);
       if (!q.withPath) {
-        result.push(withThumb);
+        result.push({ ...withThumb, tags: flatTags });
         continue;
       }
       let path: BreadcrumbCrumb[] = [];
@@ -95,7 +101,7 @@ export class FilesService {
         }
         path = cache.get(f.folderId)!;
       }
-      result.push({ ...withThumb, folderPath: path });
+      result.push({ ...withThumb, folderPath: path, tags: flatTags });
     }
     return result;
   }

@@ -3,13 +3,19 @@ import { firstValueFrom } from 'rxjs';
 import { TrashApiService, TrashItem } from '../../core/services/trash-api.service';
 import { FilesApiService } from '../../core/services/files-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
+import { RefreshService } from '../../core/services/refresh.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { ConfirmDialog } from '../ui/confirm-dialog';
 import { formatBytes, iconOf } from '../../core/util/file-types';
+
+type PendingConfirm =
+  | { type: 'purge'; item: TrashItem }
+  | { type: 'empty' };
 
 /** Thùng rác (mục 7.E, 11.K): khôi phục / xoá vĩnh viễn / dọn thùng rác. */
 @Component({
   selector: 'app-trash',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ConfirmDialog],
   templateUrl: './trash.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -17,9 +23,11 @@ export class Trash implements OnInit {
   private readonly trashApi = inject(TrashApiService);
   private readonly filesApi = inject(FilesApiService);
   private readonly foldersApi = inject(FoldersApiService);
+  private readonly refresh = inject(RefreshService);
 
   protected readonly items = signal<TrashItem[]>([]);
   protected readonly loading = signal(false);
+  protected readonly confirm = signal<PendingConfirm | null>(null);
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
 
@@ -42,19 +50,29 @@ export class Trash implements OnInit {
     if (item.kind === 'file') await firstValueFrom(this.filesApi.restore(item.id));
     else await firstValueFrom(this.foldersApi.restore(item.id));
     void this.load();
+    this.refresh.bump();
   }
 
-  async purge(item: TrashItem): Promise<void> {
-    if (!window.confirm('Xoá vĩnh viễn? Không thể hoàn tác.')) return;
-    if (item.kind === 'file') await firstValueFrom(this.filesApi.remove(item.id));
-    else await firstValueFrom(this.foldersApi.remove(item.id));
-    void this.load();
+  // --- Xác nhận qua hộp thoại giữa màn hình (thay prompt/confirm trình duyệt) ---
+  askPurge(item: TrashItem): void {
+    this.confirm.set({ type: 'purge', item });
   }
 
-  async empty(): Promise<void> {
-    // Xác nhận mạnh hơn cho hành động phá huỷ hàng loạt (mục 11.K).
-    if (window.prompt('Gõ "XOÁ" để dọn toàn bộ Thùng rác') !== 'XOÁ') return;
-    await firstValueFrom(this.trashApi.empty());
-    void this.load();
+  askEmpty(): void {
+    this.confirm.set({ type: 'empty' });
+  }
+
+  async runConfirm(): Promise<void> {
+    const c = this.confirm();
+    this.confirm.set(null);
+    if (!c) return;
+    if (c.type === 'purge') {
+      if (c.item.kind === 'file') await firstValueFrom(this.filesApi.remove(c.item.id));
+      else await firstValueFrom(this.foldersApi.remove(c.item.id));
+    } else {
+      await firstValueFrom(this.trashApi.empty());
+    }
+    await this.load();
+    this.refresh.bump();
   }
 }

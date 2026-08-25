@@ -1,0 +1,119 @@
+<div class="modal-backdrop" (click)="close()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <span><span class="mi">sell</span> {{ assignMode() ? ('tags.assignTitle' | t) : ('tags.manageTitle' | t) }}</span>
+      <button class="btn btn-icon" type="button" (click)="close()"><span class="mi">close</span></button>
+    </div>
+
+    @if (error()) {
+      <div class="auth-error" style="margin: 12px 16px 0">{{ error() }}</div>
+    }
+
+    <div class="modal-body">
+      <!-- Danh sách thẻ -->
+      @if (tags().length) {
+        <div class="tag-list">
+          @for (tag of tags(); track tag.id) {
+            @if (editingId() === tag.id) {
+              <!-- Chế độ sửa inline -->
+              <div class="tag-row tag-row--edit">
+                <input
+                  class="auth-input tag-edit-name"
+                  type="text"
+                  maxlength="40"
+                  [value]="editName()"
+                  (input)="editName.set($any($event.target).value)"
+                  (keydown.enter)="saveEdit()"
+                  (keydown.escape)="cancelEdit()"
+                />
+                <div class="tag-swatches">
+                  @for (c of presets; track c) {
+                    <button
+                      type="button"
+                      class="tag-swatch"
+                      [class.on]="editColor() === c"
+                      [style.background]="c"
+                      (click)="editColor.set(c)"
+                      [attr.aria-label]="c"
+                    ></button>
+                  }
+                  <label class="tag-swatch tag-swatch--custom" [style.background]="editColor()" title="Màu tuỳ chỉnh">
+                    <input type="color" [value]="editColor()" (input)="editColor.set($any($event.target).value)" />
+                  </label>
+                </div>
+                <button class="btn btn-icon" type="button" (click)="saveEdit()" [disabled]="busy()" title="Lưu">
+                  <span class="mi">check</span>
+                </button>
+                <button class="btn btn-icon" type="button" (click)="cancelEdit()" title="Huỷ">
+                  <span class="mi">close</span>
+                </button>
+              </div>
+            } @else {
+              <div class="tag-row" [class.assigned]="assignMode() && isAssigned(tag.id)">
+                @if (assignMode()) {
+                  <button
+                    type="button"
+                    class="tag-check"
+                    [class.on]="isAssigned(tag.id)"
+                    (click)="toggleAssign(tag)"
+                    [disabled]="busy()"
+                    [attr.aria-pressed]="isAssigned(tag.id)"
+                    [attr.aria-label]="tag.name"
+                  >
+                    <span class="mi">{{ isAssigned(tag.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                  </button>
+                }
+                <span class="tag-dot" [style.background]="tag.color"></span>
+                <span class="tag-name">{{ tag.name }}</span>
+                @if (assignMode() && isAssigned(tag.id)) {
+                  <span class="tag-assigned-badge"><span class="mi">check</span> {{ 'tags.assigned' | t }}</span>
+                }
+                <span class="card-sub tag-count">{{ tag.fileCount }}</span>
+                <button class="btn btn-icon" type="button" (click)="startEdit(tag)" title="Sửa">
+                  <span class="mi">edit</span>
+                </button>
+                <button class="btn btn-icon" type="button" (click)="remove(tag)" [disabled]="busy()" title="Xoá">
+                  <span class="mi" style="color: var(--danger)">delete_outline</span>
+                </button>
+              </div>
+            }
+          }
+        </div>
+      } @else {
+        <div class="empty" style="border: none; padding: 16px 0">{{ 'tags.empty' | t }}</div>
+      }
+
+      <!-- Thêm thẻ mới -->
+      <h3 class="modal-section">{{ 'tags.addNew' | t }}</h3>
+      <div class="tag-add">
+        <input
+          class="auth-input"
+          type="text"
+          maxlength="40"
+          [placeholder]="'tags.namePlaceholder' | t"
+          [value]="newName()"
+          (input)="newName.set($any($event.target).value)"
+          (keydown.enter)="create()"
+        />
+        <div class="tag-swatches">
+          @for (c of presets; track c) {
+            <button
+              type="button"
+              class="tag-swatch"
+              [class.on]="newColor() === c"
+              [style.background]="c"
+              (click)="newColor.set(c)"
+              [attr.aria-label]="c"
+            ></button>
+          }
+          <label class="tag-swatch tag-swatch--custom" [style.background]="newColor()" title="Màu tuỳ chỉnh">
+            <input type="color" [value]="newColor()" (input)="newColor.set($any($event.target).value)" />
+          </label>
+        </div>
+        <button class="btn btn-primary" type="button" [disabled]="busy() || !newName().trim()" (click)="create()">
+          {{ 'tags.add' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
