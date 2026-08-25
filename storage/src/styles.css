@@ -1701,12 +1701,14 @@ body {
   padding: 4px 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
-/* Dropdown "Tải lên": bằng đúng chiều rộng nút, canh phải để không tràn trang */
+/* Dropdown "Tải lên": bằng ĐÚNG chiều rộng nút, canh phải để không tràn trang.
+   Bóng đổ chỉ xuống dưới (spread âm) để không loe sang 2 bên → nhìn bằng nút. */
 .upload-menu .sort-pop {
   width: 100%;
   min-width: 0;
   left: auto;
   right: 0;
+  box-shadow: 0 6px 10px -8px rgba(0, 0, 0, 0.55);
 }
 .sort-item {
   display: flex;
