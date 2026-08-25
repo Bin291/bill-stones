@@ -255,6 +255,11 @@ body {
   gap: 8px;
   color: var(--ink);
 }
+.brand-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
 .nav-section-title {
   font-size: 12px;
   letter-spacing: 0.32px;
