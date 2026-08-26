@@ -23,7 +23,6 @@ import { VideoPlayer } from '../video-player/video-player';
 import { FilePreview } from '../file-preview/file-preview';
 import { TagDialog } from '../tags/tag-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
-import { PromptDialog } from '../ui/prompt-dialog';
 import { Loader } from '../ui/loader';
 import { Autofocus } from '../ui/autofocus.directive';
 import { MoveDialog, MoveItem } from './move-dialog';
@@ -48,9 +47,7 @@ interface TagTarget {
 }
 
 /** Hộp thoại tuỳ biến (thay prompt/confirm trình duyệt). */
-type ExplorerDialog =
-  | { type: 'rename'; kind: 'file' | 'folder'; id: string; name: string }
-  | { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
+type ExplorerDialog = { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
 
 interface ContextMenu {
   x: number;
@@ -86,7 +83,6 @@ interface UploadBatch {
     FilePreview,
     TagDialog,
     ConfirmDialog,
-    PromptDialog,
     MoveDialog,
     Loader,
     Autofocus,
@@ -156,6 +152,13 @@ export class FileExplorer {
   protected readonly creatingFolder = signal(false);
   protected readonly newFolderName = signal('');
   private creatingBusy = false;
+
+  // Đổi tên INLINE ngay trên card/hàng (không dùng hộp thoại).
+  protected readonly renamingId = signal<string | null>(null);
+  protected readonly renamingKind = signal<'file' | 'folder'>('file');
+  protected readonly renameName = signal('');
+  private renameOldName = '';
+  private renamingBusy = false;
 
   // --- Chọn nhiều (multi-select) để thao tác hàng loạt ---
   protected readonly selectionMode = signal(false);
@@ -617,26 +620,48 @@ export class FileExplorer {
     this.menu.set(null);
   }
 
-  // --- Đổi tên (hộp thoại tuỳ biến) ---
+  // --- Đổi tên INLINE (ngay trên card/hàng, không hộp thoại) ---
   renameItem(): void {
     const m = this.menu();
     if (!m) return;
     this.menu.set(null);
-    this.dialog.set({ type: 'rename', kind: m.kind, id: m.id, name: m.name });
+    this.startRename(m.kind, m.id, m.name);
   }
 
-  async submitRename(name: string): Promise<void> {
-    const d = this.dialog();
-    this.dialog.set(null);
-    if (d?.type !== 'rename') return;
-    if (d.kind === 'file') {
-      await firstValueFrom(this.filesApi.rename(d.id, name.trim()));
-    } else {
-      await firstValueFrom(this.foldersApi.rename(d.id, name.trim()));
-      // Dồn số thứ tự các thư mục trùng tên phía sau xuống -1 (kiểu yêu cầu).
-      await this.renumberAfter(d.name, d.id);
+  private startRename(kind: 'file' | 'folder', id: string, name: string): void {
+    this.creatingFolder.set(false); // không tạo mới song song
+    this.renamingKind.set(kind);
+    this.renameOldName = name;
+    this.renameName.set(name);
+    this.renamingId.set(id);
+  }
+
+  cancelRename(): void {
+    this.renamingId.set(null);
+    this.renamingBusy = false;
+  }
+
+  /** Xác nhận đổi tên (Enter/rời ô). Thư mục: dồn số thứ tự nhóm trùng tên. */
+  async confirmRename(): Promise<void> {
+    const id = this.renamingId();
+    if (!id || this.renamingBusy) return;
+    const kind = this.renamingKind();
+    const newName = this.renameName().trim();
+    const oldName = this.renameOldName;
+    this.renamingBusy = true;
+    this.renamingId.set(null);
+    try {
+      if (!newName || newName === oldName) return; // không đổi → thôi
+      if (kind === 'file') {
+        await firstValueFrom(this.filesApi.rename(id, newName));
+      } else {
+        await firstValueFrom(this.foldersApi.rename(id, newName));
+        await this.renumberAfter(oldName, id);
+      }
+      void this.revalidate();
+    } finally {
+      this.renamingBusy = false;
     }
-    void this.revalidate();
   }
 
   /**

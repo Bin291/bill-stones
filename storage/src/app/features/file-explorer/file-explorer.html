@@ -186,8 +186,21 @@
           }
           <div class="card-preview"><span class="mi" style="font-size: 46px; color: var(--primary)">folder</span></div>
           <div class="card-meta">
-            <div class="card-name">{{ folder.name }}</div>
-            <div class="card-sub">{{ 'common.folder' | t }}</div>
+            @if (renamingId() === folder.id) {
+              <input
+                class="inline-name"
+                appAutofocus
+                [value]="renameName()"
+                (click)="$event.stopPropagation()"
+                (input)="renameName.set($any($event.target).value)"
+                (keydown.enter)="confirmRename()"
+                (keydown.escape)="cancelRename()"
+                (blur)="confirmRename()"
+              />
+            } @else {
+              <div class="card-name">{{ folder.name }}</div>
+              <div class="card-sub">{{ 'common.folder' | t }}</div>
+            }
           </div>
         </div>
       }
@@ -214,7 +227,20 @@
             }
           </div>
           <div class="card-meta">
-            <div class="card-name" [title]="file.name">{{ file.name }}</div>
+            @if (renamingId() === file.id) {
+              <input
+                class="inline-name"
+                appAutofocus
+                [value]="renameName()"
+                (click)="$event.stopPropagation()"
+                (input)="renameName.set($any($event.target).value)"
+                (keydown.enter)="confirmRename()"
+                (keydown.escape)="cancelRename()"
+                (blur)="confirmRename()"
+              />
+            } @else {
+              <div class="card-name" [title]="file.name">{{ file.name }}</div>
+            }
             <div class="card-metarow">
               <span class="card-size">
                 {{ formatBytes(file.size) }}
@@ -291,7 +317,21 @@
               @if (selectionMode()) {
                 <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
               }
-              <span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}
+              <span class="mi" style="color: var(--primary)">folder</span>
+              @if (renamingId() === folder.id) {
+                <input
+                  class="inline-name"
+                  appAutofocus
+                  [value]="renameName()"
+                  (click)="$event.stopPropagation()"
+                  (input)="renameName.set($any($event.target).value)"
+                  (keydown.enter)="confirmRename()"
+                  (keydown.escape)="cancelRename()"
+                  (blur)="confirmRename()"
+                />
+              } @else {
+                {{ folder.name }}
+              }
             </td>
             <td>—</td>
             <td>{{ folder.updatedAt | date: 'short' }}</td>
@@ -307,7 +347,21 @@
               @if (selectionMode()) {
                 <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
               }
-              <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span> {{ file.name }}
+              <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
+              @if (renamingId() === file.id) {
+                <input
+                  class="inline-name"
+                  appAutofocus
+                  [value]="renameName()"
+                  (click)="$event.stopPropagation()"
+                  (input)="renameName.set($any($event.target).value)"
+                  (keydown.enter)="confirmRename()"
+                  (keydown.escape)="cancelRename()"
+                  (blur)="confirmRename()"
+                />
+              } @else {
+                {{ file.name }}
+              }
             </td>
             <td>{{ formatBytes(file.size) }}</td>
             <td>{{ file.updatedAt | date: 'short' }}</td>
@@ -403,30 +457,16 @@
   />
 }
 
-<!-- Hộp thoại đổi tên / xác nhận xoá (thay prompt/confirm trình duyệt) -->
+<!-- Hộp thoại xác nhận xoá (thay confirm trình duyệt) -->
 @if (dialog(); as d) {
-  @switch (d.type) {
-    @case ('rename') {
-      <app-prompt-dialog
-        [title]="'action.rename' | t"
-        [label]="'files.name' | t"
-        [initialValue]="d.name"
-        [confirmLabel]="'action.save' | t"
-        (confirmed)="submitRename($event)"
-        (cancelled)="dialog.set(null)"
-      />
-    }
-    @case ('confirmDelete') {
-      <app-confirm-dialog
-        [title]="'action.delete' | t"
-        [message]="'Bạn có chắc chắn chuyển “' + d.name + '” vào Thùng rác?'"
-        [confirmLabel]="'action.delete' | t"
-        [danger]="true"
-        (confirmed)="confirmDelete()"
-        (cancelled)="dialog.set(null)"
-      />
-    }
-  }
+  <app-confirm-dialog
+    [title]="'action.delete' | t"
+    [message]="'Bạn có chắc chắn chuyển “' + d.name + '” vào Thùng rác?'"
+    [confirmLabel]="'action.delete' | t"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="dialog.set(null)"
+  />
 }
 
 <!-- Upload panel (gộp theo mục, gọn, thu gọn được) -->
