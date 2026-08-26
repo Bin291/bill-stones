@@ -80,7 +80,7 @@ export class Landing {
     'hợp đồng thuê nhà Landmark 81',
     'sơ đồ luồng thanh toán Microservices',
     'bảng kê chi phí công tác quý 2',
-    'giấy phép kinh doanh SeekAsset'
+    'giấy phép kinh doanh BillPrime'
   ];
 
   // Comprehensive Search Data
@@ -397,7 +397,7 @@ export class Landing {
       });
     }
 
-    // 3. How SeekAsset Works Section (Pinned Sequence on Desktop)
+    // 3. How BillPrime Works Section (Pinned Sequence on Desktop)
     const howItWorksSection = this.hostEl.nativeElement.querySelector('#how-it-works');
     const stepCards = this.hostEl.nativeElement.querySelectorAll('.how-step-card');
     const pathDraw1 = this.hostEl.nativeElement.querySelector('#pipeline-path-1');

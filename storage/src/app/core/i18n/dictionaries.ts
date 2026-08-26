@@ -5,7 +5,7 @@ export type Lang = 'vi' | 'en';
 export type Dict = Record<string, string>;
 
 export const vi: Dict = {
-  'app.title': 'SeekAsset',
+  'app.title': 'BillPrime',
   'nav.myStorage': 'Kho của tôi',
   'nav.starred': 'Gắn sao',
   'nav.recent': 'Gần đây',
@@ -187,7 +187,7 @@ export const vi: Dict = {
 };
 
 export const en: Dict = {
-  'app.title': 'SeekAsset',
+  'app.title': 'BillPrime',
   'nav.myStorage': 'My Storage',
   'nav.starred': 'Starred',
   'nav.recent': 'Recent',
