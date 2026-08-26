@@ -11,6 +11,8 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { Share, ShareApiService } from '../../core/services/share-api.service';
 import { environment } from '../../../environments/environment';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { LangService } from '../../core/i18n/lang.service';
 
 export interface ShareTarget {
   kind: 'file' | 'folder';
@@ -20,12 +22,13 @@ export interface ShareTarget {
 
 @Component({
   selector: 'app-share-dialog',
-  imports: [],
+  imports: [TranslatePipe],
   templateUrl: './share-dialog.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShareDialog {
   private readonly shareApi = inject(ShareApiService);
+  private readonly lang = inject(LangService);
 
   readonly target = input.required<ShareTarget>();
   readonly closed = output<void>();
@@ -128,6 +131,6 @@ export class ShareDialog {
       const e = (err as { error?: { message?: string } }).error;
       if (e?.message) return e.message;
     }
-    return 'Đã xảy ra lỗi';
+    return this.lang.translate('share.errorGeneric');
   }
 }

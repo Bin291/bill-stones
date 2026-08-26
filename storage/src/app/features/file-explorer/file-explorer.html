@@ -141,7 +141,7 @@
     </div>
   }
 
-  @if (folders().length === 0 && files().length === 0 && !creatingFolder()) {
+  @if (folders().length === 0 && files().length === 0) {
     <div class="empty" style="cursor: default">
       <div style="font-size: 40px">
         <span class="mi" style="font-size: 40px">folder_open</span>
@@ -151,22 +151,6 @@
     </div>
   } @else if (settings.viewMode() === 'grid') {
     <div class="file-grid">
-      @if (creatingFolder()) {
-        <div class="card">
-          <div class="card-preview"><span class="mi" style="font-size: 46px; color: var(--primary)">folder</span></div>
-          <div class="card-meta">
-            <input
-              class="inline-name"
-              appAutofocus
-              [value]="newFolderName()"
-              (input)="newFolderName.set($any($event.target).value)"
-              (keydown.enter)="confirmCreateFolder()"
-              (keydown.escape)="cancelCreateFolder()"
-              (blur)="confirmCreateFolder()"
-            />
-          </div>
-        </div>
-      }
       @for (folder of folders(); track folder.id) {
         <div
           class="card"
@@ -196,7 +180,7 @@
                 (blur)="confirmRename()"
               />
             } @else {
-              <div class="card-name">{{ folder.name }}</div>
+              <div class="card-name">{{ folderDisplayName(folder.name) }}</div>
               <div class="card-sub">{{ 'common.folder' | t }}</div>
             }
           </div>
@@ -287,24 +271,6 @@
         </tr>
       </thead>
       <tbody>
-        @if (creatingFolder()) {
-          <tr>
-            <td>
-              <span class="mi" style="color: var(--primary)">folder</span>
-              <input
-                class="inline-name"
-                appAutofocus
-                [value]="newFolderName()"
-                (input)="newFolderName.set($any($event.target).value)"
-                (keydown.enter)="confirmCreateFolder()"
-                (keydown.escape)="cancelCreateFolder()"
-                (blur)="confirmCreateFolder()"
-              />
-            </td>
-            <td>—</td>
-            <td></td>
-          </tr>
-        }
         @for (folder of folders(); track folder.id) {
           <tr
             [class.selected]="isSelected('folder', folder.id)"
@@ -328,7 +294,7 @@
                   (blur)="confirmRename()"
                 />
               } @else {
-                {{ folder.name }}
+                {{ folderDisplayName(folder.name) }}
               }
             </td>
             <td>—</td>
@@ -412,7 +378,7 @@
       </button>
     }
     <button class="menu-item" type="button" (click)="openShare()">
-      <span class="mi">share</span> Chia sẻ
+      <span class="mi">share</span> {{ 'share.title' | t }}
     </button>
     <button class="menu-item danger" type="button" (click)="deleteItem()">
       <span class="mi">delete</span> {{ 'action.delete' | t }}
@@ -455,16 +421,30 @@
   />
 }
 
-<!-- Hộp thoại xác nhận xoá (thay confirm trình duyệt) -->
+<!-- Hộp thoại tạo thư mục / xác nhận xoá (thay prompt/confirm trình duyệt) -->
 @if (dialog(); as d) {
-  <app-confirm-dialog
-    [title]="'action.delete' | t"
-    [message]="'Bạn có chắc chắn chuyển “' + d.name + '” vào Thùng rác?'"
-    [confirmLabel]="'action.delete' | t"
-    [danger]="true"
-    (confirmed)="confirmDelete()"
-    (cancelled)="dialog.set(null)"
-  />
+  @switch (d.type) {
+    @case ('newFolder') {
+      <app-prompt-dialog
+        [title]="'action.newFolder' | t"
+        [label]="'files.name' | t"
+        [initialValue]="d.name"
+        [confirmLabel]="'action.create' | t"
+        (confirmed)="submitNewFolder($event)"
+        (cancelled)="dialog.set(null)"
+      />
+    }
+    @case ('confirmDelete') {
+      <app-confirm-dialog
+        [title]="'action.delete' | t"
+        [message]="'confirm.trashMsg' | t: { name: d.name }"
+        [confirmLabel]="'action.delete' | t"
+        [danger]="true"
+        (confirmed)="confirmDelete()"
+        (cancelled)="dialog.set(null)"
+      />
+    }
+  }
 }
 
 <!-- Upload panel (gộp theo mục, gọn, thu gọn được) -->
@@ -473,10 +453,10 @@
     <div class="upload-head">
       <span class="upload-head-title">
         <span>
-          {{ uploadingCount() > 0 ? ('Đang tải ' + uploadingCount() + ' mục lên') : 'Đã tải lên xong' }}
+          {{ uploadingCount() > 0 ? ('upload.uploading' | t: { n: uploadingCount() }) : ('upload.doneAll' | t) }}
         </span>
         <span class="upload-head-sub">
-          Đã tải {{ uploadDoneItems() }}/{{ uploadTotalItems() }} mục · {{ uploadPercent() }}%
+          {{ 'upload.progress' | t: { done: uploadDoneItems(), total: uploadTotalItems(), pct: uploadPercent() } }}
         </span>
       </span>
       <span class="row" style="gap: 2px">
@@ -500,8 +480,8 @@
               <div class="upload-name" [title]="b.label">{{ b.label }}</div>
               <div class="card-sub">
                 @if (b.isFolder) {
-                  {{ b.done() }} trong số {{ b.total }}
-                  @if (b.failed() > 0) { · {{ b.failed() }} lỗi }
+                  {{ 'upload.ofTotal' | t: { done: b.done(), total: b.total } }}
+                  @if (b.failed() > 0) { · {{ 'upload.errCount' | t: { n: b.failed() } }} }
                 } @else if (b.firstTask(); as tk) {
                   {{ tk.progress() }}%
                 }
@@ -515,11 +495,11 @@
                 <span class="mi" style="color: var(--danger)">error</span>
               }
               @case ('canceled') {
-                <span class="card-sub">Đã huỷ</span>
+                <span class="card-sub">{{ 'upload.canceled' | t }}</span>
               }
               @default {
                 <app-loader [dot]="2" [gap]="1" cycle="1.1s" />
-                <button class="up-cancel" type="button" (click)="cancelBatch(b)">Hủy</button>
+                <button class="up-cancel" type="button" (click)="cancelBatch(b)">{{ 'action.cancel' | t }}</button>
               }
             }
           </div>

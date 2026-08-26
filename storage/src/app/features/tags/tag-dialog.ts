@@ -57,9 +57,10 @@ export class TagDialog implements OnInit {
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
 
-  // Form thêm thẻ mới.
+  // Form thêm thẻ mới. newColor = null: CHƯA chọn màu → khi tạo sẽ lấy màu ngẫu
+  // nhiên trong 9 màu có sẵn.
   readonly newName = signal('');
-  readonly newColor = signal(PRESET_COLORS[0]);
+  readonly newColor = signal<string | null>(null);
 
   // Sửa inline.
   readonly editingId = signal<string | null>(null);
@@ -93,9 +94,11 @@ export class TagDialog implements OnInit {
     this.busy.set(true);
     this.error.set(null);
     try {
-      await firstValueFrom(this.tagsApi.create(name, this.newColor()));
+      // Chưa chọn màu → lấy màu ngẫu nhiên trong 9 màu có sẵn.
+      const color = this.newColor() ?? this.randomPreset();
+      await firstValueFrom(this.tagsApi.create(name, color));
       this.newName.set('');
-      this.newColor.set(PRESET_COLORS[0]);
+      this.newColor.set(null);
       await this.load();
       this.refresh.bumpTags();
     } catch (e) {
@@ -211,6 +214,11 @@ export class TagDialog implements OnInit {
 
   isAssigned(id: string): boolean {
     return this.assigned().has(id);
+  }
+
+  /** Chọn 1 màu ngẫu nhiên trong 9 màu có sẵn (khi người dùng không chọn màu). */
+  private randomPreset(): string {
+    return PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
   }
 
   close(): void {

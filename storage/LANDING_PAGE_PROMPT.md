@@ -1,4 +1,4 @@
-# Prompt: Redesign trang Landing (SeekAsset)
+# Prompt: Redesign trang Landing (BillPrime)
 
 Copy toàn bộ nội dung dưới đây, dán cho Claude (Claude Code / claude.ai) để nó
 thiết kế + code lại trang landing.
@@ -7,7 +7,7 @@ thiết kế + code lại trang landing.
 
 ## Bối cảnh dự án
 
-Đây là Angular 20+ standalone app tên **SeekAsset** — app lưu trữ file cá
+Đây là Angular 20+ standalone app tên **BillPrime** — app lưu trữ file cá
 nhân (kiểu Google Drive) với tính năng nổi bật nhất là **AI Hybrid Search**:
 tìm file bằng ngôn ngữ tự nhiên, đọc được cả OCR trong ảnh, bảng biểu trong
 PDF, và tìm được bằng tiếng Anh lẫn tiếng Việt dù nội dung gốc là tiếng Việt.

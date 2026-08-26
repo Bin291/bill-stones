@@ -30,7 +30,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     `
       :host {
         display: inline-flex;
-        color: #ffffff; /* màu loading trắng */
+        /* Tự tương phản với nền: theme sáng -> chấm ĐEN, theme tối -> chấm TRẮNG */
+        color: var(--ink);
       }
       .dmx {
         display: inline-flex;

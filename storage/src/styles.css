@@ -306,6 +306,10 @@ body {
   height: 24px;
   object-fit: contain;
 }
+/* Logo là hình trắng — ở theme SÁNG phải đảo màu cho hiện rõ trên nền trắng */
+:root[data-theme='light'] .brand-logo {
+  filter: invert(1);
+}
 .nav-section-title {
   font-size: 12px;
   letter-spacing: 0.32px;
@@ -1271,6 +1275,10 @@ body {
   color: #fff;
   text-align: center;
 }
+/* Loader trên nền video luôn tối → giữ TRẮNG bất kể theme */
+.vp-overlay app-loader {
+  color: #fff;
+}
 
 /* Spinner đệm + nút phát lớn giữa màn hình */
 .vp-spinner {
@@ -1562,6 +1570,7 @@ body {
   flex-wrap: wrap;
 }
 .tag-swatch {
+  flex: 0 0 auto; /* không co lại khi hẹp → xuống hàng gọn, không méo/lệch */
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -1574,10 +1583,28 @@ body {
 .tag-swatch.on {
   border-color: var(--ink);
 }
+/* Swatch màu tuỳ chỉnh: vòng 7 màu (rainbow) để dễ nhận ra là chọn màu tự do */
 .tag-swatch--custom {
   display: grid;
   place-items: center;
   overflow: hidden;
+  background: conic-gradient(
+    #f44336,
+    #ff9800,
+    #ffeb3b,
+    #4caf50,
+    #00bcd4,
+    #3f51b5,
+    #9c27b0,
+    #f44336
+  );
+}
+/* Chấm nhỏ ở giữa hiện màu đang chọn (đè lên vòng rainbow) */
+.tag-swatch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--canvas);
 }
 .tag-swatch--custom input[type='color'] {
   position: absolute;
@@ -1586,6 +1613,13 @@ body {
   cursor: pointer;
   border: none;
   padding: 0;
+}
+/* Nút màu ngẫu nhiên (xúc xắc) */
+.tag-swatch--random {
+  display: grid;
+  place-items: center;
+  background: var(--surface-1);
+  color: var(--ink);
 }
 
 /* Form thêm thẻ */
@@ -1791,11 +1825,11 @@ body {
   padding: 4px 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
-/* Dropdown "Tải lên": bằng ĐÚNG chiều rộng nút, canh phải để không tràn trang.
-   Bóng đổ chỉ xuống dưới (spread âm) để không loe sang 2 bên → nhìn bằng nút. */
+/* Dropdown "Tải lên": tối thiểu bằng nút, tự nới rộng vừa đủ chữ (VD "Thư mục"),
+   canh phải để không tràn trang. Bóng đổ chỉ xuống dưới (spread âm). */
 .upload-menu .sort-pop {
-  width: 100%;
-  min-width: 0;
+  min-width: 100%;
+  width: max-content;
   left: auto;
   right: 0;
   box-shadow: 0 6px 10px -8px rgba(0, 0, 0, 0.55);

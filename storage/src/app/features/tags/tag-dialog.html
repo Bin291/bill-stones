@@ -37,8 +37,11 @@
                       [attr.aria-label]="c"
                     ></button>
                   }
-                  <label class="tag-swatch tag-swatch--custom" [style.background]="editColor()" title="Màu tuỳ chỉnh">
-                    <input type="color" [value]="editColor()" (input)="editColor.set($any($event.target).value)" />
+                  <label class="tag-swatch tag-swatch--custom" [title]="'tags.customColor' | t">
+                    @if (editColor()) {
+                      <span class="tag-swatch-dot" [style.background]="editColor()"></span>
+                    }
+                    <input type="color" [value]="editColor() || '#8d8d8d'" (input)="editColor.set($any($event.target).value)" />
                   </label>
                 </div>
                 <button class="btn btn-icon" type="button" (click)="saveEdit()" [disabled]="busy()" title="Lưu">
@@ -105,8 +108,11 @@
               [attr.aria-label]="c"
             ></button>
           }
-          <label class="tag-swatch tag-swatch--custom" [style.background]="newColor()" title="Màu tuỳ chỉnh">
-            <input type="color" [value]="newColor()" (input)="newColor.set($any($event.target).value)" />
+          <label class="tag-swatch tag-swatch--custom" [title]="'tags.customColor' | t">
+            @if (newColor()) {
+              <span class="tag-swatch-dot" [style.background]="newColor()"></span>
+            }
+            <input type="color" [value]="newColor() || '#8d8d8d'" (input)="newColor.set($any($event.target).value)" />
           </label>
         </div>
         <button class="btn btn-primary" type="button" [disabled]="busy() || !newName().trim()" (click)="create()">

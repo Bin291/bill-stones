@@ -11,7 +11,7 @@
 
     <div class="modal-body">
       <!-- Phần trên: mời theo email -->
-      <h3 class="modal-section">Mời người dùng</h3>
+      <h3 class="modal-section">{{ 'share.invite' | t }}</h3>
       <div class="row">
         <input
           class="auth-input"
@@ -21,7 +21,7 @@
           (input)="email.set($any($event.target).value)"
         />
         <button class="btn btn-primary" type="button" [disabled]="busy()" (click)="invite()">
-          Mời
+          {{ 'share.inviteBtn' | t }}
         </button>
       </div>
 
@@ -29,15 +29,13 @@
         <div class="share-row">
           <span class="mi">person</span>
           <span class="share-email">{{ s.sharedWithEmail }}</span>
-          <span class="card-sub">Người xem</span>
-          <button class="btn btn-icon" type="button" (click)="revoke(s)">
-            <span class="mi" style="color: var(--danger)">remove_circle_outline</span>
-          </button>
+          <span class="card-sub">{{ 'share.viewer' | t }}</span>
+          <button class="btn" type="button" (click)="revoke(s)">{{ 'action.cancel' | t }}</button>
         </div>
       }
 
       <!-- Phần dưới: link công khai -->
-      <h3 class="modal-section">Link công khai</h3>
+      <h3 class="modal-section">{{ 'share.publicLink' | t }}</h3>
       <!-- Sau khi đã tạo link thì ẩn phần tuỳ chọn + nút "Tạo link" (mỗi mục 1 link) -->
       @if (!links().length) {
         <div class="link-opts">
@@ -47,30 +45,30 @@
               [checked]="linkAllowDownload()"
               (change)="linkAllowDownload.set($any($event.target).checked)"
             />
-            Cho phép tải xuống
+            {{ 'share.allowDownload' | t }}
           </label>
           <label class="opt">
-            Hết hạn:
+            {{ 'share.expiry' | t }}
             <select
               [value]="linkExpiresDays()"
               (change)="linkExpiresDays.set(+$any($event.target).value)"
             >
-              <option [value]="0">Không</option>
-              <option [value]="1">1 ngày</option>
-              <option [value]="7">7 ngày</option>
-              <option [value]="30">30 ngày</option>
+              <option [value]="0">{{ 'share.expNone' | t }}</option>
+              <option [value]="1">{{ 'share.exp1' | t }}</option>
+              <option [value]="7">{{ 'share.exp7' | t }}</option>
+              <option [value]="30">{{ 'share.exp30' | t }}</option>
             </select>
           </label>
           <input
             class="auth-input"
             style="max-width: 160px"
             type="text"
-            placeholder="Mật khẩu (tuỳ chọn)"
+            [placeholder]="'share.passwordPh' | t"
             [value]="linkPassword()"
             (input)="linkPassword.set($any($event.target).value)"
           />
           <button class="btn" type="button" [disabled]="busy()" (click)="createLink()">
-            Tạo link
+            {{ 'share.createLink' | t }}
           </button>
         </div>
       }
@@ -79,12 +77,10 @@
         <div class="share-row">
           <span class="mi">link</span>
           <input class="auth-input" style="flex: 1" readonly [value]="linkUrl(s)" />
-          <button class="btn btn-icon" type="button" (click)="copy(s)" [title]="'Sao chép'">
+          <button class="btn btn-icon" type="button" (click)="copy(s)" [title]="'share.copy' | t">
             <span class="mi">{{ copied() === s.id ? 'check' : 'content_copy' }}</span>
           </button>
-          <button class="btn btn-icon" type="button" (click)="revoke(s)">
-            <span class="mi" style="color: var(--danger)">delete</span>
-          </button>
+          <button class="btn" type="button" (click)="revoke(s)">{{ 'action.cancel' | t }}</button>
         </div>
       }
     </div>
