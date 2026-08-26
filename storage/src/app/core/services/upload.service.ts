@@ -43,6 +43,29 @@ export class UploadService {
     return `upload:${folderId ?? 'root'}:${file.name}:${file.size}:${file.lastModified}`;
   }
 
+  /**
+   * Thử lại thao tác mạng khi gặp lỗi TẠM THỜI (mất kết nối, server khởi động lại,
+   * 5xx, 429) — giúp mọi loại tệp tải lên ổn định. Lỗi client thật (400/401/403/413)
+   * thì báo ngay, không thử lại.
+   */
+  private async withRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+    let lastErr: unknown;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastErr = err;
+        const status = (err as { status?: number })?.status ?? 0;
+        // Không thử lại với lỗi client rõ ràng (trừ 408 timeout, 429 quá tải).
+        const permanent = status >= 400 && status < 500 && status !== 408 && status !== 429;
+        if (permanent || i === attempts - 1) break;
+        // Backoff tăng dần: 0.6s, 1.2s, 2.4s…
+        await new Promise((r) => setTimeout(r, 600 * 2 ** i));
+      }
+    }
+    throw lastErr;
+  }
+
   createTask(file: File): UploadTask {
     const controller = { canceled: false };
     const task: UploadTask = {
@@ -140,13 +163,15 @@ export class UploadService {
   }
 
   private init(file: File, folderId: string | null): Promise<InitResult> {
-    return firstValueFrom(
-      this.http.post<InitResult>(`${this.base}/init`, {
-        name: file.name,
-        size: String(file.size),
-        mimeType: file.type || 'application/octet-stream',
-        folderId,
-      }),
+    return this.withRetry(() =>
+      firstValueFrom(
+        this.http.post<InitResult>(`${this.base}/init`, {
+          name: file.name,
+          size: String(file.size),
+          mimeType: file.type || 'application/octet-stream',
+          folderId,
+        }),
+      ),
     );
   }
 
@@ -157,15 +182,17 @@ export class UploadService {
     blob: Blob,
   ): Promise<string> {
     const buffer = await blob.arrayBuffer();
-    const res = await firstValueFrom(
-      this.http.post<{ ETag: string; PartNumber: number }>(`${this.base}/part`, buffer, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/octet-stream',
-          'x-file-id': fileId,
-          'x-upload-id': uploadId,
-          'x-part-number': String(partNumber),
+    const res = await this.withRetry(() =>
+      firstValueFrom(
+        this.http.post<{ ETag: string; PartNumber: number }>(`${this.base}/part`, buffer, {
+          headers: new HttpHeaders({
+            'Content-Type': 'application/octet-stream',
+            'x-file-id': fileId,
+            'x-upload-id': uploadId,
+            'x-part-number': String(partNumber),
+          }),
         }),
-      }),
+      ),
     );
     return res.ETag;
   }
@@ -175,8 +202,10 @@ export class UploadService {
     uploadId: string,
     parts: CompletedPart[],
   ): Promise<StoredFile> {
-    return firstValueFrom(
-      this.http.post<StoredFile>(`${this.base}/complete`, { fileId, uploadId, parts }),
+    return this.withRetry(() =>
+      firstValueFrom(
+        this.http.post<StoredFile>(`${this.base}/complete`, { fileId, uploadId, parts }),
+      ),
     );
   }
 
