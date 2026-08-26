@@ -1,18 +1,1209 @@
-<div class="landing-page">
-  <header class="landing-nav">
-    <div class="landing-nav__brand">
-      <img src="logo.png" alt="" width="24" height="24" />
-      <span>SeekAsset</span>
+<!-- SeekAsset - IBM Carbon Dark Theme Landing Page -->
+<div class="relative min-h-screen bg-[#161616] text-[#f4f4f4] overflow-x-hidden font-sans selection:bg-[#0f62fe] selection:text-white">
+
+  <!-- ========================================== -->
+  <!-- 1. STICKY HEADER NAVIGATION                -->
+  <!-- ========================================== -->
+  <header
+    id="main-nav"
+    class="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
+    [class.bg-[#161616]/90]="isScrolled()"
+    [class.backdrop-blur-md]="isScrolled()"
+    [class.border-b]="isScrolled()"
+    [class.border-[#262626]]="isScrolled()"
+    [class.py-3]="isScrolled()"
+    [class.py-5]="!isScrolled()"
+  >
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      
+      <!-- Brand Logo (Accessible Button) -->
+      <button
+        type="button"
+        class="flex items-center gap-3 cursor-pointer text-left bg-transparent border-0 p-0 focus:outline-none"
+        (click)="scrollToSection('hero')"
+        aria-label="SeekAsset Home"
+      >
+        <div class="w-8 h-8 bg-[#0f62fe] flex items-center justify-center text-white font-mono font-bold text-base select-none">
+          SA
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="font-sans font-semibold text-lg tracking-tight text-white">SeekAsset</span>
+          </div>
+          <span class="text-[10px] text-[#8d8d8d] font-mono -mt-1 hidden sm:block">AI-HYBRID FILE INTELLIGENCE</span>
+        </div>
+      </button>
+
+      <!-- Desktop Nav Links (Scroll Spy Active States) -->
+      <nav class="hidden md:flex items-center gap-1">
+        <button
+          type="button"
+          (click)="scrollToSection('features')"
+          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
+          [class.text-white]="activeNavSection() === 'features'"
+          [class.border-[#0f62fe]]="activeNavSection() === 'features'"
+          [class.text-[#c6c6c6]]="activeNavSection() !== 'features'"
+          [class.border-transparent]="activeNavSection() !== 'features'"
+          [class.hover:text-white]="true"
+        >
+          Tính năng
+        </button>
+
+        <button
+          type="button"
+          (click)="scrollToSection('how-it-works')"
+          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
+          [class.text-white]="activeNavSection() === 'how-it-works'"
+          [class.border-[#0f62fe]]="activeNavSection() === 'how-it-works'"
+          [class.text-[#c6c6c6]]="activeNavSection() !== 'how-it-works'"
+          [class.border-transparent]="activeNavSection() !== 'how-it-works'"
+          [class.hover:text-white]="true"
+        >
+          Cách hoạt động
+        </button>
+
+        <button
+          type="button"
+          (click)="scrollToSection('sandbox')"
+          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
+          [class.text-white]="activeNavSection() === 'sandbox'"
+          [class.border-[#0f62fe]]="activeNavSection() === 'sandbox'"
+          [class.text-[#c6c6c6]]="activeNavSection() !== 'sandbox'"
+          [class.border-transparent]="activeNavSection() !== 'sandbox'"
+          [class.hover:text-white]="true"
+        >
+          Trải nghiệm thử
+        </button>
+
+        <button
+          type="button"
+          (click)="scrollToSection('security')"
+          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
+          [class.text-white]="activeNavSection() === 'security'"
+          [class.border-[#0f62fe]]="activeNavSection() === 'security'"
+          [class.text-[#c6c6c6]]="activeNavSection() !== 'security'"
+          [class.border-transparent]="activeNavSection() !== 'security'"
+          [class.hover:text-white]="true"
+        >
+          Bảo mật &amp; Riêng tư
+        </button>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="hidden sm:flex items-center gap-3">
+        <button
+          type="button"
+          (click)="openModal('signup')"
+          class="btn-ghost text-sm py-2 px-3 text-[#c6c6c6] hover:text-white"
+        >
+          Đăng nhập
+        </button>
+        <button
+          type="button"
+          (click)="openModal('signup')"
+          class="btn-primary text-sm py-2 px-4 flex items-center gap-2"
+        >
+          <span>Dùng thử miễn phí</span>
+          <mat-icon class="text-sm scale-90">arrow_forward</mat-icon>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle Button -->
+      <button
+        type="button"
+        (click)="toggleMobileMenu()"
+        class="md:hidden p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
+        aria-label="Toggle Navigation Menu"
+      >
+        <mat-icon>{{ mobileMenuOpen() ? 'close' : 'menu' }}</mat-icon>
+      </button>
     </div>
-    <nav class="landing-nav__actions">
-      <a routerLink="/login" class="landing-link">Đăng nhập</a>
-      <a routerLink="/register" class="landing-btn landing-btn--primary">Bắt đầu miễn phí</a>
-    </nav>
+
+    <!-- Mobile Dropdown Menu -->
+    @if (mobileMenuOpen()) {
+      <div class="md:hidden bg-[#1c1c1c] border-b border-[#262626] px-4 pt-3 pb-6 flex flex-col gap-3">
+        <button
+          type="button"
+          (click)="scrollToSection('features')"
+          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+        >
+          Tính năng
+        </button>
+        <button
+          type="button"
+          (click)="scrollToSection('how-it-works')"
+          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+        >
+          Cách hoạt động
+        </button>
+        <button
+          type="button"
+          (click)="scrollToSection('sandbox')"
+          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+        >
+          Trải nghiệm thử
+        </button>
+        <button
+          type="button"
+          (click)="scrollToSection('security')"
+          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+        >
+          Bảo mật &amp; Riêng tư
+        </button>
+        <div class="flex flex-col gap-2 pt-2">
+          <button type="button" (click)="openModal('signup')" class="btn-secondary w-full justify-center">Đăng nhập</button>
+          <button type="button" (click)="openModal('signup')" class="btn-primary w-full justify-center">Dùng thử miễn phí</button>
+        </div>
+      </div>
+    }
   </header>
 
-  <app-bento-shutter />
+  <!-- ========================================== -->
+  <!-- 2. HERO SECTION (100vh Pinned / Tilt)      -->
+  <!-- ========================================== -->
+  <section id="hero" class="relative min-h-screen flex items-center justify-center pt-24 pb-16 carbon-grid-lines">
+    <!-- Subtle top glow -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 max-w-4xl h-80 bg-[#0f62fe]/10 blur-[120px] pointer-events-none rounded-full"></div>
 
-  <footer class="landing-footer">
-    <span>© 2026 SeekAsset. Bảo mật theo chuẩn AES-256.</span>
+    <div class="hero-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <!-- Left Column: Display Title & Actions -->
+      <div class="lg:col-span-6 flex flex-col gap-6 z-10">
+        
+        <!-- IBM Header Tag -->
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-[#0f62fe]"></div>
+          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+            IBM CARBON ARCHITECTURE // 768-D VECTOR VAULT
+          </span>
+        </div>
+
+        <!-- Hero Display Title -->
+        <h1 class="display-01 text-white">
+          Tìm mọi file bằng <span class="text-[#78a9ff] font-normal">ý nghĩa</span>, không chỉ tên file.
+        </h1>
+
+        <!-- Subheading -->
+        <p class="body-long-01 max-w-xl text-[#c6c6c6]">
+          Kho lưu trữ tệp AI-hybrid cá nhân với công nghệ OCR đa phương thức và lập chỉ mục không gian vector. Quên đi cấu trúc thư mục rườm rà — chỉ cần diễn đạt những gì bạn nhớ.
+        </p>
+
+        <!-- Search Suggestions Chips -->
+        <div class="flex flex-col gap-2 pt-1">
+          <span class="text-xs font-mono text-[#8d8d8d]">THỬ TRUY VẤN MẪU:</span>
+          <div class="flex flex-wrap gap-2">
+            @for (prompt of typingPrompts; track prompt) {
+              <button
+                type="button"
+                (click)="setQuery(prompt)"
+                class="carbon-tag hover:border-[#0f62fe] hover:text-white transition-colors cursor-pointer text-left"
+              >
+                <mat-icon class="text-xs text-[#0f62fe]">search</mat-icon>
+                <span>{{ prompt }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Action CTAs -->
+        <div class="flex flex-wrap items-center gap-4 pt-4">
+          <button
+            type="button"
+            (click)="openModal('signup')"
+            class="btn-primary"
+          >
+            <span>Khám phá Vault thông minh</span>
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+
+          <button
+            type="button"
+            (click)="scrollToSection('sandbox')"
+            class="btn-secondary"
+          >
+            <span>Xem Demo tương tác</span>
+            <mat-icon>play_circle_outline</mat-icon>
+          </button>
+        </div>
+
+        <!-- Metric strip -->
+        <div class="grid grid-cols-3 gap-4 pt-6 border-t border-[#262626]">
+          <div>
+            <div class="font-mono text-xl text-white font-medium">35+</div>
+            <div class="text-xs text-[#8d8d8d] font-mono">ĐỊNH DẠNG FILE HỖ TRỢ</div>
+          </div>
+          <div>
+            <div class="font-mono text-xl text-white font-medium">3 NHÁNH</div>
+            <div class="text-xs text-[#8d8d8d] font-mono">TÌM KIẾM HỢP NHẤT (RRF)</div>
+          </div>
+          <div>
+            <div class="font-mono text-xl text-white font-medium">100%</div>
+            <div class="text-xs text-[#8d8d8d] font-mono">CÔ LẬP THEO TÀI KHOẢN</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Interactive 3D Mockup Container -->
+      <div class="lg:col-span-6 hero-mockup-wrapper relative">
+        
+        <div
+          id="hero-mockup"
+          class="hero-3d-mockup bg-[#1c1c1c] border border-[#393939] overflow-hidden"
+        >
+          <!-- Mockup Window Bar -->
+          <div class="bg-[#262626] px-4 py-2.5 flex items-center justify-between border-b border-[#333333]">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 bg-[#fa4d56]"></div>
+              <div class="w-3 h-3 bg-[#f1c21b]"></div>
+              <div class="w-3 h-3 bg-[#42be65]"></div>
+              <span class="font-mono text-xs text-[#8d8d8d] ml-2">seekasset://vault/semantic-indexer</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#42be65] animate-ping"></span>
+              <span class="text-[11px] font-mono text-[#42be65]">VECTOR_ENGINE: ACTIVE</span>
+            </div>
+          </div>
+
+          <!-- Mockup Search Input Simulation -->
+          <div class="p-5 border-b border-[#262626] bg-[#161616]/60">
+            <div class="flex items-center bg-[#262626] border border-[#0f62fe] px-3.5 py-2.5 gap-3">
+              <mat-icon class="text-[#0f62fe]">search</mat-icon>
+              <div class="flex-1 font-mono text-sm text-white flex items-center">
+                <span id="hero-typed-input" class="text-white"></span>
+                <span class="typewriter-cursor ml-0.5"></span>
+              </div>
+              <span class="carbon-tag carbon-tag-blue text-[10px] hidden sm:inline-flex">768-D EMBED</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-[#8d8d8d] font-mono mt-2 px-1">
+              <span>TRUY VẤN NGỮ NGHĨA TIẾNG VIỆT TỰ NHIÊN</span>
+              <span>KẾT QUẢ: 4 TÀI LIỆU TRÙNG KHỚP (0.012s)</span>
+            </div>
+          </div>
+
+          <!-- Mockup Search Results Stream -->
+          <div class="p-4 flex flex-col gap-3 max-h-[380px] overflow-y-auto">
+            
+            <!-- Result Item 1 -->
+            <button
+              type="button"
+              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[#0f62fe] transition-colors cursor-pointer text-left w-full"
+              (click)="openModal('preview', allSearchResults[0])"
+            >
+              <div class="flex items-start justify-between w-full">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 bg-[#fa4d56]/20 text-[#fa4d56] flex items-center justify-center font-mono text-xs">
+                    PDF
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm text-white flex items-center gap-2">
+                      <span>Highlands_Coffee_Invoice_Aug2024.pdf</span>
+                    </div>
+                    <div class="text-xs text-[#8d8d8d] font-mono">1.2 MB // Cập nhật: 18/08/2024</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 bg-[#42be65]/10 border border-[#42be65]/30 px-2 py-0.5 text-[#42be65] text-xs font-mono font-medium">
+                  <mat-icon class="text-xs scale-75">verified</mat-icon>
+                  <span>99.4% MATCH</span>
+                </div>
+              </div>
+
+              <!-- OCR Extract Highlight -->
+              <div class="bg-[#161616] p-2.5 border-l-2 border-[#0f62fe] text-xs text-[#c6c6c6] font-mono leading-relaxed w-full">
+                <span class="text-[#8d8d8d]">[TRÍCH XUẤT OCR]:</span>
+                TỔNG TIỀN: <span class="bg-[#0f62fe]/30 text-white px-1">245.000 VNĐ</span>. Chi tiết: 02 Cà phê phin sữa đá, 01 Trà sen vàng. MST: 0302821264.
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-[#8d8d8d] pt-1 w-full">
+                <div class="flex items-center gap-2">
+                  <span class="carbon-tag text-[9px] py-0.5">MÃ HÓA AES-256</span>
+                  <span class="carbon-tag text-[9px] py-0.5">PRESIGNED 10M</span>
+                </div>
+                <span class="text-[#0f62fe] hover:underline flex items-center gap-0.5 font-medium">
+                  Chi tiết <mat-icon class="text-xs">chevron_right</mat-icon>
+                </span>
+              </div>
+            </button>
+
+            <!-- Result Item 2 -->
+            <button
+              type="button"
+              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[#0f62fe] transition-colors cursor-pointer text-left w-full"
+              (click)="openModal('preview', allSearchResults[1])"
+            >
+              <div class="flex items-start justify-between w-full">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 bg-[#0f62fe]/20 text-[#78a9ff] flex items-center justify-center font-mono text-xs">
+                    DOC
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm text-white">HopDong_ThueCanHo_Landmark_Signed.pdf</div>
+                    <div class="text-xs text-[#8d8d8d] font-mono">4.8 MB // Cập nhật: 12/05/2024</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 bg-[#42be65]/10 border border-[#42be65]/30 px-2 py-0.5 text-[#42be65] text-xs font-mono font-medium">
+                  <mat-icon class="text-xs scale-75">verified</mat-icon>
+                  <span>97.8% MATCH</span>
+                </div>
+              </div>
+              <div class="bg-[#161616] p-2.5 border-l-2 border-[#4589ff] text-xs text-[#c6c6c6] font-mono leading-relaxed w-full">
+                <span class="text-[#8d8d8d]">[TRÍCH XUẤT OCR]:</span>
+                HỢP ĐỒNG THUÊ: <span class="bg-[#0f62fe]/30 text-white px-1">Landmark 81</span>. Giá: 28.000.000 VNĐ/tháng. Thời hạn 12 tháng.
+              </div>
+            </button>
+
+            <!-- Result Item 3 -->
+            <button
+              type="button"
+              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[#0f62fe] transition-colors cursor-pointer text-left w-full"
+              (click)="openModal('preview', allSearchResults[2])"
+            >
+              <div class="flex items-start justify-between w-full">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 bg-[#8a3ffc]/20 text-[#be95ff] flex items-center justify-center font-mono text-xs">
+                    IMG
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm text-white">System_Architecture_Payment_Flow.png</div>
+                    <div class="text-xs text-[#8d8d8d] font-mono">3.1 MB // Vision OCR</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 bg-[#0f62fe]/10 border border-[#0f62fe]/30 px-2 py-0.5 text-[#78a9ff] text-xs font-mono font-medium">
+                  <span>95.6% MATCH</span>
+                </div>
+              </div>
+            </button>
+
+          </div>
+
+          <!-- Mockup Status Footer -->
+          <div class="bg-[#262626] px-4 py-2 flex items-center justify-between text-[11px] font-mono text-[#8d8d8d] border-t border-[#333333]">
+            <span>HASH: sha256:7f8e...4b1c</span>
+            <span class="text-[#4589ff]">CÔ LẬP THEO TÀI KHOẢN</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 3. HOW SEEKASSET WORKS (Pinned Sequence)   -->
+  <!-- ========================================== -->
+  <section id="how-it-works" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center">
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      
+      <!-- Section Header -->
+      <div class="mb-16 max-w-2xl">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-2 h-2 bg-[#0f62fe]"></div>
+          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+            KIẾN TRÚC DỮ LIỆU ĐA TẦNG
+          </span>
+        </div>
+        <h2 class="heading-04 text-white">Cách SeekAsset hoạt động</h2>
+        <p class="body-long-01 text-[#c6c6c6] mt-2">
+          Quy trình tự động chuyển hóa file thô hỗn tạp thành các điểm dữ liệu vector đa chiều có thể truy vấn bằng ngôn ngữ tự nhiên trong chớp mắt.
+        </p>
+      </div>
+
+      <!-- Interactive 3-Step Sequence Pipeline -->
+      <div class="relative grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        
+        <!-- SVG Pipeline Overlay Connector Lines (Visible on Desktop) -->
+        <svg
+          class="hidden md:block absolute top-1/2 left-0 w-full h-12 -translate-y-1/2 pointer-events-none z-0"
+          preserveAspectRatio="none"
+          viewBox="0 0 1000 50"
+        >
+          <!-- Background Track 1 -->
+          <line x1="280" y1="25" x2="380" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Animated Draw Path 1 -->
+          <path id="pipeline-path-1" d="M 280 25 L 380 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
+
+          <!-- Background Track 2 -->
+          <line x1="620" y1="25" x2="720" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Animated Draw Path 2 -->
+          <path id="pipeline-path-2" d="M 620 25 L 720 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
+        </svg>
+
+        <!-- STEP 1 CARD -->
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[#1c1c1c]">
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <span class="font-mono text-3xl font-light text-[#0f62fe]">01</span>
+              <span class="carbon-tag text-[10px]">INGESTION & SHARDING</span>
+            </div>
+            
+            <h3 class="heading-02 text-white mb-3">Thu nạp trực tiếp lên Cloudflare R2</h3>
+            <p class="body-short-01 mb-6">
+              Khi bạn kéo thả tài liệu (PDF, hình ảnh, tài liệu, bảng tính...), tệp được tải thẳng lên Cloudflare R2 qua presigned multipart upload — không đi qua máy chủ trung gian, hỗ trợ tốt cả file lớn.
+            </p>
+          </div>
+
+          <!-- Step Feature Visual Pill -->
+          <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[#c6c6c6]">
+              <span>Mã hóa:</span>
+              <span class="text-[#42be65]">Cloudflare R2 (tại nơi lưu trữ)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Định dạng:</span>
+              <span>PDF, ảnh, Office, code và hầu hết loại file</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Tốc độ:</span>
+              <span class="text-[#78a9ff]">Presigned Multipart Upload</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 CARD -->
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[#1c1c1c]">
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <span class="font-mono text-3xl font-light text-[#0f62fe]">02</span>
+              <span class="carbon-tag carbon-tag-blue text-[10px]">AI OCR & VECTORIZATION</span>
+            </div>
+            
+            <h3 class="heading-02 text-white mb-3">Trích xuất OCR & Vector hóa</h3>
+            <p class="body-short-01 mb-6">
+              Mô hình thị giác máy quét toàn bộ văn bản in, chữ viết tay, bảng số liệu phức tạp và chuyển đổi toàn bộ ngữ cảnh thành vector nhúng 768 chiều với pgvector và Gemini.
+            </p>
+          </div>
+
+          <!-- Step Feature Visual Pill -->
+          <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[#c6c6c6]">
+              <span>Không gian vector:</span>
+              <span class="text-[#78a9ff]">768-D Dense Embeddings</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Nhận diện OCR:</span>
+              <span class="text-[#42be65]">Chữ in, viết tay, bảng biểu (Gemini Vision)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Từ khoá:</span>
+              <span>Song ngữ Việt + Anh</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 CARD -->
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[#1c1c1c]">
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <span class="font-mono text-3xl font-light text-[#0f62fe]">03</span>
+              <span class="carbon-tag carbon-tag-green text-[10px]">SEMANTIC RETRIEVAL</span>
+            </div>
+            
+            <h3 class="heading-02 text-white mb-3">Tìm kiếm ngữ nghĩa & Tải tức thì</h3>
+            <p class="body-short-01 mb-6">
+              Gõ câu hỏi hoặc ý nghĩ tự nhiên của bạn. Hệ thống hợp nhất 3 nhánh tìm kiếm bằng Reciprocal Rank Fusion và trả về đoạn trích khớp nhất cùng liên kết tải presigned an toàn.
+            </p>
+          </div>
+
+          <!-- Step Feature Visual Pill -->
+          <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[#c6c6c6]">
+              <span>Xếp hạng:</span>
+              <span class="text-[#42be65]">Cosine Similarity + RRF</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Thời gian phản hồi:</span>
+              <span class="text-[#78a9ff]">Vài giây (AI embedding thời gian thực)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Bảo mật tải về:</span>
+              <span>Presigned Expiring Token</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 4. FEATURE BENTO SHUTTER GRID (300vh Pin)  -->
+  <!-- ========================================== -->
+  <section id="features" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center overflow-hidden">
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative">
+      
+      <!-- Section Title -->
+      <div class="mb-12 max-w-2xl z-20 relative">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-2 h-2 bg-[#0f62fe]"></div>
+          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+            HỆ SINH THÁI TÍNH NĂNG TOÀN DIỆN
+          </span>
+        </div>
+        <h2 class="heading-04 text-white">Kiến trúc Bento Shutter Đột phá</h2>
+        <p class="body-long-01 text-[#c6c6c6]">
+          Cuộn chuột để phân rã 8 khối module và khám phá triết lý bảo mật cốt lõi bên dưới.
+        </p>
+      </div>
+
+      <!-- Bento Shutter Container (Overlayed over glowing message) -->
+      <div class="bento-shutter-container relative min-h-[580px]">
+        
+        <!-- Underlying Glowing Tech Message Revealed Upon Scroll Scatter -->
+        <div class="shutter-glow-message px-4 text-center">
+          <div class="w-16 h-1 bg-[#0f62fe] mb-6"></div>
+          <h2 class="glowing-tech-text text-3xl sm:text-5xl lg:text-6xl font-light max-w-4xl uppercase leading-tight mb-4">
+            BẢO MẬT &amp; TRÍ TUỆ TRONG TỪNG DÒNG CODE
+          </h2>
+          <p class="font-mono text-sm sm:text-base text-[#78a9ff] max-w-2xl mb-6">
+            // HYBRID STORAGE ARCHITECTURE POWERED BY IBM CARBON &amp; GEMINI VECTORS
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-4">
+            <span class="carbon-tag carbon-tag-blue">POSTGRESQL + PGVECTOR</span>
+            <span class="carbon-tag carbon-tag-blue">HYBRID RRF SEARCH</span>
+            <span class="carbon-tag carbon-tag-green">CÔ LẬP THEO TÀI KHOẢN</span>
+          </div>
+        </div>
+
+        <!-- 8 Bento Grid Tiles -->
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-10">
+          
+          @for (feature of bentoFeatures; track feature.id) {
+            <div
+              [id]="feature.id"
+              class="bento-tile carbon-card p-5 flex flex-col justify-between {{ feature.colSpan }}"
+            >
+              <div>
+                <!-- Top Tag & Icon -->
+                <div class="flex items-center justify-between mb-4">
+                  <span class="carbon-tag text-[10px]">{{ feature.tag }}</span>
+                  <div class="w-8 h-8 bg-[#262626] flex items-center justify-center text-[#78a9ff]">
+                    <mat-icon class="text-lg">{{ feature.icon }}</mat-icon>
+                  </div>
+                </div>
+
+                <!-- Title & Subtitle -->
+                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title }}</h3>
+                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle }}</div>
+                
+                <!-- Description -->
+                <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed mb-4">
+                  {{ feature.description }}
+                </p>
+              </div>
+
+              <!-- Tech Spec Footer -->
+              <div class="pt-3 border-t border-[#262626] flex items-center justify-between text-[11px] font-mono text-[#8d8d8d]">
+                <span>{{ feature.techSpec }}</span>
+                <mat-icon class="text-xs text-[#0f62fe]">arrow_forward</mat-icon>
+              </div>
+            </div>
+          }
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 5. INTERACTIVE SEARCH SANDBOX EXPLORER    -->
+  <!-- ========================================== -->
+  <section id="sandbox" class="relative py-24 bg-[#1c1c1c] border-t border-[#262626]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-2 h-2 bg-[#0f62fe]"></div>
+            <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+              LIVE INTERACTIVE PLAYGROUND
+            </span>
+          </div>
+          <h2 class="heading-04 text-white">Trải nghiệm Thử Tìm Kiếm Thực Tế</h2>
+          <p class="body-long-01 text-[#c6c6c6] mt-2 max-w-xl">
+            Thử lọc các danh mục tài liệu thực tế và quan sát cách hệ thống phân giải độ khớp ngữ nghĩa và trích xuất nội dung chính.
+          </p>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            (click)="setFilter('all')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'all'"
+            [class.border-[#0f62fe]]="selectedFilter() === 'all'"
+          >
+            Tất cả ({{ allSearchResults.length }})
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('invoice')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'invoice'"
+          >
+            Hóa đơn & Biên nhận
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('contract')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'contract'"
+          >
+            Hợp đồng & Pháp lý
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('tech')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'tech'"
+          >
+            Sơ đồ & Kỹ thuật
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('sheet')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'sheet'"
+          >
+            Bảng kê chi phí
+          </button>
+        </div>
+      </div>
+
+      <!-- Feedback toast -->
+      @if (copyFeedback()) {
+        <div class="fixed bottom-6 right-6 z-50 bg-[#0f62fe] text-white px-4 py-3 font-mono text-xs flex items-center gap-2 shadow-2xl">
+          <mat-icon class="text-sm">check_circle</mat-icon>
+          <span>{{ copyFeedback() }}</span>
+        </div>
+      }
+
+      <!-- Sandbox Grid List -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        @for (item of filteredResults(); track item.id) {
+          <div class="carbon-card p-5 flex flex-col justify-between gap-4 hover:border-[#0f62fe] transition-all">
+            
+            <div>
+              <!-- Header info -->
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-[#262626] border border-[#393939] flex items-center justify-center font-mono text-xs text-[#78a9ff]">
+                    {{ item.fileType.split(' ')[0] }}
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      class="font-medium text-base text-white hover:text-[#78a9ff] transition-colors cursor-pointer text-left bg-transparent border-0 p-0 focus:outline-none"
+                      (click)="openModal('preview', item)"
+                    >
+                      {{ item.title }}
+                    </button>
+                    <div class="flex items-center gap-3 text-xs text-[#8d8d8d] font-mono mt-0.5">
+                      <span>{{ item.categoryLabel }}</span>
+                      <span>•</span>
+                      <span>{{ item.fileSize }}</span>
+                      <span>•</span>
+                      <span>{{ item.updatedDate }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end">
+                  <span class="carbon-tag carbon-tag-green text-[10px]">{{ item.matchScore }}% MATCH</span>
+                  <span class="text-[10px] font-mono text-[#8d8d8d] mt-1">Dist: {{ item.vectorDistance }}</span>
+                </div>
+              </div>
+
+              <!-- OCR Snippet block -->
+              <div class="bg-[#161616] p-3 border-l-2 border-[#0f62fe] text-xs text-[#c6c6c6] font-mono leading-relaxed mb-4">
+                <div class="text-[10px] text-[#8d8d8d] uppercase tracking-wider mb-1">Trích xuất ngữ cảnh AI:</div>
+                <p>{{ item.ocrSnippet }}</p>
+              </div>
+
+              <!-- Extracted Entities Tags -->
+              <div class="flex flex-wrap gap-2 mb-2">
+                @for (entity of item.extractedEntities; track entity.label) {
+                  <div class="bg-[#262626] border border-[#393939] px-2.5 py-1 text-[11px] font-mono flex items-center gap-1.5">
+                    <span class="text-[#8d8d8d]">{{ entity.label }}:</span>
+                    <span class="text-white font-medium">{{ entity.value }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Actions row -->
+            <div class="pt-3 border-t border-[#262626] flex items-center justify-between">
+              <button
+                type="button"
+                (click)="openModal('preview', item)"
+                class="text-xs text-[#78a9ff] hover:text-white font-mono flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+              >
+                <mat-icon class="text-sm">visibility</mat-icon>
+                <span>Xem chi tiết OCR</span>
+              </button>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="copyToClipboard(item.id, 'Vector Hash ID')"
+                  class="carbon-tag text-[10px] cursor-pointer hover:border-[#525252]"
+                  title="Sao chép Vector Hash"
+                >
+                  <mat-icon class="text-xs">content_copy</mat-icon>
+                  <span>HASH</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="openModal('signup')"
+                  class="btn-primary text-xs py-1.5 px-3 flex items-center gap-1"
+                >
+                  <mat-icon class="text-xs">download</mat-icon>
+                  <span>Tải Presigned</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        }
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 6. SECURITY & PRIVACY SECTION              -->
+  <!-- ========================================== -->
+  <section id="security" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex items-center">
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <!-- Left Column: Security Narrative & Cards -->
+      <div class="lg:col-span-7 flex flex-col gap-6">
+        
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-[#0f62fe]"></div>
+          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+            BẢO MẬT ĐẲNG CẤP DOANH NGHIỆP
+          </span>
+        </div>
+
+        <h2 class="heading-04 text-white">Cô Lập Dữ Liệu &amp; Truy Cập Có Thời Hạn</h2>
+
+        <p class="body-long-01 text-[#c6c6c6]">
+          Dữ liệu của bạn thuộc về bạn. Mọi truy vấn tìm kiếm — kể cả AI Search — luôn giới hạn trong đúng tài khoản của bạn: không có cách nào một người dùng thấy được file hay nội dung trích xuất của người khác, dù trùng từ khoá.
+        </p>
+
+        <!-- 3 Security Pillars -->
+        <div class="flex flex-col gap-4 mt-2">
+
+          <!-- Pillar 1 -->
+          <div class="carbon-card p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-[#0f62fe]/10 border border-[#0f62fe]/40 text-[#78a9ff] flex items-center justify-center shrink-0">
+              <mat-icon>lock</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-base font-medium text-white mb-1">Mã hóa tại nơi lưu trữ &amp; TLS khi truyền tải</h3>
+              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+                Tệp được lưu trên Cloudflare R2 với mã hoá mặc định ở trạng thái nghỉ; mọi kết nối giữa trình duyệt và máy chủ đều qua HTTPS/TLS.
+              </p>
+            </div>
+          </div>
+
+          <!-- Pillar 2 -->
+          <div class="carbon-card p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-[#42be65]/10 border border-[#42be65]/40 text-[#42be65] flex items-center justify-center shrink-0">
+              <mat-icon>vpn_key</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-base font-medium text-white mb-1">Liên Kết Tải Về Có Thời Hạn</h3>
+              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+                Khi cần tải tệp, máy chủ cấp một liên kết presigned có chữ ký, tự hết hạn sau 10 phút. Không có URL công khai tĩnh nào tồn tại trong hệ thống.
+              </p>
+            </div>
+          </div>
+
+          <!-- Pillar 3 -->
+          <div class="carbon-card p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-[#8a3ffc]/10 border border-[#8a3ffc]/40 text-[#be95ff] flex items-center justify-center shrink-0">
+              <mat-icon>shield</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-base font-medium text-white mb-1">Riêng Tư Theo Từng Tài Khoản</h3>
+              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+                Vector nhúng và nội dung trích xuất (OCR, caption ảnh) được lọc theo userId ở tầng truy vấn — tách biệt tuyệt đối giữa các tài khoản, không có tìm kiếm chéo.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Right Column: Interactive Animated SVG Security Shield -->
+      <div class="lg:col-span-5 flex flex-col items-center justify-center relative">
+        
+        <!-- Shield Container Frame -->
+        <div class="relative w-full max-w-[380px] bg-[#1c1c1c] border border-[#393939] p-6 flex flex-col items-center">
+          
+          <div class="w-full flex items-center justify-between border-b border-[#262626] pb-3 mb-6 font-mono text-xs text-[#8d8d8d]">
+            <span>SEEKASSET_GUARD // ACCESS CONTROL</span>
+            <span class="text-[#42be65] flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[#42be65]"></span>
+              LIVE_SHIELD
+            </span>
+          </div>
+
+          <!-- Animated SVG Shield Graphic -->
+          <div class="relative w-64 h-64 flex items-center justify-center">
+            
+            <svg class="w-full h-full" viewBox="0 0 300 300">
+              <!-- Outer Hexagonal Cypher Ring 1 -->
+              <circle
+                cx="150"
+                cy="150"
+                r="135"
+                fill="none"
+                stroke="#262626"
+                stroke-width="1.5"
+                stroke-dasharray="6 8"
+                class="shield-ring-rotate"
+              />
+
+              <!-- Inner Concentric Ring 2 -->
+              <circle
+                cx="150"
+                cy="150"
+                r="115"
+                fill="none"
+                stroke="#393939"
+                stroke-width="1"
+                stroke-dasharray="12 12"
+                class="shield-ring-reverse"
+              />
+
+              <!-- Outer Shield Path with Scroll-Triggered Draw -->
+              <path
+                d="M 150 40 L 230 75 L 230 160 C 230 215 150 255 150 255 C 150 255 70 215 70 160 L 70 75 Z"
+                fill="rgba(15, 98, 254, 0.05)"
+                stroke="#0f62fe"
+                stroke-width="2.5"
+                class="shield-draw-path"
+              />
+
+              <!-- Inner Shield Accent -->
+              <path
+                d="M 150 65 L 210 92 L 210 155 C 210 198 150 230 150 230 C 150 230 90 198 90 155 L 90 92 Z"
+                fill="none"
+                stroke="#4589ff"
+                stroke-width="1.5"
+                stroke-dasharray="4 4"
+                class="shield-draw-path"
+              />
+
+              <!-- Central Keylock Core -->
+              <circle cx="150" cy="135" r="16" fill="#0f62fe" />
+              <rect x="145" y="135" width="10" height="28" fill="#0f62fe" />
+
+              <!-- Active Status Indicators -->
+              <circle cx="150" cy="135" r="5" fill="#ffffff" />
+            </svg>
+
+            <!-- Scanning Laser Line Overlay -->
+            <div class="absolute inset-x-8 h-0.5 bg-gradient-to-r from-transparent via-[#42be65] to-transparent shield-scan-line pointer-events-none"></div>
+
+          </div>
+
+          <!-- Real-Time Cryptographic Status Monitor -->
+          <div class="w-full mt-6 pt-4 border-t border-[#262626] font-mono text-[11px] text-[#8d8d8d] flex flex-col gap-1.5">
+            <div class="flex justify-between">
+              <span>STORAGE ENCRYPTION:</span>
+              <span class="text-white">AES-256 (Cloudflare R2)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>ACCESS MODEL:</span>
+              <span class="text-[#78a9ff]">Per-user scoped</span>
+            </div>
+            <div class="flex justify-between">
+              <span>CROSS-USER LEAK:</span>
+              <span class="text-[#42be65]">0% (đã kiểm thử)</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 8. BOTTOM CTA SECTION                      -->
+  <!-- ========================================== -->
+  <section id="pricing" class="relative py-28 bg-[#161616] border-t border-[#262626] text-center carbon-grid-lines">
+    
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="inline-flex items-center gap-2 mb-6">
+        <div class="w-2 h-2 bg-[#0f62fe]"></div>
+        <span class="font-mono text-xs text-[#78a9ff] tracking-wider uppercase">
+          BẮT ĐẦU NGAY HÔM NAY // 15GB MIỄN PHÍ TRỌN ĐỜI
+        </span>
+      </div>
+
+      <h2 class="display-01 text-white mb-6">
+        Sẵn sàng giải phóng kho dữ liệu cá nhân của bạn?
+      </h2>
+
+      <p class="body-long-01 text-[#c6c6c6] max-w-2xl mx-auto mb-10">
+        Trải nghiệm sự tiện lợi của việc không bao giờ cần phải nhớ tên file hay lục lọi thư mục cũ. Đăng ký tài khoản ngay chỉ trong 30 giây.
+      </p>
+
+      <!-- Instant Registration Form -->
+      <div class="max-w-md mx-auto flex flex-col sm:flex-row gap-2 mb-6">
+        <input
+          type="email"
+          id="cta-email-input"
+          aria-label="Email công việc"
+          [(ngModel)]="registerEmail"
+          placeholder="Nhập email công việc của bạn..."
+          class="flex-1 bg-[#262626] border border-[#393939] focus:border-[#0f62fe] px-4 py-3 text-sm text-white font-mono placeholder:text-[#8d8d8d] focus:outline-none rounded-none"
+        />
+        <button
+          type="button"
+          (click)="handleRegisterSubmit()"
+          class="btn-primary justify-center px-6"
+        >
+          <span>Khởi tạo Vault</span>
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+      </div>
+
+      <!-- Trust signals -->
+      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[#8d8d8d] font-mono">
+        <span class="flex items-center gap-1.5">
+          <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
+          Không yêu cầu thẻ tín dụng
+        </span>
+        <span class="flex items-center gap-1.5">
+          <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
+          Không có đường dẫn tệp công khai
+        </span>
+        <span class="flex items-center gap-1.5">
+          <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
+          Tải cả thư mục dạng .zip bất kỳ lúc nào
+        </span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 9. FOOTER SECTION (IBM Carbon Dark)        -->
+  <!-- ========================================== -->
+  <footer class="bg-[#111111] border-t border-[#262626] pt-16 pb-12 text-sm text-[#8d8d8d]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-[#262626]">
+        
+        <!-- Brand Column -->
+        <div class="md:col-span-2 flex flex-col gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-7 h-7 bg-[#0f62fe] flex items-center justify-center text-white font-mono font-bold text-sm">
+              SA
+            </div>
+            <span class="font-sans font-semibold text-lg text-white">SeekAsset</span>
+          </div>
+          <p class="text-xs text-[#8d8d8d] leading-relaxed max-w-sm">
+            Nền tảng lưu trữ và tìm kiếm tệp bằng trí tuệ nhân tạo hybrid theo ngôn ngữ tự nhiên. Được thiết kế theo ngôn ngữ thiết kế IBM Carbon.
+          </p>
+        </div>
+
+        <!-- Col 1: Sản phẩm -->
+        <div class="flex flex-col gap-3">
+          <div class="font-mono text-xs text-white uppercase tracking-wider">SẢN PHẨM</div>
+          <a href="#features" class="hover:text-white transition-colors">Semantic Search</a>
+          <a href="#features" class="hover:text-white transition-colors">OCR Trích xuất Bảng</a>
+          <a href="#security" class="hover:text-white transition-colors">Cô Lập Theo Tài Khoản</a>
+          <a href="#features" class="hover:text-white transition-colors">Presigned Edge Delivery</a>
+          <a href="#pricing" class="hover:text-white transition-colors">Bảng giá cá nhân</a>
+        </div>
+
+        <!-- Col 2: Công nghệ -->
+        <div class="flex flex-col gap-3">
+          <div class="font-mono text-xs text-white uppercase tracking-wider">CÔNG NGHỆ</div>
+          <a href="#how-it-works" class="hover:text-white transition-colors">pgvector Indexing</a>
+          <a href="#how-it-works" class="hover:text-white transition-colors">Gemini Multimodal API</a>
+          <a href="#security" class="hover:text-white transition-colors">Mã hóa AES-256-GCM</a>
+          <a href="#how-it-works" class="hover:text-white transition-colors">Data Pipeline SDK</a>
+          <a href="#features" class="hover:text-white transition-colors">Reranking (BGE-Reranker)</a>
+        </div>
+
+        <!-- Col 3: Pháp lý & Bảo mật -->
+        <div class="flex flex-col gap-3">
+          <div class="font-mono text-xs text-white uppercase tracking-wider">PHÁP LÝ</div>
+          <a href="#security" class="hover:text-white transition-colors">Cam kết Quyền riêng tư</a>
+          <a href="#security" class="hover:text-white transition-colors">Chính sách Bảo mật Dữ liệu</a>
+          <a href="#security" class="hover:text-white transition-colors">Cách Chúng Tôi Bảo Vệ Dữ Liệu</a>
+          <a href="#pricing" class="hover:text-white transition-colors">Điều Khoản Sử Dụng</a>
+          <a href="#pricing" class="hover:text-white transition-colors">Liên Hệ Hỗ Trợ</a>
+        </div>
+
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs">
+        <div>
+          © 2026 SeekAsset Technologies. All rights reserved. Inspired by IBM Carbon Design System.
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="hover:text-white cursor-pointer">VIETNAMESE (VI)</span>
+          <span class="hover:text-white cursor-pointer">ENGLISH (EN)</span>
+          <span class="hover:text-white cursor-pointer">STATUS</span>
+        </div>
+      </div>
+
+    </div>
   </footer>
+
+  <!-- ========================================== -->
+  <!-- 10. MODALS (Registration / File Detail)    -->
+  <!-- ========================================== -->
+  @if (showModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div class="relative w-full max-w-lg bg-[#1c1c1c] border border-[#393939] shadow-2xl p-6 flex flex-col gap-5 animate-in fade-in zoom-in duration-200">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-[#262626] pb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2.5 h-2.5 bg-[#0f62fe]"></div>
+            <h3 class="text-lg font-medium text-white">
+              @if (modalType() === 'signup') {
+                Khởi tạo Tài khoản SeekAsset Vault
+              } @else if (modalType() === 'preview' && selectedResult()) {
+                Chi tiết OCR: {{ selectedResult()?.title }}
+              } @else {
+                Bảo mật &amp; Riêng tư
+              }
+            </h3>
+          </div>
+          <button
+            type="button"
+            (click)="closeModal()"
+            class="text-[#8d8d8d] hover:text-white p-1"
+            aria-label="Close dialog"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <!-- Modal Body Content -->
+        @if (modalType() === 'signup') {
+          @if (registerSuccess()) {
+            <div class="p-6 bg-[#42be65]/10 border border-[#42be65] text-center flex flex-col items-center gap-3">
+              <mat-icon class="text-4xl text-[#42be65]">check_circle</mat-icon>
+              <div class="text-lg font-medium text-white">Chào mừng bạn đến với SeekAsset!</div>
+              <p class="text-xs text-[#c6c6c6] font-mono">
+                Liên kết kích hoạt Vault an toàn đã được gửi tới email của bạn. Hãy kiểm tra hòm thư.
+              </p>
+            </div>
+          } @else {
+            <div class="flex flex-col gap-4">
+              <p class="text-xs text-[#c6c6c6] leading-relaxed">
+                Tạo tài khoản SeekAsset miễn phí. Tận hưởng 15GB dung lượng với đầy đủ tính năng Semantic Search và OCR đa phương thức.
+              </p>
+              
+              <div class="flex flex-col gap-1.5">
+                <label for="modal-register-email" class="text-xs font-mono text-[#8d8d8d]">EMAIL CỦA BẠN</label>
+                <input
+                  type="email"
+                  id="modal-register-email"
+                  [(ngModel)]="registerEmail"
+                  placeholder="name@company.com"
+                  class="bg-[#262626] border border-[#393939] focus:border-[#0f62fe] p-3 text-sm text-white font-mono focus:outline-none"
+                />
+              </div>
+
+              <div class="flex flex-col gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="handleRegisterSubmit()"
+                  class="btn-primary w-full justify-center"
+                >
+                  <span>Tạo tài khoản ngay (Miễn phí)</span>
+                  <mat-icon>arrow_forward</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  (click)="closeModal()"
+                  class="btn-secondary w-full justify-center text-xs"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          }
+        } @else if (modalType() === 'preview' && selectedResult(); as res) {
+          <div class="flex flex-col gap-4 font-mono text-xs">
+            
+            <div class="bg-[#161616] p-4 border border-[#262626] flex flex-col gap-2">
+              <div class="text-[#8d8d8d] uppercase tracking-wider text-[10px]">ĐOẠN TRÍCH OCR &amp; NGỮ NGHĨA:</div>
+              <div class="text-white text-sm leading-relaxed font-sans">{{ res.ocrSnippet }}</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-[#262626] p-2.5 border border-[#393939]">
+                <div class="text-[#8d8d8d] text-[10px]">ĐỘ KHỚP VECTOR:</div>
+                <div class="text-[#42be65] text-sm font-bold">{{ res.matchScore }}% (d = {{ res.vectorDistance }})</div>
+              </div>
+              <div class="bg-[#262626] p-2.5 border border-[#393939]">
+                <div class="text-[#8d8d8d] text-[10px]">ĐỊNH DẠNG TỆP:</div>
+                <div class="text-[#78a9ff] text-sm font-bold">{{ res.fileType }} ({{ res.fileSize }})</div>
+              </div>
+            </div>
+
+            <div class="bg-[#262626] p-3 border border-[#393939] flex flex-col gap-1.5">
+              <div class="text-[#8d8d8d] text-[10px]">THÔNG TIN NỔI BẬT TRONG TÀI LIỆU:</div>
+              @for (entity of res.extractedEntities; track entity.label) {
+                <div class="flex justify-between text-[#c6c6c6]">
+                  <span>{{ entity.label }}:</span>
+                  <span class="text-white font-semibold">{{ entity.value }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                (click)="copyToClipboard(res.id, 'Token ID')"
+                class="carbon-tag cursor-pointer hover:border-[#525252]"
+              >
+                <mat-icon class="text-xs">content_copy</mat-icon>
+                <span>Sao chép ID</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="openModal('signup')"
+                class="btn-primary text-xs py-2 px-4"
+              >
+                <mat-icon class="text-xs">download</mat-icon>
+                <span>Tải Presigned Link</span>
+              </button>
+            </div>
+
+          </div>
+        }
+
+      </div>
+    </div>
+  }
+
 </div>

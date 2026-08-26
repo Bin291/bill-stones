@@ -1,93 +1,314 @@
-/* Landing page — nav + footer tối giản, phong cách IBM Carbon Gray 100 dark.
-   Namespaced bằng tiền tố "landing-" để không đụng global styles.css dùng
-   chung cho phần app đã đăng nhập. Cảnh chính nằm trong <app-bento-shutter>. */
+/* landing.css - IBM Carbon Design System Adaptations */
 
 :host {
   display: block;
-  background: #161616;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #161616;
   color: #f4f4f4;
-  font-family: 'IBM Plex Sans', 'Roboto', sans-serif;
+  overflow-x: hidden;
 }
 
-/* ---------- Nav ---------- */
-.landing-nav {
-  display: flex;
+/* IBM Carbon Precision Typography */
+.display-01 {
+  font-size: clamp(2.75rem, 5.5vw, 4.75rem);
+  font-weight: 300;
+  line-height: 1.14;
+  letter-spacing: -0.5px;
+}
+
+.heading-04 {
+  font-size: clamp(1.8rem, 3.2vw, 2.625rem);
+  font-weight: 300;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+}
+
+.heading-03 {
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.33;
+}
+
+.heading-02 {
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.body-long-01 {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.16px;
+  color: #c6c6c6;
+}
+
+.body-short-01 {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0.16px;
+  color: #a8a8a8;
+}
+
+.label-01 {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.33;
+  letter-spacing: 0.32px;
+}
+
+/* Carbon Geometric Surfaces - Strict 0px Corners */
+.carbon-card {
+  background-color: #1c1c1c;
+  border: 1px solid #262626;
+  border-radius: 0px !important;
+  transition: border-color 0.2s cubic-bezier(0.2, 0, 0.38, 0.9), background-color 0.2s cubic-bezier(0.2, 0, 0.38, 0.9);
+}
+
+.carbon-card:hover {
+  border-color: #525252;
+  background-color: #222222;
+}
+
+.carbon-card-interactive {
+  background-color: #1c1c1c;
+  border: 1px solid #262626;
+  border-radius: 0px !important;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0.38, 0.9);
+}
+
+.carbon-card-interactive:hover {
+  border-color: #0f62fe;
+  background-color: #222222;
+}
+
+/* Carbon Button Styles */
+.btn-primary {
+  background-color: #0f62fe;
+  color: #ffffff;
+  border: 1px solid #0f62fe;
+  border-radius: 0px !important;
+  padding: 0.875rem 1.75rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.16px;
+  display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid #393939;
-  gap: 12px;
-}
-
-.landing-nav__brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 15px;
+  gap: 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
 }
 
-.landing-nav__brand img {
-  border-radius: 4px;
-  flex-shrink: 0;
+.btn-primary:hover {
+  background-color: #0050e6;
+  border-color: #0050e6;
 }
 
-.landing-nav__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.btn-primary:active {
+  background-color: #002d9c;
+  border-color: #002d9c;
 }
 
-@media (min-width: 640px) {
-  .landing-nav {
-    padding: 20px 24px;
-  }
-  .landing-nav__brand {
-    font-size: 16px;
-  }
-  .landing-nav__actions {
-    gap: 20px;
-  }
-}
-
-/* ---------- Buttons (Carbon-style, rectangular) ---------- */
-.landing-btn {
+.btn-secondary {
+  background-color: #393939;
+  color: #ffffff;
+  border: 1px solid #393939;
+  border-radius: 0px !important;
+  padding: 0.875rem 1.75rem;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.16px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 0 16px;
-  font-size: 14px;
-  text-decoration: none;
-  border: 1px solid transparent;
-  border-radius: 0;
+  justify-content: space-between;
+  gap: 1rem;
   cursor: pointer;
-  transition: background 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
-}
-.landing-btn--primary {
-  background: #0f62fe;
-  color: #fff;
-}
-.landing-btn--primary:hover {
-  background: #0353e9;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
 }
 
-.landing-link {
-  color: #f4f4f4;
-  text-decoration: none;
-  font-size: 14px;
-}
-.landing-link:hover {
-  text-decoration: underline;
+.btn-secondary:hover {
+  background-color: #4c4c4c;
+  border-color: #4c4c4c;
 }
 
-/* ---------- Footer ---------- */
-.landing-footer {
-  padding: 32px 24px;
-  text-align: center;
-  color: #6f6f6f;
-  font-size: 13px;
-  border-top: 1px solid #393939;
-  background: #161616;
+.btn-ghost {
+  background-color: transparent;
+  color: #0f62fe;
+  border: 1px solid transparent;
+  border-radius: 0px !important;
+  padding: 0.875rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-ghost:hover {
+  background-color: rgba(15, 98, 254, 0.1);
+  color: #4589ff;
+}
+
+/* Carbon Monospace Tag */
+.carbon-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.32px;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0px !important;
+  border: 1px solid #393939;
+  background-color: #262626;
+  color: #c6c6c6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  text-transform: uppercase;
+}
+
+.carbon-tag-blue {
+  border-color: rgba(15, 98, 254, 0.4);
+  background-color: rgba(15, 98, 254, 0.12);
+  color: #78a9ff;
+}
+
+.carbon-tag-green {
+  border-color: rgba(66, 190, 101, 0.4);
+  background-color: rgba(66, 190, 101, 0.12);
+  color: #6fdc8c;
+}
+
+/* 3D Mockup Container */
+.hero-mockup-wrapper {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.hero-3d-mockup {
+  transform: perspective(1200px) rotateX(16deg) rotateY(-6deg) rotateZ(2deg) translateY(40px) scale(0.92);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Blinking Cursor for Typewriter */
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.25em;
+  background-color: #0f62fe;
+  vertical-align: text-bottom;
+  animation: cursorBlink 0.9s infinite cubic-bezier(0.2, 0, 0.38, 0.9);
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* How-it-Works Pipeline SVG path styles */
+.pipeline-track {
+  stroke: #333333;
+  stroke-dasharray: 4 4;
+}
+
+.pipeline-draw {
+  stroke: #0f62fe;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.pulse-dot {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.4); }
+}
+
+/* Shutter Bento Grid Layout */
+.bento-shutter-container {
+  position: relative;
+  width: 100%;
+}
+
+.bento-tile {
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+  background: #1c1c1c;
+  border: 1px solid #262626;
+}
+
+.bento-tile:hover {
+  border-color: #0f62fe;
+  box-shadow: 0 0 20px rgba(15, 98, 254, 0.15);
+}
+
+.shutter-glow-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.glowing-tech-text {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
+  letter-spacing: 4px;
+  background: linear-gradient(180deg, #ffffff 0%, #78a9ff 50%, #0f62fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 40px rgba(15, 98, 254, 0.6);
+}
+
+/* Security Shield Animations */
+.shield-draw-path {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+}
+
+.shield-scan-line {
+  animation: scanLaser 3s infinite linear;
+}
+
+@keyframes scanLaser {
+  0% { transform: translateY(-120px); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(240px); opacity: 0; }
+}
+
+.shield-ring-rotate {
+  transform-origin: 150px 150px;
+  animation: spinShieldRing 24s infinite linear;
+}
+
+@keyframes spinShieldRing {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.shield-ring-reverse {
+  transform-origin: 150px 150px;
+  animation: spinShieldReverse 18s infinite linear;
+}
+
+@keyframes spinShieldReverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
 }

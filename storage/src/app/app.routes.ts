@@ -1,10 +1,12 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, rootGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  // Landing page công khai — marketing, không cần đăng nhập.
+  // Trang chủ công khai: đã đăng nhập -> /files; chưa thì hiển thị Landing ngay tại '/'.
   {
-    path: 'landing',
+    path: '',
+    pathMatch: 'full',
+    canActivate: [rootGuard],
     loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
   },
   {

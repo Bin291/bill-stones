@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export type SearchMatchBranch = 'dense' | 'bge' | 'fts';
+
 export interface SearchResult {
   id: string;
   name: string;
@@ -12,6 +14,8 @@ export interface SearchResult {
   folderId: string | null;
   hlsStatus: string | null;
   snippet: string | null;
+  similarity: number;
+  matchedBy: SearchMatchBranch[];
 }
 
 @Injectable({ providedIn: 'root' })
