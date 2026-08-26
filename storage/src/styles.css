@@ -29,6 +29,9 @@
   --warning: #f1c21b;
   --danger: #da1e28;
   --star: #f1c21b;
+  /* Thanh cuộn tuỳ chỉnh (kiểu Grok) */
+  --scroll-thumb: rgba(0, 0, 0, 0.22);
+  --scroll-thumb-hover: rgba(0, 0, 0, 0.38);
 
   /* Alias cũ -> Carbon (giữ tương thích class name) */
   --bg: var(--surface-1);
@@ -57,6 +60,8 @@
   --ink-subtle: #8d8d8d;
   --danger: #fa4d56;
   --star: #f1c21b;
+  --scroll-thumb: rgba(255, 255, 255, 0.22);
+  --scroll-thumb-hover: rgba(255, 255, 255, 0.4);
 
   --bg: var(--canvas);
   --surface: #262626;
@@ -76,6 +81,33 @@ body {
   line-height: 1.5;
   letter-spacing: 0.16px;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Thanh cuộn tuỳ chỉnh (kiểu Grok): mảnh, thumb bo tròn mờ, track trong suốt =====
+   Áp cho MỌI vùng cuộn (trang, sidebar, dialog, popover…) thay cho scrollbar mặc định. */
+* {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 999px;
+  /* viền trong suốt tạo khoảng đệm 2 bên → thumb trông mảnh như của Grok */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scroll-thumb-hover);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 * {
