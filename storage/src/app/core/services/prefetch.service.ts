@@ -6,6 +6,9 @@ import { BreadcrumbCrumb, Folder, StoredFile } from '../models/file.model';
 import { CATEGORIES } from '../util/file-types';
 import { Lens, ViewParams, buildListQuery, viewKey } from '../util/list-query';
 
+/** Trần thời gian hiện splash khi mới vào app (ms) — không vượt quá 5 giây. */
+const MAX_SPLASH_MS = 5000;
+
 /** Gói dữ liệu 1 khung nhìn (folders + files + breadcrumb). */
 export interface ViewBundle {
   folders: Folder[];
@@ -67,7 +70,10 @@ export class PrefetchService {
     ];
 
     const jobs: Promise<unknown>[] = lenses.map((l) => this.fetchView(l.mode, l.params));
-    await Promise.allSettled(jobs);
+    // Ẩn splash NGAY khi prefetch xong, NHƯNG tối đa 5 giây — nếu quá thì vào app
+    // luôn, các job còn lại chạy nền tiếp tục lấp cache.
+    const cap = new Promise<void>((r) => setTimeout(r, MAX_SPLASH_MS));
+    await Promise.race([Promise.allSettled(jobs), cap]);
     this._ready.set(true);
   }
 
