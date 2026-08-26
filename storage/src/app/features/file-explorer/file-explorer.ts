@@ -671,40 +671,15 @@ export class FileExplorer {
     this.renamingId.set(null);
     try {
       if (!newName || newName === oldName) return; // không đổi → thôi
+      // Đổi tên CHỈ mục đang chọn — KHÔNG đụng tới các mục khác (bỏ dồn số thứ tự).
       if (kind === 'file') {
         await firstValueFrom(this.filesApi.rename(id, newName));
       } else {
         await firstValueFrom(this.foldersApi.rename(id, newName));
-        await this.renumberAfter(oldName, id);
       }
       void this.revalidate();
     } finally {
       this.renamingBusy = false;
-    }
-  }
-
-  /**
-   * Sau khi đổi tên/loại 1 thư mục khỏi nhóm "Base (n)", các thư mục có index lớn
-   * hơn sẽ giảm 1 để giữ dãy liền mạch (New folder (3) → New folder (2)…).
-   */
-  private async renumberAfter(oldName: string, renamedId: string): Promise<void> {
-    const removed = this.parseIndexed(oldName);
-    const group = this.folders()
-      .filter((f) => f.id !== renamedId)
-      .map((f) => ({ f, ...this.parseIndexed(f.name) }))
-      .filter(
-        (x) => x.base.toLowerCase() === removed.base.toLowerCase() && x.index > removed.index,
-      )
-      .sort((a, b) => a.index - b.index);
-
-    for (const item of group) {
-      const ni = item.index - 1;
-      const target = ni <= 1 ? removed.base : `${removed.base} (${ni})`;
-      try {
-        await firstValueFrom(this.foldersApi.rename(item.f.id, target));
-      } catch {
-        /* fail-soft: bỏ qua mục lỗi, tiếp tục */
-      }
     }
   }
 
