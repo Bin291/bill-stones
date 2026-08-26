@@ -32,40 +32,29 @@
         class="btn"
         type="button"
         (click)="toggleSortMenu($event)"
-        [title]="('sort.label' | t) + ': ' + (sortLabelKey() | t) + ' · ' + ((order() === 'asc' ? 'sort.asc' : 'sort.desc') | t)"
+        [title]="('sort.label' | t) + ': ' + (sortLabelKey() | t)"
       >
         <span class="mi">swap_vert</span>
         {{ sortLabelKey() | t }}
-        <span class="mi sort-btn-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
         <span class="mi" style="font-size: 18px">{{ sortMenuOpen() ? 'expand_less' : 'expand_more' }}</span>
       </button>
       @if (sortMenuOpen()) {
         <div class="sort-pop" (click)="$event.stopPropagation()">
           <div class="sort-pop-head">{{ 'sort.label' | t }}</div>
-          <button class="sort-item" type="button" [class.on]="sort() === 'name'" (click)="setSort('name')">
-            <span class="mi">sort_by_alpha</span>
-            <span class="sort-item-label">{{ 'sort.name' | t }}</span>
-            @if (sort() === 'name') {
-              <span class="sort-dir-label">{{ (order() === 'asc' ? 'sort.asc' : 'sort.desc') | t }}</span>
-              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
-            }
-          </button>
-          <button class="sort-item" type="button" [class.on]="sort() === 'createdAt'" (click)="setSort('createdAt')">
-            <span class="mi">schedule</span>
-            <span class="sort-item-label">{{ 'sort.date' | t }}</span>
-            @if (sort() === 'createdAt') {
-              <span class="sort-dir-label">{{ (order() === 'asc' ? 'sort.asc' : 'sort.desc') | t }}</span>
-              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
-            }
-          </button>
-          <button class="sort-item" type="button" [class.on]="sort() === 'size'" (click)="setSort('size')">
-            <span class="mi">data_usage</span>
-            <span class="sort-item-label">{{ 'sort.size' | t }}</span>
-            @if (sort() === 'size') {
-              <span class="sort-dir-label">{{ (order() === 'asc' ? 'sort.asc' : 'sort.desc') | t }}</span>
-              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
-            }
-          </button>
+          @for (opt of sortOptions; track opt.labelKey) {
+            <button
+              class="sort-item"
+              type="button"
+              [class.on]="isActiveSort(opt.sort, opt.order)"
+              (click)="applySort(opt.sort, opt.order)"
+            >
+              <span class="mi">{{ opt.icon }}</span>
+              <span class="sort-item-label">{{ opt.labelKey | t }}</span>
+              @if (isActiveSort(opt.sort, opt.order)) {
+                <span class="mi sort-dir">check</span>
+              }
+            </button>
+          }
         </div>
       }
     </div>

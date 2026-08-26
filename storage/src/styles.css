@@ -1777,7 +1777,7 @@ body {
   top: calc(100% + 4px);
   left: 0;
   z-index: 50;
-  min-width: 180px;
+  min-width: 210px;
   background: var(--canvas);
   border: 1px solid var(--border);
   padding: 4px 0;
@@ -1815,6 +1815,7 @@ body {
 }
 .sort-item-label {
   flex: 1;
+  white-space: nowrap;
 }
 .sort-dir {
   font-size: 18px;

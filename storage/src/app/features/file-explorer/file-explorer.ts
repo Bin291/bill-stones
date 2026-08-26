@@ -121,17 +121,30 @@ export class FileExplorer {
   protected readonly sort = signal<ListFilesQuery['sort']>('createdAt');
   protected readonly order = signal<ListFilesQuery['order']>('desc');
   protected readonly sortMenuOpen = signal(false);
-  /** Nhãn trường đang sắp xếp — hiện trên nút để người dùng biết đang sắp theo gì. */
+
+  /** Các lựa chọn sắp xếp GỘP (trường + chiều) như kiểu shop — chọn 1 là ra ngay. */
+  protected readonly sortOptions: {
+    sort: NonNullable<ListFilesQuery['sort']>;
+    order: NonNullable<ListFilesQuery['order']>;
+    labelKey: string;
+    icon: string;
+  }[] = [
+    { sort: 'name', order: 'asc', labelKey: 'sort.nameAsc', icon: 'sort_by_alpha' },
+    { sort: 'name', order: 'desc', labelKey: 'sort.nameDesc', icon: 'sort_by_alpha' },
+    { sort: 'createdAt', order: 'desc', labelKey: 'sort.dateNew', icon: 'schedule' },
+    { sort: 'createdAt', order: 'asc', labelKey: 'sort.dateOld', icon: 'history' },
+    { sort: 'size', order: 'desc', labelKey: 'sort.sizeDesc', icon: 'data_usage' },
+    { sort: 'size', order: 'asc', labelKey: 'sort.sizeAsc', icon: 'data_usage' },
+  ];
+  /** Nhãn lựa chọn đang áp dụng — hiện trên nút để biết đang sắp theo kiểu gì. */
   protected readonly sortLabelKey = computed(() => {
-    switch (this.sort()) {
-      case 'name':
-        return 'sort.name';
-      case 'size':
-        return 'sort.size';
-      default:
-        return 'sort.date';
-    }
+    const s = this.sort();
+    const o = this.order();
+    return this.sortOptions.find((x) => x.sort === s && x.order === o)?.labelKey ?? 'sort.dateNew';
   });
+  protected isActiveSort(sort: string, order: string): boolean {
+    return this.sort() === sort && this.order() === order;
+  }
   protected readonly uploadMenuOpen = signal(false);
 
   protected readonly uploadBatches = signal<UploadBatch[]>([]);
@@ -367,13 +380,11 @@ export class FileExplorer {
     this.sortMenuOpen.update((v) => !v);
   }
 
-  setSort(field: NonNullable<ListFilesQuery['sort']>): void {
-    if (this.sort() === field) {
-      this.order.set(this.order() === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.sort.set(field);
-      this.order.set(field === 'name' ? 'asc' : 'desc');
-    }
+  /** Áp dụng 1 lựa chọn sắp xếp gộp (trường + chiều). */
+  applySort(sort: NonNullable<ListFilesQuery['sort']>, order: NonNullable<ListFilesQuery['order']>): void {
+    this.sort.set(sort);
+    this.order.set(order);
+    this.sortMenuOpen.set(false);
     void this.revalidate();
   }
 
