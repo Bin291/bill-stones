@@ -37,9 +37,18 @@
                       [attr.aria-label]="c"
                     ></button>
                   }
-                  <label class="tag-swatch tag-swatch--custom" [style.background]="editColor()" title="Màu tuỳ chỉnh">
+                  <label class="tag-swatch tag-swatch--custom" [title]="'tags.customColor' | t">
+                    <span class="tag-swatch-dot" [style.background]="editColor()"></span>
                     <input type="color" [value]="editColor()" (input)="editColor.set($any($event.target).value)" />
                   </label>
+                  <button
+                    type="button"
+                    class="tag-swatch tag-swatch--random"
+                    (click)="editColor.set(randomHex())"
+                    [title]="'tags.random' | t"
+                  >
+                    <span class="mi" style="font-size: 15px">casino</span>
+                  </button>
                 </div>
                 <button class="btn btn-icon" type="button" (click)="saveEdit()" [disabled]="busy()" title="Lưu">
                   <span class="mi">check</span>
@@ -105,9 +114,18 @@
               [attr.aria-label]="c"
             ></button>
           }
-          <label class="tag-swatch tag-swatch--custom" [style.background]="newColor()" title="Màu tuỳ chỉnh">
+          <label class="tag-swatch tag-swatch--custom" [title]="'tags.customColor' | t">
+            <span class="tag-swatch-dot" [style.background]="newColor()"></span>
             <input type="color" [value]="newColor()" (input)="newColor.set($any($event.target).value)" />
           </label>
+          <button
+            type="button"
+            class="tag-swatch tag-swatch--random"
+            (click)="newColor.set(randomHex())"
+            [title]="'tags.random' | t"
+          >
+            <span class="mi" style="font-size: 15px">casino</span>
+          </button>
         </div>
         <button class="btn btn-primary" type="button" [disabled]="busy() || !newName().trim()" (click)="create()">
           {{ 'tags.add' | t }}

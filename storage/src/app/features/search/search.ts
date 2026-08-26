@@ -8,9 +8,11 @@ import {
   SearchResult,
 } from '../../core/services/search-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { LangService } from '../../core/i18n/lang.service';
 import { formatBytes, iconOf } from '../../core/util/file-types';
 import { StoredFile } from '../../core/models/file.model';
 import { FilePreview } from '../file-preview/file-preview';
+import { Loader } from '../ui/loader';
 
 const MATCH_LABELS: Record<SearchMatchBranch, string> = {
   dense: 'Ngữ nghĩa',
@@ -24,7 +26,7 @@ const MATCH_LABELS: Record<SearchMatchBranch, string> = {
  */
 @Component({
   selector: 'app-search',
-  imports: [TranslatePipe, DecimalPipe, FilePreview],
+  imports: [TranslatePipe, DecimalPipe, FilePreview, Loader],
   templateUrl: './search.html',
   styleUrl: './search.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,6 +35,7 @@ export class Search {
   private readonly api = inject(SearchApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly lang = inject(LangService);
 
   readonly query = signal('');
   readonly results = signal<SearchResult[]>([]);
@@ -73,7 +76,7 @@ export class Search {
 
   private async runSearch(q: string): Promise<void> {
     if (q.length < 2) {
-      this.note.set('Nhập ít nhất 2 ký tự.');
+      this.note.set(this.lang.translate('search.min2'));
       return;
     }
     this.note.set(null);
@@ -84,7 +87,7 @@ export class Search {
       this.searched.set(true);
     } catch {
       this.results.set([]);
-      this.note.set('Tìm kiếm lỗi.');
+      this.note.set(this.lang.translate('search.failed'));
     } finally {
       this.loading.set(false);
     }

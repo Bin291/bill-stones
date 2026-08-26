@@ -23,6 +23,7 @@ import { VideoPlayer } from '../video-player/video-player';
 import { FilePreview } from '../file-preview/file-preview';
 import { TagDialog } from '../tags/tag-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
+import { PromptDialog } from '../ui/prompt-dialog';
 import { Loader } from '../ui/loader';
 import { Autofocus } from '../ui/autofocus.directive';
 import { MoveDialog, MoveItem } from './move-dialog';
@@ -47,7 +48,9 @@ interface TagTarget {
 }
 
 /** Hộp thoại tuỳ biến (thay prompt/confirm trình duyệt). */
-type ExplorerDialog = { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
+type ExplorerDialog =
+  | { type: 'newFolder'; name: string }
+  | { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
 
 interface ContextMenu {
   x: number;
@@ -83,6 +86,7 @@ interface UploadBatch {
     FilePreview,
     TagDialog,
     ConfirmDialog,
+    PromptDialog,
     MoveDialog,
     Loader,
     Autofocus,
@@ -172,9 +176,6 @@ export class FileExplorer {
   protected readonly dialog = signal<ExplorerDialog | null>(null);
   protected readonly moveTarget = signal<MoveItem[] | null>(null);
 
-  // Tạo thư mục inline kiểu Windows Explorer (ô tên điền sẵn, sửa tại chỗ).
-  protected readonly creatingFolder = signal(false);
-  protected readonly newFolderName = signal('');
   private creatingBusy = false;
 
   // Đổi tên INLINE ngay trên card/hàng (không dùng hộp thoại).
@@ -205,6 +206,21 @@ export class FileExplorer {
   /** File ảnh? → thumbnail hiển thị đúng tỉ lệ gốc (object-fit: contain). */
   protected isImage(extension: string): boolean {
     return categoryOf(extension) === 'image';
+  }
+
+  /**
+   * Hiển thị tên thư mục do hệ thống TỰ ĐẶT theo ngôn ngữ đang chọn:
+   * "Thư mục mới (2)" ⇄ "New folder (2)". Tên do người dùng tự đặt giữ nguyên.
+   */
+  protected folderDisplayName(name: string): string {
+    const cur = this.lang.translate('folder.newDefault');
+    for (const base of ['Thư mục mới', 'New folder']) {
+      if (name === base) return cur;
+      const esc = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const m = new RegExp(`^${esc} \\((\\d+)\\)$`).exec(name);
+      if (m) return `${cur} (${m[1]})`;
+    }
+    return name;
   }
 
   /** Số chấm màu thẻ hiện trực tiếp trên card; dư ra gộp thành "+N" (hover xem). */
@@ -388,32 +404,22 @@ export class FileExplorer {
     void this.revalidate();
   }
 
-  // --- Tạo thư mục INLINE (kiểu Windows Explorer) ---
-  /** Bấm "Thư mục mới" → hiện 1 card với ô tên điền sẵn (đánh số kiểu Windows). */
+  // --- Tạo thư mục (HỘP THOẠI riêng, có nút Huỷ) ---
+  /** Bấm "Thư mục mới" → mở dialog với ô tên điền sẵn (đánh số kiểu Windows). */
   createFolder(): void {
-    if (this.creatingFolder()) return;
-    this.newFolderName.set(this.nextFolderName());
-    this.creatingFolder.set(true);
+    this.dialog.set({ type: 'newFolder', name: this.nextFolderName() });
   }
 
-  cancelCreateFolder(): void {
-    this.creatingFolder.set(false);
-    this.newFolderName.set('');
-    this.creatingBusy = false;
-  }
-
-  /** Xác nhận tạo (Enter hoặc rời ô). Trùng tên → tự thêm (2), (3)… */
-  async confirmCreateFolder(): Promise<void> {
-    if (!this.creatingFolder() || this.creatingBusy) return;
+  /** Xác nhận tạo từ dialog. Trùng tên → tự thêm (2), (3)… */
+  async submitNewFolder(name: string): Promise<void> {
+    this.dialog.set(null);
+    if (this.creatingBusy) return;
     this.creatingBusy = true;
-    const typed = this.newFolderName().trim();
     const base = this.lang.translate('folder.newDefault');
-    // Tránh trùng ngay ở client (backend cũng có lớp chống trùng dự phòng).
-    const name = typed ? this.uniqueFolderName(typed) : this.nextFolderName();
-    this.creatingFolder.set(false);
-    this.newFolderName.set('');
+    const typed = name.trim();
+    const finalName = this.uniqueFolderName(typed || base);
     try {
-      await firstValueFrom(this.foldersApi.create(name || base, this.folderId()));
+      await firstValueFrom(this.foldersApi.create(finalName, this.folderId()));
       void this.revalidate();
       this.refresh.bump();
     } finally {
@@ -643,7 +649,6 @@ export class FileExplorer {
   }
 
   private startRename(kind: 'file' | 'folder', id: string, name: string): void {
-    this.creatingFolder.set(false); // không tạo mới song song
     this.renamingKind.set(kind);
     this.renameOldName = name;
     this.renameName.set(name);

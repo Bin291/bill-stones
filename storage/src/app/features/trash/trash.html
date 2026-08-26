@@ -3,7 +3,7 @@
   <span class="spacer"></span>
   @if (items().length) {
     <button class="btn" type="button" (click)="askEmpty()">
-      <span class="mi">delete_forever</span> Dọn thùng rác
+      <span class="mi">delete_forever</span> {{ 'trash.empty' | t }}
     </button>
   }
 </div>
@@ -20,8 +20,8 @@
     <thead>
       <tr>
         <th>{{ 'files.name' | t }}</th>
-        <th>Vị trí gốc</th>
-        <th>Còn lại</th>
+        <th>{{ 'trash.origin' | t }}</th>
+        <th>{{ 'trash.remaining' | t }}</th>
         <th></th>
       </tr>
     </thead>
@@ -48,12 +48,12 @@
               }
             </span>
           </td>
-          <td>{{ item.daysUntilPurge }} ngày</td>
+          <td>{{ 'trash.days' | t: { n: item.daysUntilPurge } }}</td>
           <td style="text-align: right; white-space: nowrap">
-            <button class="btn btn-icon" type="button" title="Khôi phục" (click)="restore(item)">
+            <button class="btn btn-icon" type="button" [title]="'trash.restore' | t" (click)="restore(item)">
               <span class="mi">restore</span>
             </button>
-            <button class="btn btn-icon" type="button" title="Xoá vĩnh viễn" (click)="askPurge(item)">
+            <button class="btn btn-icon" type="button" [title]="'trash.purge' | t" (click)="askPurge(item)">
               <span class="mi" style="color: var(--danger)">delete_forever</span>
             </button>
           </td>
@@ -65,13 +65,9 @@
 
 @if (confirm(); as c) {
   <app-confirm-dialog
-    [title]="c.type === 'empty' ? 'Dọn toàn bộ Thùng rác?' : 'Xoá vĩnh viễn?'"
-    [message]="
-      c.type === 'empty'
-        ? 'Bạn có chắc chắn xoá? Toàn bộ mục trong Thùng rác sẽ bị xoá vĩnh viễn, không thể hoàn tác.'
-        : 'Bạn có chắc chắn xoá? Mục này sẽ bị xoá vĩnh viễn, không thể hoàn tác.'
-    "
-    [confirmLabel]="'Xoá'"
+    [title]="(c.type === 'empty' ? 'trash.emptyTitle' : 'trash.purgeTitle') | t"
+    [message]="(c.type === 'empty' ? 'trash.emptyMsg' : 'trash.purgeMsg') | t"
+    [confirmLabel]="'action.delete' | t"
     [danger]="true"
     (confirmed)="runConfirm()"
     (cancelled)="confirm.set(null)"

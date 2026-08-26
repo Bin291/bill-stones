@@ -213,6 +213,23 @@ export class TagDialog implements OnInit {
     return this.assigned().has(id);
   }
 
+  /** Sinh 1 màu hex ngẫu nhiên (đủ tươi để dễ phân biệt) cho nút "Ngẫu nhiên". */
+  randomHex(): string {
+    // HSL ngẫu nhiên -> hex: bão hoà cao, độ sáng vừa để chấm màu rõ.
+    const h = Math.floor(Math.random() * 360);
+    const s = 65 + Math.floor(Math.random() * 20); // 65-85%
+    const l = 45 + Math.floor(Math.random() * 15); // 45-60%
+    const a = (s * Math.min(l, 100 - l)) / 100 / 100;
+    const f = (n: number): string => {
+      const k = (n + h / 30) % 12;
+      const c = l / 100 - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * c)
+        .toString(16)
+        .padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
   close(): void {
     // Đồng bộ 1 lần khi đóng: cập nhật thẻ trên card + số đếm sidebar.
     if (this.dirty) {

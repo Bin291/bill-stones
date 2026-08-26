@@ -306,6 +306,10 @@ body {
   height: 24px;
   object-fit: contain;
 }
+/* Logo là hình trắng — ở theme SÁNG phải đảo màu cho hiện rõ trên nền trắng */
+:root[data-theme='light'] .brand-logo {
+  filter: invert(1);
+}
 .nav-section-title {
   font-size: 12px;
   letter-spacing: 0.32px;
@@ -1574,10 +1578,28 @@ body {
 .tag-swatch.on {
   border-color: var(--ink);
 }
+/* Swatch màu tuỳ chỉnh: vòng 7 màu (rainbow) để dễ nhận ra là chọn màu tự do */
 .tag-swatch--custom {
   display: grid;
   place-items: center;
   overflow: hidden;
+  background: conic-gradient(
+    #f44336,
+    #ff9800,
+    #ffeb3b,
+    #4caf50,
+    #00bcd4,
+    #3f51b5,
+    #9c27b0,
+    #f44336
+  );
+}
+/* Chấm nhỏ ở giữa hiện màu đang chọn (đè lên vòng rainbow) */
+.tag-swatch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--canvas);
 }
 .tag-swatch--custom input[type='color'] {
   position: absolute;
@@ -1586,6 +1608,13 @@ body {
   cursor: pointer;
   border: none;
   padding: 0;
+}
+/* Nút màu ngẫu nhiên (xúc xắc) */
+.tag-swatch--random {
+  display: grid;
+  place-items: center;
+  background: var(--surface-1);
+  color: var(--ink);
 }
 
 /* Form thêm thẻ */
