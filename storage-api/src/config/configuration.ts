@@ -74,18 +74,33 @@ export default () => ({
   },
 
   ai: {
+    // Embedding dense (768d, khớp DocumentChunk.embedding) + vision (OCR/caption
+    // ảnh) — thứ tự ưu tiên: BazaarLink (OpenAI-compatible) nếu có key VÀ chưa
+    // gặp 402, fallback Gemini direct. Xem mục 8.E (hybrid search) trong PLAN.
     geminiApiKey: process.env.GEMINI_API_KEY,
     geminiEmbeddingModel:
       process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-001',
-    geminiOcrModel: process.env.GEMINI_OCR_MODEL ?? 'gemini-3.5-flash',
+    geminiOcrModel: process.env.GEMINI_OCR_MODEL ?? 'gemini-3.6-flash',
+    embedDimensions: parseInt(process.env.AI_EMBED_DIMENSIONS ?? '768', 10),
     bazaarlinkApiKey: process.env.BAZAARLINK_API_KEY || undefined,
     bazaarlinkBaseUrl: process.env.BAZAARLINK_BASE_URL || undefined,
     bazaarlinkEmbeddingModel:
       process.env.BAZAARLINK_EMBEDDING_MODEL ?? 'openai/text-embedding-3-small',
+    bazaarlinkOcrModel:
+      process.env.BAZAARLINK_OCR_MODEL ?? 'google/gemini-2.5-flash',
+    // HuggingFace Inference Providers — nhánh BGE-M3 (dense đa ngôn ngữ, 1024d)
+    // + reranker cross-encoder cuối pipeline hybrid search.
     hfApiKey: process.env.HF_API_KEY || undefined,
     hfBaseUrl: process.env.HF_BASE_URL ?? 'https://router.huggingface.co',
     hfBgeModel: process.env.HF_BGE_MODEL ?? 'BAAI/bge-m3',
+    hfBgeDimensions: parseInt(process.env.HF_BGE_DIMENSIONS ?? '1024', 10),
     hfRerankerModel: process.env.HF_RERANKER_MODEL ?? 'BAAI/bge-reranker-v2-m3',
+    hfTimeoutMs: parseInt(process.env.HF_TIMEOUT_MS ?? '45000', 10),
+    hfEnableBge: (process.env.HF_ENABLE_BGE ?? 'true') !== 'false',
+    hfEnableReranker: (process.env.HF_ENABLE_RERANKER ?? 'true') !== 'false',
+    // SigLIP: HF Inference Providers không host CLIP/SigLIP serverless nữa
+    // (2025) — nhánh ảnh dùng Gemini vision auto-caption thay thế (xem
+    // DocumentParserService). Cờ này giữ lại để bật lại nếu HF phục vụ lại.
     hfEnableSiglip: (process.env.HF_ENABLE_SIGLIP ?? 'false') === 'true',
   },
 });

@@ -1,27 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { File } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { DocumentParserService } from './document-parser.service';
-import { AiService } from './ai.service';
+import { AiEmbeddingService } from './ai-embedding.service';
+import { HfInferenceService } from './hf-inference.service';
 
 const MAX_INDEX_BYTES = 100 * 1024 * 1024; // bỏ qua file > 100MB
-
-// Ảnh: index qua Gemini vision auto-caption (mục 8.E).
-const IMAGE_MIME: Record<string, string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  webp: 'image/webp',
-  gif: 'image/gif',
-  bmp: 'image/bmp',
-  heic: 'image/heic',
-};
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // giới hạn ảnh gửi lên vision
+const EMBED_BATCH = 32;
 
 /**
- * Lập chỉ mục FTS: trích text -> chunk -> lưu DocumentChunk.content (embedding để
- * null; sẽ điền khi bật nhánh AI). Chạy nền như thumbnail/HLS.
+ * Pipeline AI cho hybrid search (mục 8.E): trích text (ảnh -> vision auto-
+ * caption) -> chunk -> embed dense (BazaarLink/Gemini 768d, bắt buộc) + BGE-M3
+ * (HF 1024d, best-effort) -> lưu DocumentChunk. Chạy nền như thumbnail/HLS.
+ *
+ * Best-effort cho BGE-M3: nếu HF lỗi/tắt/hết quota, cột "embeddingBge" để
+ * null cho chunk đó — nhánh dense + FTS trong SearchService vẫn hoạt động.
  */
 @Injectable()
 export class IndexingService {
@@ -32,19 +27,17 @@ export class IndexingService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly parser: DocumentParserService,
-    private readonly ai: AiService,
+    private readonly embedder: AiEmbeddingService,
+    private readonly hf: HfInferenceService,
   ) {}
 
-  private isImage(extension: string): boolean {
-    return extension.toLowerCase() in IMAGE_MIME;
-  }
-
   supports(extension: string): boolean {
-    // Ảnh chỉ index được khi có AI (vision caption); tài liệu/text luôn index (FTS).
-    return this.parser.supports(extension) || (this.isImage(extension) && this.ai.enabled());
+    return this.parser.supports(extension);
   }
 
-  indexInBackground(file: Pick<File, 'id' | 'r2Key' | 'extension' | 'size'>): void {
+  indexInBackground(
+    file: Pick<File, 'id' | 'r2Key' | 'extension' | 'size' | 'mimeType'>,
+  ): void {
     if (this.inProgress.has(file.id)) return;
     this.inProgress.add(file.id);
     void this.index(file)
@@ -52,54 +45,108 @@ export class IndexingService {
       .finally(() => this.inProgress.delete(file.id));
   }
 
-  async index(file: Pick<File, 'id' | 'r2Key' | 'extension' | 'size'>): Promise<void> {
+  async index(
+    file: Pick<File, 'id' | 'r2Key' | 'extension' | 'size' | 'mimeType'>,
+  ): Promise<void> {
     if (!this.supports(file.extension) || Number(file.size) > MAX_INDEX_BYTES) return;
-    const ext = file.extension.toLowerCase();
 
-    let chunks: string[];
-    if (this.isImage(ext)) {
-      // Ảnh -> caption (OCR + mô tả + từ khoá) bằng Gemini vision.
-      if (Number(file.size) > MAX_IMAGE_BYTES) return;
-      const buffer = await this.storage.getObjectBuffer(file.r2Key);
-      const caption = await this.ai.captionImage(buffer, IMAGE_MIME[ext]);
-      chunks = this.parser.chunk(caption);
-    } else {
-      const buffer = await this.storage.getObjectBuffer(file.r2Key);
-      const text = await this.parser.extractText(buffer, ext);
-      chunks = this.parser.chunk(text);
-    }
+    const buffer = await this.storage.getObjectBuffer(file.r2Key);
+    const text = await this.parser.extractText(buffer, file.extension, file.mimeType);
+    const chunks = this.parser.chunk(text);
 
-    // Ghi đè chỉ mục cũ.
+    // Ghi đè chỉ mục cũ (idempotent — reindex chạy lại thoải mái).
     await this.prisma.documentChunk.deleteMany({ where: { fileId: file.id } });
     if (chunks.length === 0) return;
 
-    // Nhánh dense: embed chunk bằng Gemini (nếu có key). Lỗi/không key -> chỉ FTS.
-    const vectors = await this.ai.embed(chunks);
-    for (let i = 0; i < chunks.length; i++) {
-      const content = chunks[i];
-      const vec = vectors?.[i];
-      if (vec) {
-        const lit = `[${vec.join(',')}]`;
-        await this.prisma.$executeRaw`
-          INSERT INTO "DocumentChunk" (id, "fileId", content, "chunkIndex", embedding)
-          VALUES (gen_random_uuid(), ${file.id}, ${content}, ${i}, ${lit}::vector)`;
-      } else {
-        await this.prisma.$executeRaw`
-          INSERT INTO "DocumentChunk" (id, "fileId", content, "chunkIndex")
-          VALUES (gen_random_uuid(), ${file.id}, ${content}, ${i})`;
+    if (!this.embedder.enabled) {
+      // Không có key nào (BazaarLink/Gemini) -> vẫn lưu content thô để nhánh
+      // FTS (không cần key) tìm được theo từ khoá, chỉ mất phần semantic.
+      await this.prisma.documentChunk.createMany({
+        data: chunks.map((content, chunkIndex) => ({ fileId: file.id, content, chunkIndex })),
+      });
+      this.log.warn(
+        `File ${file.id}: không có AI key khả dụng — chỉ lưu FTS, bỏ qua embedding.`,
+      );
+      return;
+    }
+
+    for (let i = 0; i < chunks.length; i += EMBED_BATCH) {
+      const batch = chunks.slice(i, i + EMBED_BATCH);
+
+      // Dense (bắt buộc — nếu cả batch lỗi thì các chunk này không có vector,
+      // vẫn giữ content để FTS tìm được).
+      let denseVectors: number[][];
+      try {
+        denseVectors = await this.embedder.generateEmbeddings(batch);
+      } catch (err) {
+        this.log.warn(`Dense embed lỗi (file ${file.id}): ${(err as Error).message}`);
+        denseVectors = batch.map(() => []);
+      }
+
+      // BGE-M3 tuần tự từng chunk (HF không đảm bảo batch cho feature-extraction).
+      // Best-effort — không throw, chunk lỗi chỉ mất nhánh bge.
+      const bgeVectors = await this.embedBgeBestEffort(batch);
+
+      for (let j = 0; j < batch.length; j++) {
+        const dense = denseVectors[j];
+        const bge = bgeVectors[j];
+        const denseLiteral = dense && dense.length > 0 ? `[${dense.join(',')}]` : null;
+        const bgeLiteral = bge && bge.length > 0 ? `[${bge.join(',')}]` : null;
+
+        // Prisma không hỗ trợ type vector -> insert raw, cast ::vector.
+        await this.prisma.$executeRawUnsafe(
+          `INSERT INTO "DocumentChunk"
+             (id, "fileId", content, "chunkIndex", embedding, "embeddingBge")
+           VALUES ($1, $2, $3, $4, $5::vector, $6::vector)`,
+          randomUUID(),
+          file.id,
+          batch[j],
+          i + j,
+          denseLiteral,
+          bgeLiteral,
+        );
       }
     }
-    this.log.log(`Đã index ${file.id}: ${chunks.length} chunk${vectors ? ' (+embedding)' : ''}`);
+    this.log.log(`Đã index ${file.id}: ${chunks.length} chunk`);
   }
 
-  /** Backfill: index mọi file text của user chưa có chunk (chạy nền). */
+  /** BGE-M3 lần lượt từng chunk. Không throw — trả null cho phần tử lỗi. */
+  private async embedBgeBestEffort(chunks: string[]): Promise<(number[] | null)[]> {
+    if (!this.hf.bgeEnabled) return chunks.map(() => null);
+    const out: (number[] | null)[] = [];
+    for (const c of chunks) {
+      try {
+        out.push(await this.hf.embedTextBge(c));
+      } catch (err) {
+        this.log.warn(`BGE-M3 embed lỗi: ${(err as Error).message}`);
+        out.push(null);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Backfill: index lại file hỗ trợ (tài liệu + ảnh) của user mà CHƯA có chunk
+   * nào, HOẶC có chunk nhưng thiếu vector (dữ liệu cũ từ trước khi bật hybrid
+   * search — cột "embedding"/"embeddingBge" đều null, chỉ có content thô).
+   * Cột vector là Unsupported() với Prisma nên phải lọc bằng raw SQL.
+   */
   async reindexUser(userId: string): Promise<number> {
-    const files = await this.prisma.file.findMany({
-      where: { userId, deletedAt: null, status: 'ready', chunks: { none: {} } },
-      select: { id: true, r2Key: true, extension: true, size: true },
-    });
+    const rows = await this.prisma.$queryRaw<
+      { id: string; r2Key: string; extension: string; size: bigint; mimeType: string }[]
+    >`
+      SELECT f.id, f."r2Key", f.extension, f.size, f."mimeType"
+      FROM "File" f
+      WHERE f."userId" = ${userId}
+        AND f."deletedAt" IS NULL
+        AND f.status = 'ready'
+        AND NOT EXISTS (
+          SELECT 1 FROM "DocumentChunk" dc
+          WHERE dc."fileId" = f.id AND dc.embedding IS NOT NULL
+        )
+    `;
     let n = 0;
-    for (const f of files) {
+    for (const f of rows) {
       if (this.supports(f.extension)) {
         this.indexInBackground(f);
         n++;

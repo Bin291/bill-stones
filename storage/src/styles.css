@@ -696,6 +696,15 @@ body {
   background: color-mix(in srgb, var(--primary) 8%, var(--surface-1));
   color: var(--primary);
 }
+/* Trạng thái thông tin thuần (không phải khu vực kéo-thả để upload) — bỏ
+   toàn bộ gợi ý tương tác kế thừa từ .empty (mục: trang Tìm kiếm). */
+.empty--static {
+  cursor: default;
+}
+.empty--static:hover {
+  border-color: transparent;
+  background: transparent;
+}
 .page-title {
   font-size: 28px;
   font-weight: 300;

@@ -108,11 +108,12 @@ model FileTag {
 }
 
 model DocumentChunk {
-  id         String                     @id @default(uuid())
-  fileId     String
-  content    String // đoạn text đã chunk (~1000 ký tự, mục 8.C)
-  chunkIndex Int
-  embedding  Unsupported("vector(768)")? // khớp gemini-embedding-001 (mục 8.A)
+  id           String                      @id @default(uuid())
+  fileId       String
+  content      String // đoạn text đã chunk (~1000 ký tự, mục 8.C)
+  chunkIndex   Int
+  embedding    Unsupported("vector(768)")? // dense: BazaarLink/Gemini (mục 8.A)
+  embeddingBge Unsupported("vector(1024)")? // BGE-M3 đa ngôn ngữ, qua HF (mục 8.E)
 
   file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
