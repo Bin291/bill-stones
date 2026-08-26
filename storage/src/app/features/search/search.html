@@ -22,9 +22,9 @@
 }
 
 @if (loading()) {
-  <div class="empty">{{ 'files.loading' | t }}</div>
+  <div class="empty empty--static">{{ 'files.loading' | t }}</div>
 } @else if (searched() && results().length === 0) {
-  <div class="empty">
+  <div class="empty empty--static">
     <span class="mi" style="font-size: 40px">search_off</span>
     <p>Không tìm thấy kết quả</p>
   </div>

@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  // Landing page công khai — marketing, không cần đăng nhập.
+  {
+    path: 'landing',
+    loadComponent: () => import('./features/landing/landing').then((m) => m.Landing),
+  },
   {
     path: 'login',
     canActivate: [guestGuard],
