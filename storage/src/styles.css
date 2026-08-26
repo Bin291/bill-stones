@@ -1516,6 +1516,7 @@ body {
 .card-metarow {
   display: flex;
   align-items: center;
+  justify-content: space-between; /* dung lượng bên trái, cụm thẻ dồn sang phải */
   gap: 8px;
   margin-top: 4px;
   min-width: 0;
