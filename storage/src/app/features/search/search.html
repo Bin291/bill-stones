@@ -22,33 +22,62 @@
 }
 
 @if (loading()) {
-  <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
+  <div class="empty empty--static">{{ 'files.loading' | t }}</div>
 } @else if (searched() && results().length === 0) {
   <div class="empty empty--static">
     <span class="mi" style="font-size: 40px">search_off</span>
     <p>Không tìm thấy kết quả</p>
   </div>
 } @else if (results().length) {
-  <table class="file-list" style="margin-top: 16px">
-    <tbody>
-      @for (r of results(); track r.id) {
-        <tr (click)="open(r)">
-          <td style="width: 56px">
-            @if (r.thumbnailUrl) {
-              <img [src]="r.thumbnailUrl" [alt]="r.name" style="width: 40px; height: 40px; object-fit: cover" />
-            } @else {
-              <span class="mi" style="color: var(--text-muted)">{{ iconOf(r.extension) }}</span>
+  <div class="results">
+    @for (r of results(); track r.id) {
+      <div class="result-card">
+        <button type="button" class="result-main" (click)="openPreview(r)" title="Bấm để xem nội dung">
+          <div class="result-head">
+            <div class="result-file">
+              @if (r.thumbnailUrl) {
+                <img class="result-thumb" [src]="r.thumbnailUrl" [alt]="r.name" />
+              } @else {
+                <span class="result-icon-badge">
+                  <span class="mi">{{ iconOf(r.extension) }}</span>
+                </span>
+              }
+              <div class="result-name-block">
+                <div class="result-name">{{ r.name }}</div>
+                <div class="result-meta">{{ formatBytes(r.size) }}</div>
+              </div>
+            </div>
+            <span class="match-badge" [class]="similarityBucket(r.similarity)">
+              {{ (r.similarity * 100) | number: '1.0-0' }}% khớp
+            </span>
+          </div>
+
+          @if (r.snippet) {
+            <div class="result-snippet">…{{ r.snippet }}…</div>
+          }
+        </button>
+
+        <div class="result-footer">
+          @if (r.matchedBy.length) {
+            @for (label of matchLabels(r.matchedBy); track label) {
+              <span class="match-chip">{{ label }}</span>
             }
-          </td>
-          <td>
-            <div>{{ r.name }}</div>
-            @if (r.snippet) {
-              <div class="card-sub" style="white-space: normal">…{{ r.snippet }}…</div>
-            }
-          </td>
-          <td style="white-space: nowrap">{{ formatBytes(r.size) }}</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+          }
+          <span class="spacer"></span>
+          <button
+            class="btn btn-icon"
+            type="button"
+            title="Mở thư mục chứa tệp"
+            (click)="goToFolder(r, $event)"
+          >
+            <span class="mi">folder_open</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (previewTarget(); as pf) {
+  <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
 }
