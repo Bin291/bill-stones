@@ -675,6 +675,15 @@ body {
 }
 
 /* ===== Misc ===== */
+/* Màn hình splash khi mới vào app (tải trước mọi thứ) */
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  background: var(--canvas);
+}
 /* Vùng loading căn GIỮA cả trang (dùng cho <app-loader>) */
 .loading-center {
   display: flex;

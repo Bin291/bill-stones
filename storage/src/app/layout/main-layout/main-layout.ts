@@ -24,6 +24,8 @@ import { CATEGORIES, CategoryKey, categoryOf } from '../../core/util/file-types'
 import { ExtensionStat, TagWithCount } from '../../core/models/file.model';
 import { MiniAudioPlayer } from '../../features/audio-player/mini-audio-player';
 import { TagDialog } from '../../features/tags/tag-dialog';
+import { Loader } from '../../features/ui/loader';
+import { PrefetchService } from '../../core/services/prefetch.service';
 
 interface NavItem {
   icon: string;
@@ -41,6 +43,7 @@ interface NavItem {
     MiniAudioPlayer,
     TagDialog,
     NgOptimizedImage,
+    Loader,
   ],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.css',
@@ -56,6 +59,7 @@ export class MainLayout implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly settings = inject(SettingsService);
   protected readonly notifications = inject(NotificationService);
+  protected readonly prefetch = inject(PrefetchService);
 
   protected readonly profile = this.auth.profile;
   // Bỏ mục "Khác" khỏi sidebar theo yêu cầu (vẫn giữ trong CATEGORIES cho nơi khác).
@@ -112,6 +116,8 @@ export class MainLayout implements OnInit {
 
   ngOnInit(): void {
     void this.notifications.refresh();
+    // Tải trước MỌI dữ liệu 1 lần (splash) → các lần chuyển lăng kính sau không loading.
+    void this.prefetch.prefetchAll();
   }
 
   loadStats(): void {
@@ -156,6 +162,7 @@ export class MainLayout implements OnInit {
   }
 
   async logout(): Promise<void> {
+    this.prefetch.clear(); // xoá cache để tài khoản khác không thấy dữ liệu cũ
     await this.auth.signOut();
     location.href = '/login';
   }

@@ -33,7 +33,9 @@ import {
   ListFilesQuery,
   StoredFile,
 } from '../../core/models/file.model';
-import { CATEGORIES, categoryByKey, categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
+import { categoryByKey, categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
+import { PrefetchService, ViewBundle } from '../../core/services/prefetch.service';
+import { Lens, ViewParams, buildListQuery, viewKey } from '../../core/util/list-query';
 
 type Mode = 'folder' | 'type' | 'starred' | 'recent' | 'tag';
 
@@ -100,6 +102,7 @@ export class FileExplorer {
   private readonly refresh = inject(RefreshService);
   private readonly audioSvc = inject(AudioPlayerService);
   private readonly tagsApi = inject(TagsApiService);
+  private readonly prefetch = inject(PrefetchService);
   protected readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -242,64 +245,86 @@ export class FileExplorer {
     );
     if (!pending) return;
     this.thumbRetries++;
-    setTimeout(() => void this.load(), 3000);
+    setTimeout(() => void this.revalidate(), 3000);
   }
 
+  /** Tham số khung nhìn hiện tại (để dựng query + khoá cache). */
+  private currentParams(): ViewParams {
+    return {
+      folderId: this.folderId(),
+      category: this.category(),
+      tagId: this.tagId(),
+      sort: this.sort() ?? 'createdAt',
+      order: this.order() ?? 'desc',
+    };
+  }
+  private currentKey(): string {
+    return viewKey(this.mode() as Lens, this.currentParams());
+  }
+  private applyBundle(b: ViewBundle): void {
+    this.folders.set(b.folders);
+    this.files.set(b.files);
+    this.breadcrumb.set(b.crumbs);
+  }
+
+  /** Gọi API lấy dữ liệu khung nhìn hiện tại. */
+  private async fetchBundle(): Promise<ViewBundle> {
+    const mode = this.mode() as Lens;
+    const p = this.currentParams();
+    const query = buildListQuery(mode, p);
+    if (mode === 'folder') {
+      const fid = p.folderId;
+      const [folders, files, crumbs] = await Promise.all([
+        firstValueFrom(this.foldersApi.listChildren(fid)),
+        firstValueFrom(this.filesApi.list(query)),
+        fid ? firstValueFrom(this.foldersApi.breadcrumb(fid)) : Promise.resolve([]),
+      ]);
+      return { folders, files, crumbs };
+    }
+    const files = await firstValueFrom(this.filesApi.list(query));
+    return { folders: [], files, crumbs: [] };
+  }
+
+  /**
+   * Nạp khung nhìn: nếu đã có trong cache (prefetch/lần trước) → hiện NGAY, KHÔNG
+   * spinner; luôn nạp lại nền để cập nhật. Chỉ hiện loading khi thật sự chưa có gì.
+   */
   async load(): Promise<void> {
-    this.loading.set(true);
     this.menu.set(null);
+    const key = this.currentKey();
+    const cached = this.prefetch.getView(key);
+    if (cached) {
+      this.applyBundle(cached);
+      this.loading.set(false);
+    } else {
+      this.loading.set(true);
+    }
     try {
-      if (this.isFolderLens()) {
-        const fid = this.folderId();
-        const [folders, files, crumbs] = await Promise.all([
-          firstValueFrom(this.foldersApi.listChildren(fid)),
-          firstValueFrom(this.filesApi.list(this.buildQuery())),
-          fid ? firstValueFrom(this.foldersApi.breadcrumb(fid)) : Promise.resolve([]),
-        ]);
-        this.folders.set(folders);
-        this.files.set(files);
-        this.breadcrumb.set(crumbs);
-      } else {
-        this.folders.set([]);
-        this.breadcrumb.set([]);
-        const files = await firstValueFrom(this.filesApi.list(this.buildQuery()));
-        this.files.set(files);
-      }
+      const fresh = await this.fetchBundle();
+      this.prefetch.setView(key, fresh);
+      this.applyBundle(fresh);
     } catch {
-      this.folders.set([]);
-      this.files.set([]);
+      if (!cached) {
+        this.folders.set([]);
+        this.files.set([]);
+      }
     } finally {
       this.loading.set(false);
       this.scheduleThumbRefresh();
     }
   }
 
-  private buildQuery(): ListFilesQuery {
-    const base: ListFilesQuery = { sort: this.sort(), order: this.order() };
-    switch (this.mode()) {
-      case 'folder':
-        return { ...base, folderId: this.folderId() };
-      case 'type': {
-        const cat = categoryByKey((this.category() ?? 'other') as never);
-        return { ...base, extensions: (cat?.extensions ?? []).join(','), withPath: true };
-      }
-      case 'tag':
-        return { ...base, tagId: this.tagId() ?? '', withPath: true };
-      case 'starred':
-        return { ...base, starred: true, extensions: this.allExtensions(), withPath: true };
-      case 'recent':
-        return {
-          ...base,
-          sort: 'updatedAt',
-          order: 'desc',
-          extensions: this.allExtensions(),
-          withPath: true,
-        };
+  /** Nạp lại SILENT sau thao tác (không spinner, giữ hiển thị hiện tại đến khi có dữ liệu mới). */
+  async revalidate(): Promise<void> {
+    try {
+      const fresh = await this.fetchBundle();
+      this.prefetch.setView(this.currentKey(), fresh);
+      this.applyBundle(fresh);
+    } catch {
+      /* giữ nguyên hiển thị hiện tại nếu lỗi */
+    } finally {
+      this.scheduleThumbRefresh();
     }
-  }
-
-  private allExtensions(): string {
-    return CATEGORIES.flatMap((c) => c.extensions).join(',');
   }
 
   // --- Điều hướng ---
@@ -335,7 +360,7 @@ export class FileExplorer {
       this.sort.set(field);
       this.order.set(field === 'name' ? 'asc' : 'desc');
     }
-    void this.load();
+    void this.revalidate();
   }
 
   // --- Tạo thư mục (hộp thoại tuỳ biến) ---
@@ -346,7 +371,7 @@ export class FileExplorer {
   async submitNewFolder(name: string): Promise<void> {
     this.dialog.set(null);
     await firstValueFrom(this.foldersApi.create(name.trim(), this.folderId()));
-    void this.load();
+    void this.revalidate();
     this.refresh.bump();
   }
 
@@ -490,7 +515,7 @@ export class FileExplorer {
       );
       await Promise.all([...fileOps, ...folderOps]);
       this.clearSelection();
-      await this.load();
+      await this.revalidate();
       this.refresh.bump();
     } finally {
       this.bulkBusy.set(false);
@@ -523,7 +548,7 @@ export class FileExplorer {
   onMoved(): void {
     this.moveTarget.set(null);
     this.clearSelection();
-    void this.load();
+    void this.revalidate();
     this.refresh.bump();
   }
 
@@ -553,7 +578,7 @@ export class FileExplorer {
     if (d?.type !== 'rename') return;
     if (d.kind === 'file') await firstValueFrom(this.filesApi.rename(d.id, name.trim()));
     else await firstValueFrom(this.foldersApi.rename(d.id, name.trim()));
-    void this.load();
+    void this.revalidate();
   }
 
   /** Cập nhật trạng thái sao ngay tại chỗ — KHÔNG reload để tránh nhấp nháy. */
@@ -599,7 +624,7 @@ export class FileExplorer {
     if (d?.type !== 'confirmDelete') return;
     if (d.kind === 'file') await firstValueFrom(this.filesApi.trash(d.id));
     else await firstValueFrom(this.foldersApi.trash(d.id));
-    void this.load();
+    void this.revalidate();
     this.refresh.bump();
   }
 
@@ -725,7 +750,7 @@ export class FileExplorer {
     else if (batch.failed() > 0) batch.status.set('error');
     else batch.status.set('done');
 
-    void this.load();
+    void this.revalidate();
     this.refresh.bump();
   }
 

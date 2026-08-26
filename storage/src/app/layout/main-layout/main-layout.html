@@ -1,3 +1,10 @@
+<!-- Splash: tải trước mọi thứ khi mới vào app, ẩn khi xong → sau đó ít loading -->
+@if (!prefetch.ready()) {
+  <div class="app-splash">
+    <app-loader [dot]="12" [gap]="8" />
+  </div>
+}
+
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
