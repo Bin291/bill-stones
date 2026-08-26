@@ -145,12 +145,6 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
           opacity: 0.12;
         }
       }
-      @media (prefers-reduced-motion: reduce) {
-        .dmx-dot {
-          animation: none;
-          opacity: 0.55;
-        }
-      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

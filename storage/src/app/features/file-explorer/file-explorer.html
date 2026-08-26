@@ -143,7 +143,7 @@
   }
 
   @if (loading()) {
-    <div class="empty"><app-loader [dot]="9" [gap]="6" /></div>
+    <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
   } @else if (folders().length === 0 && files().length === 0) {
     <div class="empty" style="cursor: default">
       <div style="font-size: 40px">

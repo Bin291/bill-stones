@@ -9,7 +9,7 @@
 </div>
 
 @if (loading()) {
-  <div class="empty"><app-loader [dot]="9" [gap]="6" /></div>
+  <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
 } @else if (items().length === 0) {
   <div class="empty">
     <span class="mi" style="font-size: 40px">delete_outline</span>

@@ -675,6 +675,14 @@ body {
 }
 
 /* ===== Misc ===== */
+/* Vùng loading căn GIỮA cả trang (dùng cho <app-loader>) */
+.loading-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  width: 100%;
+}
 .empty {
   display: block;
   text-align: center;
