@@ -9,6 +9,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { Loader } from '../../ui/loader';
 
 /**
  * Xử lý khi người dùng bấm Magic Link trong email (hoặc quay lại từ OAuth).
@@ -17,7 +18,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
  */
 @Component({
   selector: 'app-auth-callback',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, Loader],
   templateUrl: './callback.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

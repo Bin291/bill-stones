@@ -1,8 +1,8 @@
 <div class="auth-wrap">
   <div class="auth-card" style="align-items: center; text-align: center">
     @if (status() === 'processing') {
-      <span class="mi" style="font-size: 40px; color: var(--primary)">hourglass_top</span>
-      <p class="auth-sub" style="margin-top: 12px">{{ 'auth.processing' | t }}</p>
+      <app-loader [dot]="10" [gap]="6" />
+      <p class="auth-sub" style="margin-top: 16px">{{ 'auth.processing' | t }}</p>
     } @else {
       <span class="mi" style="font-size: 40px; color: var(--danger)">error_outline</span>
       <h1 class="auth-title" style="font-size: 20px; margin-top: 12px">

@@ -10,6 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LangService } from '../../../core/i18n/lang.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { Loader } from '../../ui/loader';
 
 /**
  * Trang đặt mật khẩu mới — nơi liên kết "Quên mật khẩu" trong email trỏ tới.
@@ -17,7 +18,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
  */
 @Component({
   selector: 'app-auth-reset',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, Loader],
   templateUrl: './reset.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

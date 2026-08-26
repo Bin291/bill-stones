@@ -1,7 +1,7 @@
 <div class="auth-wrap">
   <div class="auth-card" style="max-width: 520px">
     @if (loading()) {
-      <p class="auth-sub">Đang tải…</p>
+      <div style="display: flex; justify-content: center; padding: 12px"><app-loader [dot]="9" [gap]="6" /></div>
     } @else if (error()) {
       <h1 class="auth-title">Không khả dụng</h1>
       <p class="auth-sub">{{ error() }}</p>

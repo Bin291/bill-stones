@@ -17,6 +17,7 @@ import { environment } from '../../../environments/environment';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { VideoApiService } from '../../core/services/video-api.service';
 import { formatBytes } from '../../core/util/file-types';
+import { Loader } from '../ui/loader';
 
 interface LevelOpt {
   index: number;
@@ -31,6 +32,7 @@ interface LevelOpt {
  */
 @Component({
   selector: 'app-video-player',
+  imports: [Loader],
   templateUrl: './video-player.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

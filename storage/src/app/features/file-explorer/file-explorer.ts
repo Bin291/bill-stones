@@ -24,6 +24,7 @@ import { FilePreview } from '../file-preview/file-preview';
 import { TagDialog } from '../tags/tag-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { PromptDialog } from '../ui/prompt-dialog';
+import { Loader } from '../ui/loader';
 import { MoveDialog, MoveItem } from './move-dialog';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import {
@@ -84,6 +85,7 @@ interface UploadBatch {
     ConfirmDialog,
     PromptDialog,
     MoveDialog,
+    Loader,
   ],
   templateUrl: './file-explorer.html',
   host: { class: 'explorer-host' },
@@ -161,6 +163,11 @@ export class FileExplorer {
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
+
+  /** File ảnh? → thumbnail hiển thị đúng tỉ lệ gốc (object-fit: contain). */
+  protected isImage(extension: string): boolean {
+    return categoryOf(extension) === 'image';
+  }
 
   /** Số chấm màu thẻ hiện trực tiếp trên card; dư ra gộp thành "+N" (hover xem). */
   private readonly MAX_TAG_DOTS = 5;

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { SearchApiService, SearchResult } from '../../core/services/search-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { Loader } from '../ui/loader';
 import { formatBytes, iconOf } from '../../core/util/file-types';
 
 /**
@@ -11,7 +12,7 @@ import { formatBytes, iconOf } from '../../core/util/file-types';
  */
 @Component({
   selector: 'app-search',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, Loader],
   templateUrl: './search.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

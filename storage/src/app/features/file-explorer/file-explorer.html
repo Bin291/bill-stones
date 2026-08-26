@@ -143,7 +143,7 @@
   }
 
   @if (loading()) {
-    <div class="empty">{{ 'files.loading' | t }}</div>
+    <div class="empty"><app-loader [dot]="9" [gap]="6" /></div>
   } @else if (folders().length === 0 && files().length === 0) {
     <div class="empty" style="cursor: default">
       <div style="font-size: 40px">
@@ -193,7 +193,7 @@
           }
           <div class="card-preview">
             @if (file.thumbnailUrl) {
-              <img [src]="file.thumbnailUrl" [alt]="file.name" />
+              <img [src]="file.thumbnailUrl" [alt]="file.name" [class.thumb-contain]="isImage(file.extension)" />
             } @else {
               <span class="mi" style="font-size: 42px; color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
             }
@@ -457,7 +457,7 @@
                 <span class="card-sub">Đã huỷ</span>
               }
               @default {
-                <span class="up-spin"></span>
+                <app-loader [dot]="2" [gap]="1" cycle="1.1s" />
                 <button class="up-cancel" type="button" (click)="cancelBatch(b)">Hủy</button>
               }
             }

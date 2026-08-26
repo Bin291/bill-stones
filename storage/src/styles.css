@@ -519,6 +519,10 @@ body {
   object-fit: cover;
   display: block;
 }
+/* Ảnh: hiện TRỌN theo tỉ lệ gốc (không cắt), card giữ nguyên kích thước */
+.card-preview img.thumb-contain {
+  object-fit: contain;
+}
 .card-meta {
   padding: 14px 16px;
   background: var(--canvas); /* nền thông tin file đồng nhất mọi card */

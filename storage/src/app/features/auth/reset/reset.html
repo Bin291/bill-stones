@@ -5,7 +5,10 @@
 
     @switch (status()) {
       @case ('waiting') {
-        <p class="auth-sub">{{ 'auth.processing' | t }}</p>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <app-loader [dot]="8" [gap]="5" />
+          <span class="auth-sub" style="margin: 0">{{ 'auth.processing' | t }}</span>
+        </div>
       }
       @case ('invalid') {
         <div class="auth-error">{{ 'auth.resetInvalid' | t }}</div>
