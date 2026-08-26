@@ -25,8 +25,10 @@ import { TagDialog } from '../tags/tag-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { PromptDialog } from '../ui/prompt-dialog';
 import { Loader } from '../ui/loader';
+import { Autofocus } from '../ui/autofocus.directive';
 import { MoveDialog, MoveItem } from './move-dialog';
 import { TagsApiService } from '../../core/services/tags-api.service';
+import { LangService } from '../../core/i18n/lang.service';
 import {
   BreadcrumbCrumb,
   Folder,
@@ -47,7 +49,6 @@ interface TagTarget {
 
 /** Hộp thoại tuỳ biến (thay prompt/confirm trình duyệt). */
 type ExplorerDialog =
-  | { type: 'newFolder' }
   | { type: 'rename'; kind: 'file' | 'folder'; id: string; name: string }
   | { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
 
@@ -88,6 +89,7 @@ interface UploadBatch {
     PromptDialog,
     MoveDialog,
     Loader,
+    Autofocus,
   ],
   templateUrl: './file-explorer.html',
   host: { class: 'explorer-host' },
@@ -103,6 +105,7 @@ export class FileExplorer {
   private readonly audioSvc = inject(AudioPlayerService);
   private readonly tagsApi = inject(TagsApiService);
   private readonly prefetch = inject(PrefetchService);
+  private readonly lang = inject(LangService);
   protected readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -148,6 +151,11 @@ export class FileExplorer {
   protected readonly tagTarget = signal<TagTarget | null>(null);
   protected readonly dialog = signal<ExplorerDialog | null>(null);
   protected readonly moveTarget = signal<MoveItem[] | null>(null);
+
+  // Tạo thư mục inline kiểu Windows Explorer (ô tên điền sẵn, sửa tại chỗ).
+  protected readonly creatingFolder = signal(false);
+  protected readonly newFolderName = signal('');
+  private creatingBusy = false;
 
   // --- Chọn nhiều (multi-select) để thao tác hàng loạt ---
   protected readonly selectionMode = signal(false);
@@ -363,16 +371,61 @@ export class FileExplorer {
     void this.revalidate();
   }
 
-  // --- Tạo thư mục (hộp thoại tuỳ biến) ---
+  // --- Tạo thư mục INLINE (kiểu Windows Explorer) ---
+  /** Bấm "Thư mục mới" → hiện 1 card với ô tên điền sẵn (đánh số kiểu Windows). */
   createFolder(): void {
-    this.dialog.set({ type: 'newFolder' });
+    if (this.creatingFolder()) return;
+    this.newFolderName.set(this.nextFolderName());
+    this.creatingFolder.set(true);
   }
 
-  async submitNewFolder(name: string): Promise<void> {
-    this.dialog.set(null);
-    await firstValueFrom(this.foldersApi.create(name.trim(), this.folderId()));
-    void this.revalidate();
-    this.refresh.bump();
+  cancelCreateFolder(): void {
+    this.creatingFolder.set(false);
+    this.newFolderName.set('');
+    this.creatingBusy = false;
+  }
+
+  /** Xác nhận tạo (Enter hoặc rời ô). Trùng tên → tự thêm (2), (3)… */
+  async confirmCreateFolder(): Promise<void> {
+    if (!this.creatingFolder() || this.creatingBusy) return;
+    this.creatingBusy = true;
+    const typed = this.newFolderName().trim();
+    const base = this.lang.translate('folder.newDefault');
+    // Tránh trùng ngay ở client (backend cũng có lớp chống trùng dự phòng).
+    const name = typed ? this.uniqueFolderName(typed) : this.nextFolderName();
+    this.creatingFolder.set(false);
+    this.newFolderName.set('');
+    try {
+      await firstValueFrom(this.foldersApi.create(name || base, this.folderId()));
+      void this.revalidate();
+      this.refresh.bump();
+    } finally {
+      this.creatingBusy = false;
+    }
+  }
+
+  /** Tên "Thư mục mới" khả dụng kế tiếp: base, rồi "base (2)", "base (3)"… */
+  private nextFolderName(): string {
+    return this.uniqueFolderName(this.lang.translate('folder.newDefault'));
+  }
+
+  /** Trả tên chưa trùng trong thư mục hiện tại theo kiểu Windows: base → base (2) → … */
+  private uniqueFolderName(desired: string): string {
+    const taken = new Set(this.folders().map((f) => f.name.toLowerCase()));
+    if (!taken.has(desired.toLowerCase())) return desired;
+    const { base } = this.parseIndexed(desired);
+    for (let i = 2; i < 100000; i++) {
+      const candidate = `${base} (${i})`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
+    return `${base} (${Date.now()})`;
+  }
+
+  /** Tách "Base (n)" → {base, index}; không có số → index = 1 (kiểu Windows). */
+  private parseIndexed(name: string): { base: string; index: number } {
+    const m = /^(.*?)\s\((\d+)\)$/.exec(name.trim());
+    if (m) return { base: m[1], index: Number(m[2]) };
+    return { base: name.trim(), index: 1 };
   }
 
   // --- Download / mở file ---
@@ -576,9 +629,39 @@ export class FileExplorer {
     const d = this.dialog();
     this.dialog.set(null);
     if (d?.type !== 'rename') return;
-    if (d.kind === 'file') await firstValueFrom(this.filesApi.rename(d.id, name.trim()));
-    else await firstValueFrom(this.foldersApi.rename(d.id, name.trim()));
+    if (d.kind === 'file') {
+      await firstValueFrom(this.filesApi.rename(d.id, name.trim()));
+    } else {
+      await firstValueFrom(this.foldersApi.rename(d.id, name.trim()));
+      // Dồn số thứ tự các thư mục trùng tên phía sau xuống -1 (kiểu yêu cầu).
+      await this.renumberAfter(d.name, d.id);
+    }
     void this.revalidate();
+  }
+
+  /**
+   * Sau khi đổi tên/loại 1 thư mục khỏi nhóm "Base (n)", các thư mục có index lớn
+   * hơn sẽ giảm 1 để giữ dãy liền mạch (New folder (3) → New folder (2)…).
+   */
+  private async renumberAfter(oldName: string, renamedId: string): Promise<void> {
+    const removed = this.parseIndexed(oldName);
+    const group = this.folders()
+      .filter((f) => f.id !== renamedId)
+      .map((f) => ({ f, ...this.parseIndexed(f.name) }))
+      .filter(
+        (x) => x.base.toLowerCase() === removed.base.toLowerCase() && x.index > removed.index,
+      )
+      .sort((a, b) => a.index - b.index);
+
+    for (const item of group) {
+      const ni = item.index - 1;
+      const target = ni <= 1 ? removed.base : `${removed.base} (${ni})`;
+      try {
+        await firstValueFrom(this.foldersApi.rename(item.f.id, target));
+      } catch {
+        /* fail-soft: bỏ qua mục lỗi, tiếp tục */
+      }
+    }
   }
 
   /** Cập nhật trạng thái sao ngay tại chỗ — KHÔNG reload để tránh nhấp nháy. */

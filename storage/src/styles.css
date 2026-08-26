@@ -536,6 +536,20 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Ô sửa tên tại chỗ (tạo/đổi tên thư mục kiểu Explorer) */
+.inline-name {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.16px;
+  padding: 2px 4px;
+  border: 1px solid var(--primary);
+  border-radius: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  outline: none;
+}
 .card-sub {
   font-size: 12px;
   letter-spacing: 0.32px;

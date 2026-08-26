@@ -82,7 +82,6 @@
           <button class="btn btn-icon" type="button" (click)="copy(s)" [title]="'Sao chép'">
             <span class="mi">{{ copied() === s.id ? 'check' : 'content_copy' }}</span>
           </button>
-          <span class="card-sub">{{ s.viewCount }}👁 {{ s.downloadCount }}⬇</span>
           <button class="btn btn-icon" type="button" (click)="revoke(s)">
             <span class="mi" style="color: var(--danger)">delete</span>
           </button>

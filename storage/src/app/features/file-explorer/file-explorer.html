@@ -82,7 +82,6 @@
     <div class="sort-menu upload-menu">
       <button class="btn btn-primary" type="button" (click)="toggleUploadMenu($event)">
         <span class="mi">upload</span> {{ 'action.upload' | t }}
-        <span class="mi" style="font-size: 18px">{{ uploadMenuOpen() ? 'expand_less' : 'expand_more' }}</span>
       </button>
       @if (uploadMenuOpen()) {
         <div class="sort-pop" (click)="$event.stopPropagation()">
@@ -144,7 +143,7 @@
 
   @if (loading()) {
     <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
-  } @else if (folders().length === 0 && files().length === 0) {
+  } @else if (folders().length === 0 && files().length === 0 && !creatingFolder()) {
     <div class="empty" style="cursor: default">
       <div style="font-size: 40px">
         <span class="mi" style="font-size: 40px">folder_open</span>
@@ -154,6 +153,22 @@
     </div>
   } @else if (settings.viewMode() === 'grid') {
     <div class="file-grid">
+      @if (creatingFolder()) {
+        <div class="card">
+          <div class="card-preview"><span class="mi" style="font-size: 46px; color: var(--primary)">folder</span></div>
+          <div class="card-meta">
+            <input
+              class="inline-name"
+              appAutofocus
+              [value]="newFolderName()"
+              (input)="newFolderName.set($any($event.target).value)"
+              (keydown.enter)="confirmCreateFolder()"
+              (keydown.escape)="cancelCreateFolder()"
+              (blur)="confirmCreateFolder()"
+            />
+          </div>
+        </div>
+      }
       @for (folder of folders(); track folder.id) {
         <div
           class="card"
@@ -248,6 +263,24 @@
         </tr>
       </thead>
       <tbody>
+        @if (creatingFolder()) {
+          <tr>
+            <td>
+              <span class="mi" style="color: var(--primary)">folder</span>
+              <input
+                class="inline-name"
+                appAutofocus
+                [value]="newFolderName()"
+                (input)="newFolderName.set($any($event.target).value)"
+                (keydown.enter)="confirmCreateFolder()"
+                (keydown.escape)="cancelCreateFolder()"
+                (blur)="confirmCreateFolder()"
+              />
+            </td>
+            <td>—</td>
+            <td></td>
+          </tr>
+        }
         @for (folder of folders(); track folder.id) {
           <tr
             [class.selected]="isSelected('folder', folder.id)"
@@ -370,19 +403,9 @@
   />
 }
 
-<!-- Hộp thoại tạo thư mục / đổi tên / xác nhận xoá (thay prompt/confirm trình duyệt) -->
+<!-- Hộp thoại đổi tên / xác nhận xoá (thay prompt/confirm trình duyệt) -->
 @if (dialog(); as d) {
   @switch (d.type) {
-    @case ('newFolder') {
-      <app-prompt-dialog
-        [title]="'action.newFolder' | t"
-        [label]="'files.name' | t"
-        [placeholder]="'action.newFolder' | t"
-        [confirmLabel]="'action.confirm' | t"
-        (confirmed)="submitNewFolder($event)"
-        (cancelled)="dialog.set(null)"
-      />
-    }
     @case ('rename') {
       <app-prompt-dialog
         [title]="'action.rename' | t"
