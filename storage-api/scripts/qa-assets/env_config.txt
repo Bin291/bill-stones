@@ -1,0 +1,10 @@
+PORT=3000
+NODE_ENV=production
+DATABASE_URL=postgresql://qa_user:placeholder@localhost:5432/qa_test_db
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+JWT_SECRET_KEY=qa-placeholder-not-a-real-secret
+STORAGE_BUCKET_NAME=qa-test-bucket
+MAX_UPLOAD_SIZE_MB=2048
+FEATURE_FLAG_NEW_SEARCH=true
+LOG_LEVEL=debug
