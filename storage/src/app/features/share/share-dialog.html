@@ -38,39 +38,42 @@
 
       <!-- Phần dưới: link công khai -->
       <h3 class="modal-section">Link công khai</h3>
-      <div class="link-opts">
-        <label class="opt">
+      <!-- Sau khi đã tạo link thì ẩn phần tuỳ chọn + nút "Tạo link" (mỗi mục 1 link) -->
+      @if (!links().length) {
+        <div class="link-opts">
+          <label class="opt">
+            <input
+              type="checkbox"
+              [checked]="linkAllowDownload()"
+              (change)="linkAllowDownload.set($any($event.target).checked)"
+            />
+            Cho phép tải xuống
+          </label>
+          <label class="opt">
+            Hết hạn:
+            <select
+              [value]="linkExpiresDays()"
+              (change)="linkExpiresDays.set(+$any($event.target).value)"
+            >
+              <option [value]="0">Không</option>
+              <option [value]="1">1 ngày</option>
+              <option [value]="7">7 ngày</option>
+              <option [value]="30">30 ngày</option>
+            </select>
+          </label>
           <input
-            type="checkbox"
-            [checked]="linkAllowDownload()"
-            (change)="linkAllowDownload.set($any($event.target).checked)"
+            class="auth-input"
+            style="max-width: 160px"
+            type="text"
+            placeholder="Mật khẩu (tuỳ chọn)"
+            [value]="linkPassword()"
+            (input)="linkPassword.set($any($event.target).value)"
           />
-          Cho phép tải xuống
-        </label>
-        <label class="opt">
-          Hết hạn:
-          <select
-            [value]="linkExpiresDays()"
-            (change)="linkExpiresDays.set(+$any($event.target).value)"
-          >
-            <option [value]="0">Không</option>
-            <option [value]="1">1 ngày</option>
-            <option [value]="7">7 ngày</option>
-            <option [value]="30">30 ngày</option>
-          </select>
-        </label>
-        <input
-          class="auth-input"
-          style="max-width: 160px"
-          type="text"
-          placeholder="Mật khẩu (tuỳ chọn)"
-          [value]="linkPassword()"
-          (input)="linkPassword.set($any($event.target).value)"
-        />
-        <button class="btn" type="button" [disabled]="busy()" (click)="createLink()">
-          Tạo link
-        </button>
-      </div>
+          <button class="btn" type="button" [disabled]="busy()" (click)="createLink()">
+            Tạo link
+          </button>
+        </div>
+      }
 
       @for (s of links(); track s.id) {
         <div class="share-row">
@@ -79,7 +82,6 @@
           <button class="btn btn-icon" type="button" (click)="copy(s)" [title]="'Sao chép'">
             <span class="mi">{{ copied() === s.id ? 'check' : 'content_copy' }}</span>
           </button>
-          <span class="card-sub">{{ s.viewCount }}👁 {{ s.downloadCount }}⬇</span>
           <button class="btn btn-icon" type="button" (click)="revoke(s)">
             <span class="mi" style="color: var(--danger)">delete</span>
           </button>

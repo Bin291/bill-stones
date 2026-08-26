@@ -58,8 +58,35 @@ export class SupabaseService {
     return this.client.auth.signInWithPassword({ email, password });
   }
 
-  signUp(email: string, password: string) {
-    return this.client.auth.signUp({ email, password });
+  /** Đăng ký email + password, kèm metadata (username, display_name) và link xác nhận. */
+  signUp(email: string, password: string, meta?: Record<string, unknown>) {
+    return this.client.auth.signUp({
+      email,
+      password,
+      options: {
+        data: meta,
+        emailRedirectTo: this.isBrowser ? `${window.location.origin}/auth/callback` : undefined,
+      },
+    });
+  }
+
+  /** Đặt lại session từ token do backend cấp (đăng nhập bằng tên đăng nhập). */
+  setSession(accessToken: string, refreshToken: string) {
+    return this.client.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+  }
+
+  /** Gửi email đặt lại mật khẩu (Quên mật khẩu). Link về trang /auth/reset. */
+  resetPasswordForEmail(email: string) {
+    const redirectTo = this.isBrowser ? `${window.location.origin}/auth/reset` : undefined;
+    return this.client.auth.resetPasswordForEmail(email, { redirectTo });
+  }
+
+  /** Cập nhật mật khẩu mới (dùng ở trang /auth/reset sau khi bấm link). */
+  updatePassword(password: string) {
+    return this.client.auth.updateUser({ password });
   }
 
   /**

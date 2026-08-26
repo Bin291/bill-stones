@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { firstValueFrom } from 'rxjs';
 import { SharedApiService, SharedItem } from '../../core/services/shared-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { Loader } from '../ui/loader';
 import { formatBytes, iconOf } from '../../core/util/file-types';
 
 /** "Được chia sẻ với tôi" (mục 12.E nhóm C) — chỉ Xem + Tải xuống. */
 @Component({
   selector: 'app-shared-page',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, Loader],
   templateUrl: './shared-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

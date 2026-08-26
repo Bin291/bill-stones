@@ -4,7 +4,7 @@
   (dragover)="onDragOver($event)"
   (dragleave)="onDragLeave()"
   (drop)="onDrop($event)"
-  (click)="closeMenu(); sortMenuOpen.set(false)"
+  (click)="closeMenu(); sortMenuOpen.set(false); uploadMenuOpen.set(false)"
 >
   <div class="toolbar">
     @if (isFolderLens()) {
@@ -28,33 +28,33 @@
     <span class="spacer"></span>
 
     <div class="sort-menu">
-      <button class="btn" type="button" (click)="toggleSortMenu($event)">
-        <span class="mi">swap_vert</span> {{ 'sort.label' | t }}
+      <button
+        class="btn"
+        type="button"
+        (click)="toggleSortMenu($event)"
+        [title]="('sort.label' | t) + ': ' + (sortLabelKey() | t)"
+      >
+        <span class="mi">swap_vert</span>
+        {{ sortLabelKey() | t }}
         <span class="mi" style="font-size: 18px">{{ sortMenuOpen() ? 'expand_less' : 'expand_more' }}</span>
       </button>
       @if (sortMenuOpen()) {
         <div class="sort-pop" (click)="$event.stopPropagation()">
-          <button class="sort-item" type="button" [class.on]="sort() === 'name'" (click)="setSort('name')">
-            <span class="mi">sort_by_alpha</span>
-            <span class="sort-item-label">{{ 'sort.name' | t }}</span>
-            @if (sort() === 'name') {
-              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
-            }
-          </button>
-          <button class="sort-item" type="button" [class.on]="sort() === 'createdAt'" (click)="setSort('createdAt')">
-            <span class="mi">schedule</span>
-            <span class="sort-item-label">{{ 'sort.date' | t }}</span>
-            @if (sort() === 'createdAt') {
-              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
-            }
-          </button>
-          <button class="sort-item" type="button" [class.on]="sort() === 'size'" (click)="setSort('size')">
-            <span class="mi">data_usage</span>
-            <span class="sort-item-label">{{ 'sort.size' | t }}</span>
-            @if (sort() === 'size') {
-              <span class="mi sort-dir">{{ order() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span>
-            }
-          </button>
+          <div class="sort-pop-head">{{ 'sort.label' | t }}</div>
+          @for (opt of sortOptions; track opt.labelKey) {
+            <button
+              class="sort-item"
+              type="button"
+              [class.on]="isActiveSort(opt.sort, opt.order)"
+              (click)="applySort(opt.sort, opt.order)"
+            >
+              <span class="mi">{{ opt.icon }}</span>
+              <span class="sort-item-label">{{ opt.labelKey | t }}</span>
+              @if (isActiveSort(opt.sort, opt.order)) {
+                <span class="mi sort-dir">check</span>
+              }
+            </button>
+          }
         </div>
       }
     </div>
@@ -79,10 +79,25 @@
       </button>
     }
 
-    <label class="btn btn-primary" style="cursor: pointer">
-      <span class="mi">upload</span> {{ 'action.upload' | t }}
-      <input type="file" multiple hidden (change)="onPick($event)" />
-    </label>
+    <div class="sort-menu upload-menu">
+      <button class="btn btn-primary" type="button" (click)="toggleUploadMenu($event)">
+        <span class="mi">upload</span> {{ 'action.upload' | t }}
+      </button>
+      @if (uploadMenuOpen()) {
+        <div class="sort-pop" (click)="$event.stopPropagation()">
+          <label class="sort-item" style="cursor: pointer">
+            <span class="mi">upload_file</span>
+            <span class="sort-item-label">{{ 'upload.file' | t }}</span>
+            <input type="file" multiple hidden (change)="onPick($event)" />
+          </label>
+          <label class="sort-item" style="cursor: pointer">
+            <span class="mi">drive_folder_upload</span>
+            <span class="sort-item-label">{{ 'upload.folder' | t }}</span>
+            <input type="file" webkitdirectory hidden (change)="onPick($event)" />
+          </label>
+        </div>
+      }
+    </div>
   </div>
 
   <!-- Thanh thao tác hàng loạt khi ở chế độ Chọn -->
@@ -126,9 +141,7 @@
     </div>
   }
 
-  @if (loading()) {
-    <div class="empty">{{ 'files.loading' | t }}</div>
-  } @else if (folders().length === 0 && files().length === 0) {
+  @if (folders().length === 0 && files().length === 0 && !creatingFolder()) {
     <div class="empty" style="cursor: default">
       <div style="font-size: 40px">
         <span class="mi" style="font-size: 40px">folder_open</span>
@@ -138,6 +151,22 @@
     </div>
   } @else if (settings.viewMode() === 'grid') {
     <div class="file-grid">
+      @if (creatingFolder()) {
+        <div class="card">
+          <div class="card-preview"><span class="mi" style="font-size: 46px; color: var(--primary)">folder</span></div>
+          <div class="card-meta">
+            <input
+              class="inline-name"
+              appAutofocus
+              [value]="newFolderName()"
+              (input)="newFolderName.set($any($event.target).value)"
+              (keydown.enter)="confirmCreateFolder()"
+              (keydown.escape)="cancelCreateFolder()"
+              (blur)="confirmCreateFolder()"
+            />
+          </div>
+        </div>
+      }
       @for (folder of folders(); track folder.id) {
         <div
           class="card"
@@ -155,8 +184,21 @@
           }
           <div class="card-preview"><span class="mi" style="font-size: 46px; color: var(--primary)">folder</span></div>
           <div class="card-meta">
-            <div class="card-name">{{ folder.name }}</div>
-            <div class="card-sub">{{ 'common.folder' | t }}</div>
+            @if (renamingId() === folder.id) {
+              <input
+                class="inline-name"
+                appAutofocus
+                [value]="renameName()"
+                (click)="$event.stopPropagation()"
+                (input)="renameName.set($any($event.target).value)"
+                (keydown.enter)="confirmRename()"
+                (keydown.escape)="cancelRename()"
+                (blur)="confirmRename()"
+              />
+            } @else {
+              <div class="card-name">{{ folder.name }}</div>
+              <div class="card-sub">{{ 'common.folder' | t }}</div>
+            }
           </div>
         </div>
       }
@@ -177,30 +219,58 @@
           }
           <div class="card-preview">
             @if (file.thumbnailUrl) {
-              <img [src]="file.thumbnailUrl" [alt]="file.name" />
+              <img [src]="file.thumbnailUrl" [alt]="file.name" [class.thumb-contain]="isImage(file.extension)" />
             } @else {
               <span class="mi" style="font-size: 42px; color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
             }
           </div>
           <div class="card-meta">
-            <div class="card-name" [title]="file.name">{{ file.name }}</div>
-            <div class="card-sub">
-              {{ formatBytes(file.size) }}
-              @if (file.status !== 'ready') {
-                · {{ file.status }}
+            @if (renamingId() === file.id) {
+              <input
+                class="inline-name"
+                appAutofocus
+                [value]="renameName()"
+                (click)="$event.stopPropagation()"
+                (input)="renameName.set($any($event.target).value)"
+                (keydown.enter)="confirmRename()"
+                (keydown.escape)="cancelRename()"
+                (blur)="confirmRename()"
+              />
+            } @else {
+              <div class="card-name" [title]="file.name">{{ file.name }}</div>
+            }
+            <div class="card-metarow">
+              <span class="card-size">
+                {{ formatBytes(file.size) }}
+                @if (file.status !== 'ready') {
+                  · {{ file.status }}
+                }
+              </span>
+              @if (file.tags && file.tags.length) {
+                <span class="card-tags">
+                  @for (tg of visibleTags(file.tags); track tg.id) {
+                    <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                  }
+                  @if (overflowTags(file.tags).length) {
+                    <span class="card-tag-more" (click)="$event.stopPropagation()">
+                      +{{ overflowTags(file.tags).length }}
+                      <span class="card-tag-pop">
+                        @for (tg of overflowTags(file.tags); track tg.id) {
+                          <span class="card-tag-pop-item">
+                            <span class="card-tag-dot" [style.background]="tg.color"></span>
+                            <span class="card-tag-pop-name">{{ tg.name }}</span>
+                          </span>
+                        }
+                      </span>
+                    </span>
+                  }
+                </span>
               }
             </div>
             @if (file.folderPath && file.folderPath.length) {
               <div class="card-path" (click)="goToFilePath(file); $event.stopPropagation()">
                 <span class="mi" style="font-size: 13px">folder</span>
                 {{ file.folderPath[file.folderPath.length - 1].name }}
-              </div>
-            }
-            @if (file.tags && file.tags.length) {
-              <div class="card-tags">
-                @for (tg of file.tags; track tg.id) {
-                  <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
-                }
               </div>
             }
           </div>
@@ -217,6 +287,24 @@
         </tr>
       </thead>
       <tbody>
+        @if (creatingFolder()) {
+          <tr>
+            <td>
+              <span class="mi" style="color: var(--primary)">folder</span>
+              <input
+                class="inline-name"
+                appAutofocus
+                [value]="newFolderName()"
+                (input)="newFolderName.set($any($event.target).value)"
+                (keydown.enter)="confirmCreateFolder()"
+                (keydown.escape)="cancelCreateFolder()"
+                (blur)="confirmCreateFolder()"
+              />
+            </td>
+            <td>—</td>
+            <td></td>
+          </tr>
+        }
         @for (folder of folders(); track folder.id) {
           <tr
             [class.selected]="isSelected('folder', folder.id)"
@@ -227,7 +315,21 @@
               @if (selectionMode()) {
                 <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
               }
-              <span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}
+              <span class="mi" style="color: var(--primary)">folder</span>
+              @if (renamingId() === folder.id) {
+                <input
+                  class="inline-name"
+                  appAutofocus
+                  [value]="renameName()"
+                  (click)="$event.stopPropagation()"
+                  (input)="renameName.set($any($event.target).value)"
+                  (keydown.enter)="confirmRename()"
+                  (keydown.escape)="cancelRename()"
+                  (blur)="confirmRename()"
+                />
+              } @else {
+                {{ folder.name }}
+              }
             </td>
             <td>—</td>
             <td>{{ folder.updatedAt | date: 'short' }}</td>
@@ -243,7 +345,21 @@
               @if (selectionMode()) {
                 <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
               }
-              <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span> {{ file.name }}
+              <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
+              @if (renamingId() === file.id) {
+                <input
+                  class="inline-name"
+                  appAutofocus
+                  [value]="renameName()"
+                  (click)="$event.stopPropagation()"
+                  (input)="renameName.set($any($event.target).value)"
+                  (keydown.enter)="confirmRename()"
+                  (keydown.escape)="cancelRename()"
+                  (blur)="confirmRename()"
+                />
+              } @else {
+                {{ file.name }}
+              }
             </td>
             <td>{{ formatBytes(file.size) }}</td>
             <td>{{ file.updatedAt | date: 'short' }}</td>
@@ -339,48 +455,29 @@
   />
 }
 
-<!-- Hộp thoại tạo thư mục / đổi tên / xác nhận xoá (thay prompt/confirm trình duyệt) -->
+<!-- Hộp thoại xác nhận xoá (thay confirm trình duyệt) -->
 @if (dialog(); as d) {
-  @switch (d.type) {
-    @case ('newFolder') {
-      <app-prompt-dialog
-        [title]="'action.newFolder' | t"
-        [label]="'files.name' | t"
-        [placeholder]="'action.newFolder' | t"
-        [confirmLabel]="'action.confirm' | t"
-        (confirmed)="submitNewFolder($event)"
-        (cancelled)="dialog.set(null)"
-      />
-    }
-    @case ('rename') {
-      <app-prompt-dialog
-        [title]="'action.rename' | t"
-        [label]="'files.name' | t"
-        [initialValue]="d.name"
-        [confirmLabel]="'action.save' | t"
-        (confirmed)="submitRename($event)"
-        (cancelled)="dialog.set(null)"
-      />
-    }
-    @case ('confirmDelete') {
-      <app-confirm-dialog
-        [title]="'action.delete' | t"
-        [message]="'Bạn có chắc chắn chuyển “' + d.name + '” vào Thùng rác?'"
-        [confirmLabel]="'action.delete' | t"
-        [danger]="true"
-        (confirmed)="confirmDelete()"
-        (cancelled)="dialog.set(null)"
-      />
-    }
-  }
+  <app-confirm-dialog
+    [title]="'action.delete' | t"
+    [message]="'Bạn có chắc chắn chuyển “' + d.name + '” vào Thùng rác?'"
+    [confirmLabel]="'action.delete' | t"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="dialog.set(null)"
+  />
 }
 
 <!-- Upload panel (gộp theo mục, gọn, thu gọn được) -->
 @if (hasActiveUploads()) {
   <div class="upload-panel">
     <div class="upload-head">
-      <span>
-        {{ uploadingCount() > 0 ? ('Đang tải ' + uploadingCount() + ' mục lên') : 'Đã tải lên xong' }}
+      <span class="upload-head-title">
+        <span>
+          {{ uploadingCount() > 0 ? ('Đang tải ' + uploadingCount() + ' mục lên') : 'Đã tải lên xong' }}
+        </span>
+        <span class="upload-head-sub">
+          Đã tải {{ uploadDoneItems() }}/{{ uploadTotalItems() }} mục · {{ uploadPercent() }}%
+        </span>
       </span>
       <span class="row" style="gap: 2px">
         <button class="btn btn-icon" style="padding: 2px" type="button" (click)="toggleUploadsCollapse()">
@@ -421,7 +518,7 @@
                 <span class="card-sub">Đã huỷ</span>
               }
               @default {
-                <span class="up-spin"></span>
+                <app-loader [dot]="2" [gap]="1" cycle="1.1s" />
                 <button class="up-cancel" type="button" (click)="cancelBatch(b)">Hủy</button>
               }
             }

@@ -5,6 +5,7 @@ import { FilesApiService } from '../../core/services/files-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
 import { RefreshService } from '../../core/services/refresh.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { Loader } from '../ui/loader';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { formatBytes, iconOf } from '../../core/util/file-types';
 
@@ -15,7 +16,7 @@ type PendingConfirm =
 /** Thùng rác (mục 7.E, 11.K): khôi phục / xoá vĩnh viễn / dọn thùng rác. */
 @Component({
   selector: 'app-trash',
-  imports: [TranslatePipe, ConfirmDialog],
+  imports: [TranslatePipe, ConfirmDialog, Loader],
   templateUrl: './trash.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

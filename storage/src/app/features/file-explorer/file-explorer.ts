@@ -23,16 +23,20 @@ import { VideoPlayer } from '../video-player/video-player';
 import { FilePreview } from '../file-preview/file-preview';
 import { TagDialog } from '../tags/tag-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
-import { PromptDialog } from '../ui/prompt-dialog';
+import { Loader } from '../ui/loader';
+import { Autofocus } from '../ui/autofocus.directive';
 import { MoveDialog, MoveItem } from './move-dialog';
 import { TagsApiService } from '../../core/services/tags-api.service';
+import { LangService } from '../../core/i18n/lang.service';
 import {
   BreadcrumbCrumb,
   Folder,
   ListFilesQuery,
   StoredFile,
 } from '../../core/models/file.model';
-import { CATEGORIES, categoryByKey, categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
+import { categoryByKey, categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
+import { PrefetchService, ViewBundle } from '../../core/services/prefetch.service';
+import { Lens, ViewParams, buildListQuery, viewKey } from '../../core/util/list-query';
 
 type Mode = 'folder' | 'type' | 'starred' | 'recent' | 'tag';
 
@@ -43,10 +47,7 @@ interface TagTarget {
 }
 
 /** Hộp thoại tuỳ biến (thay prompt/confirm trình duyệt). */
-type ExplorerDialog =
-  | { type: 'newFolder' }
-  | { type: 'rename'; kind: 'file' | 'folder'; id: string; name: string }
-  | { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
+type ExplorerDialog = { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
 
 interface ContextMenu {
   x: number;
@@ -82,8 +83,9 @@ interface UploadBatch {
     FilePreview,
     TagDialog,
     ConfirmDialog,
-    PromptDialog,
     MoveDialog,
+    Loader,
+    Autofocus,
   ],
   templateUrl: './file-explorer.html',
   host: { class: 'explorer-host' },
@@ -98,6 +100,8 @@ export class FileExplorer {
   private readonly refresh = inject(RefreshService);
   private readonly audioSvc = inject(AudioPlayerService);
   private readonly tagsApi = inject(TagsApiService);
+  private readonly prefetch = inject(PrefetchService);
+  private readonly lang = inject(LangService);
   protected readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -118,11 +122,47 @@ export class FileExplorer {
   protected readonly order = signal<ListFilesQuery['order']>('desc');
   protected readonly sortMenuOpen = signal(false);
 
+  /** Các lựa chọn sắp xếp GỘP (trường + chiều) như kiểu shop — chọn 1 là ra ngay. */
+  protected readonly sortOptions: {
+    sort: NonNullable<ListFilesQuery['sort']>;
+    order: NonNullable<ListFilesQuery['order']>;
+    labelKey: string;
+    icon: string;
+  }[] = [
+    { sort: 'name', order: 'asc', labelKey: 'sort.nameAsc', icon: 'sort_by_alpha' },
+    { sort: 'name', order: 'desc', labelKey: 'sort.nameDesc', icon: 'sort_by_alpha' },
+    { sort: 'createdAt', order: 'desc', labelKey: 'sort.dateNew', icon: 'schedule' },
+    { sort: 'createdAt', order: 'asc', labelKey: 'sort.dateOld', icon: 'history' },
+    { sort: 'size', order: 'desc', labelKey: 'sort.sizeDesc', icon: 'data_usage' },
+    { sort: 'size', order: 'asc', labelKey: 'sort.sizeAsc', icon: 'data_usage' },
+  ];
+  /** Nhãn lựa chọn đang áp dụng — hiện trên nút để biết đang sắp theo kiểu gì. */
+  protected readonly sortLabelKey = computed(() => {
+    const s = this.sort();
+    const o = this.order();
+    return this.sortOptions.find((x) => x.sort === s && x.order === o)?.labelKey ?? 'sort.dateNew';
+  });
+  protected isActiveSort(sort: string, order: string): boolean {
+    return this.sort() === sort && this.order() === order;
+  }
+  protected readonly uploadMenuOpen = signal(false);
+
   protected readonly uploadBatches = signal<UploadBatch[]>([]);
   protected readonly uploadsCollapsed = signal(false);
   protected readonly uploadingCount = computed(
     () => this.uploadBatches().filter((b) => b.status() === 'uploading').length,
   );
+  // Tổng số mục con (file) + số đã xử lý (xong/lỗi) + % — hiện dưới tiêu đề panel.
+  protected readonly uploadTotalItems = computed(() =>
+    this.uploadBatches().reduce((s, b) => s + b.total, 0),
+  );
+  protected readonly uploadDoneItems = computed(() =>
+    this.uploadBatches().reduce((s, b) => s + b.done() + b.failed(), 0),
+  );
+  protected readonly uploadPercent = computed(() => {
+    const total = this.uploadTotalItems();
+    return total > 0 ? Math.round((this.uploadDoneItems() / total) * 100) : 0;
+  });
   readonly hasActiveUploads = computed(() => this.uploadBatches().length > 0);
   protected readonly menu = signal<ContextMenu | null>(null);
   protected readonly shareTarget = signal<ShareTarget | null>(null);
@@ -131,6 +171,18 @@ export class FileExplorer {
   protected readonly tagTarget = signal<TagTarget | null>(null);
   protected readonly dialog = signal<ExplorerDialog | null>(null);
   protected readonly moveTarget = signal<MoveItem[] | null>(null);
+
+  // Tạo thư mục inline kiểu Windows Explorer (ô tên điền sẵn, sửa tại chỗ).
+  protected readonly creatingFolder = signal(false);
+  protected readonly newFolderName = signal('');
+  private creatingBusy = false;
+
+  // Đổi tên INLINE ngay trên card/hàng (không dùng hộp thoại).
+  protected readonly renamingId = signal<string | null>(null);
+  protected readonly renamingKind = signal<'file' | 'folder'>('file');
+  protected readonly renameName = signal('');
+  private renameOldName = '';
+  private renamingBusy = false;
 
   // --- Chọn nhiều (multi-select) để thao tác hàng loạt ---
   protected readonly selectionMode = signal(false);
@@ -149,6 +201,20 @@ export class FileExplorer {
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
+
+  /** File ảnh? → thumbnail hiển thị đúng tỉ lệ gốc (object-fit: contain). */
+  protected isImage(extension: string): boolean {
+    return categoryOf(extension) === 'image';
+  }
+
+  /** Số chấm màu thẻ hiện trực tiếp trên card; dư ra gộp thành "+N" (hover xem). */
+  private readonly MAX_TAG_DOTS = 5;
+  protected visibleTags(tags: StoredFile['tags']): NonNullable<StoredFile['tags']> {
+    return (tags ?? []).slice(0, this.MAX_TAG_DOTS);
+  }
+  protected overflowTags(tags: StoredFile['tags']): NonNullable<StoredFile['tags']> {
+    return (tags ?? []).slice(this.MAX_TAG_DOTS);
+  }
 
   protected readonly title = computed(() => {
     switch (this.mode()) {
@@ -214,64 +280,78 @@ export class FileExplorer {
     );
     if (!pending) return;
     this.thumbRetries++;
-    setTimeout(() => void this.load(), 3000);
+    setTimeout(() => void this.revalidate(), 3000);
   }
 
+  /** Tham số khung nhìn hiện tại (để dựng query + khoá cache). */
+  private currentParams(): ViewParams {
+    return {
+      folderId: this.folderId(),
+      category: this.category(),
+      tagId: this.tagId(),
+      sort: this.sort() ?? 'createdAt',
+      order: this.order() ?? 'desc',
+    };
+  }
+  private currentKey(): string {
+    return viewKey(this.mode() as Lens, this.currentParams());
+  }
+  private applyBundle(b: ViewBundle): void {
+    this.folders.set(b.folders);
+    this.files.set(b.files);
+    this.breadcrumb.set(b.crumbs);
+  }
+
+  /** Gọi API lấy dữ liệu khung nhìn hiện tại. */
+  private async fetchBundle(): Promise<ViewBundle> {
+    const mode = this.mode() as Lens;
+    const p = this.currentParams();
+    const query = buildListQuery(mode, p);
+    if (mode === 'folder') {
+      const fid = p.folderId;
+      const [folders, files, crumbs] = await Promise.all([
+        firstValueFrom(this.foldersApi.listChildren(fid)),
+        firstValueFrom(this.filesApi.list(query)),
+        fid ? firstValueFrom(this.foldersApi.breadcrumb(fid)) : Promise.resolve([]),
+      ]);
+      return { folders, files, crumbs };
+    }
+    const files = await firstValueFrom(this.filesApi.list(query));
+    return { folders: [], files, crumbs: [] };
+  }
+
+  /**
+   * Nạp khung nhìn: cache có → hiện NGAY; cache-miss → GIỮ hiển thị hiện tại rồi
+   * lấp im lặng. KHÔNG bao giờ hiện spinner trong nội dung — chỉ có 1 splash tổng
+   * lúc mới vào app (không lặp lại cho tới khi refresh trang).
+   */
   async load(): Promise<void> {
-    this.loading.set(true);
     this.menu.set(null);
+    const key = this.currentKey();
+    const cached = this.prefetch.getView(key);
+    if (cached) this.applyBundle(cached);
     try {
-      if (this.isFolderLens()) {
-        const fid = this.folderId();
-        const [folders, files, crumbs] = await Promise.all([
-          firstValueFrom(this.foldersApi.listChildren(fid)),
-          firstValueFrom(this.filesApi.list(this.buildQuery())),
-          fid ? firstValueFrom(this.foldersApi.breadcrumb(fid)) : Promise.resolve([]),
-        ]);
-        this.folders.set(folders);
-        this.files.set(files);
-        this.breadcrumb.set(crumbs);
-      } else {
-        this.folders.set([]);
-        this.breadcrumb.set([]);
-        const files = await firstValueFrom(this.filesApi.list(this.buildQuery()));
-        this.files.set(files);
-      }
+      const fresh = await this.fetchBundle();
+      this.prefetch.setView(key, fresh);
+      this.applyBundle(fresh);
     } catch {
-      this.folders.set([]);
-      this.files.set([]);
+      /* giữ hiển thị hiện tại nếu lỗi */
     } finally {
-      this.loading.set(false);
       this.scheduleThumbRefresh();
     }
   }
 
-  private buildQuery(): ListFilesQuery {
-    const base: ListFilesQuery = { sort: this.sort(), order: this.order() };
-    switch (this.mode()) {
-      case 'folder':
-        return { ...base, folderId: this.folderId() };
-      case 'type': {
-        const cat = categoryByKey((this.category() ?? 'other') as never);
-        return { ...base, extensions: (cat?.extensions ?? []).join(','), withPath: true };
-      }
-      case 'tag':
-        return { ...base, tagId: this.tagId() ?? '', withPath: true };
-      case 'starred':
-        return { ...base, starred: true, extensions: this.allExtensions(), withPath: true };
-      case 'recent':
-        return {
-          ...base,
-          sort: 'updatedAt',
-          order: 'desc',
-          extensions: this.allExtensions(),
-          withPath: true,
-        };
+  /** Nạp lại SILENT sau thao tác (không spinner, giữ hiển thị hiện tại đến khi có dữ liệu mới). */
+  async revalidate(): Promise<void> {
+    try {
+      const fresh = await this.fetchBundle();
+      this.prefetch.setView(this.currentKey(), fresh);
+      this.applyBundle(fresh);
+    } catch {
+      /* giữ nguyên hiển thị hiện tại nếu lỗi */
+    } finally {
+      this.scheduleThumbRefresh();
     }
-  }
-
-  private allExtensions(): string {
-    return CATEGORIES.flatMap((c) => c.extensions).join(',');
   }
 
   // --- Điều hướng ---
@@ -300,26 +380,69 @@ export class FileExplorer {
     this.sortMenuOpen.update((v) => !v);
   }
 
-  setSort(field: NonNullable<ListFilesQuery['sort']>): void {
-    if (this.sort() === field) {
-      this.order.set(this.order() === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.sort.set(field);
-      this.order.set(field === 'name' ? 'asc' : 'desc');
-    }
-    void this.load();
+  /** Áp dụng 1 lựa chọn sắp xếp gộp (trường + chiều). */
+  applySort(sort: NonNullable<ListFilesQuery['sort']>, order: NonNullable<ListFilesQuery['order']>): void {
+    this.sort.set(sort);
+    this.order.set(order);
+    this.sortMenuOpen.set(false);
+    void this.revalidate();
   }
 
-  // --- Tạo thư mục (hộp thoại tuỳ biến) ---
+  // --- Tạo thư mục INLINE (kiểu Windows Explorer) ---
+  /** Bấm "Thư mục mới" → hiện 1 card với ô tên điền sẵn (đánh số kiểu Windows). */
   createFolder(): void {
-    this.dialog.set({ type: 'newFolder' });
+    if (this.creatingFolder()) return;
+    this.newFolderName.set(this.nextFolderName());
+    this.creatingFolder.set(true);
   }
 
-  async submitNewFolder(name: string): Promise<void> {
-    this.dialog.set(null);
-    await firstValueFrom(this.foldersApi.create(name.trim(), this.folderId()));
-    void this.load();
-    this.refresh.bump();
+  cancelCreateFolder(): void {
+    this.creatingFolder.set(false);
+    this.newFolderName.set('');
+    this.creatingBusy = false;
+  }
+
+  /** Xác nhận tạo (Enter hoặc rời ô). Trùng tên → tự thêm (2), (3)… */
+  async confirmCreateFolder(): Promise<void> {
+    if (!this.creatingFolder() || this.creatingBusy) return;
+    this.creatingBusy = true;
+    const typed = this.newFolderName().trim();
+    const base = this.lang.translate('folder.newDefault');
+    // Tránh trùng ngay ở client (backend cũng có lớp chống trùng dự phòng).
+    const name = typed ? this.uniqueFolderName(typed) : this.nextFolderName();
+    this.creatingFolder.set(false);
+    this.newFolderName.set('');
+    try {
+      await firstValueFrom(this.foldersApi.create(name || base, this.folderId()));
+      void this.revalidate();
+      this.refresh.bump();
+    } finally {
+      this.creatingBusy = false;
+    }
+  }
+
+  /** Tên "Thư mục mới" khả dụng kế tiếp: base, rồi "base (2)", "base (3)"… */
+  private nextFolderName(): string {
+    return this.uniqueFolderName(this.lang.translate('folder.newDefault'));
+  }
+
+  /** Trả tên chưa trùng trong thư mục hiện tại theo kiểu Windows: base → base (2) → … */
+  private uniqueFolderName(desired: string): string {
+    const taken = new Set(this.folders().map((f) => f.name.toLowerCase()));
+    if (!taken.has(desired.toLowerCase())) return desired;
+    const { base } = this.parseIndexed(desired);
+    for (let i = 2; i < 100000; i++) {
+      const candidate = `${base} (${i})`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
+    return `${base} (${Date.now()})`;
+  }
+
+  /** Tách "Base (n)" → {base, index}; không có số → index = 1 (kiểu Windows). */
+  private parseIndexed(name: string): { base: string; index: number } {
+    const m = /^(.*?)\s\((\d+)\)$/.exec(name.trim());
+    if (m) return { base: m[1], index: Number(m[2]) };
+    return { base: name.trim(), index: 1 };
   }
 
   // --- Download / mở file ---
@@ -462,7 +585,7 @@ export class FileExplorer {
       );
       await Promise.all([...fileOps, ...folderOps]);
       this.clearSelection();
-      await this.load();
+      await this.revalidate();
       this.refresh.bump();
     } finally {
       this.bulkBusy.set(false);
@@ -495,7 +618,7 @@ export class FileExplorer {
   onMoved(): void {
     this.moveTarget.set(null);
     this.clearSelection();
-    void this.load();
+    void this.revalidate();
     this.refresh.bump();
   }
 
@@ -511,21 +634,73 @@ export class FileExplorer {
     this.menu.set(null);
   }
 
-  // --- Đổi tên (hộp thoại tuỳ biến) ---
+  // --- Đổi tên INLINE (ngay trên card/hàng, không hộp thoại) ---
   renameItem(): void {
     const m = this.menu();
     if (!m) return;
     this.menu.set(null);
-    this.dialog.set({ type: 'rename', kind: m.kind, id: m.id, name: m.name });
+    this.startRename(m.kind, m.id, m.name);
   }
 
-  async submitRename(name: string): Promise<void> {
-    const d = this.dialog();
-    this.dialog.set(null);
-    if (d?.type !== 'rename') return;
-    if (d.kind === 'file') await firstValueFrom(this.filesApi.rename(d.id, name.trim()));
-    else await firstValueFrom(this.foldersApi.rename(d.id, name.trim()));
-    void this.load();
+  private startRename(kind: 'file' | 'folder', id: string, name: string): void {
+    this.creatingFolder.set(false); // không tạo mới song song
+    this.renamingKind.set(kind);
+    this.renameOldName = name;
+    this.renameName.set(name);
+    this.renamingId.set(id);
+  }
+
+  cancelRename(): void {
+    this.renamingId.set(null);
+    this.renamingBusy = false;
+  }
+
+  /** Xác nhận đổi tên (Enter/rời ô). Thư mục: dồn số thứ tự nhóm trùng tên. */
+  async confirmRename(): Promise<void> {
+    const id = this.renamingId();
+    if (!id || this.renamingBusy) return;
+    const kind = this.renamingKind();
+    const newName = this.renameName().trim();
+    const oldName = this.renameOldName;
+    this.renamingBusy = true;
+    this.renamingId.set(null);
+    try {
+      if (!newName || newName === oldName) return; // không đổi → thôi
+      if (kind === 'file') {
+        await firstValueFrom(this.filesApi.rename(id, newName));
+      } else {
+        await firstValueFrom(this.foldersApi.rename(id, newName));
+        await this.renumberAfter(oldName, id);
+      }
+      void this.revalidate();
+    } finally {
+      this.renamingBusy = false;
+    }
+  }
+
+  /**
+   * Sau khi đổi tên/loại 1 thư mục khỏi nhóm "Base (n)", các thư mục có index lớn
+   * hơn sẽ giảm 1 để giữ dãy liền mạch (New folder (3) → New folder (2)…).
+   */
+  private async renumberAfter(oldName: string, renamedId: string): Promise<void> {
+    const removed = this.parseIndexed(oldName);
+    const group = this.folders()
+      .filter((f) => f.id !== renamedId)
+      .map((f) => ({ f, ...this.parseIndexed(f.name) }))
+      .filter(
+        (x) => x.base.toLowerCase() === removed.base.toLowerCase() && x.index > removed.index,
+      )
+      .sort((a, b) => a.index - b.index);
+
+    for (const item of group) {
+      const ni = item.index - 1;
+      const target = ni <= 1 ? removed.base : `${removed.base} (${ni})`;
+      try {
+        await firstValueFrom(this.foldersApi.rename(item.f.id, target));
+      } catch {
+        /* fail-soft: bỏ qua mục lỗi, tiếp tục */
+      }
+    }
   }
 
   /** Cập nhật trạng thái sao ngay tại chỗ — KHÔNG reload để tránh nhấp nháy. */
@@ -571,15 +746,21 @@ export class FileExplorer {
     if (d?.type !== 'confirmDelete') return;
     if (d.kind === 'file') await firstValueFrom(this.filesApi.trash(d.id));
     else await firstValueFrom(this.foldersApi.trash(d.id));
-    void this.load();
+    void this.revalidate();
     this.refresh.bump();
   }
 
   // --- Upload ---
+  toggleUploadMenu(event: Event): void {
+    event.stopPropagation();
+    this.uploadMenuOpen.update((v) => !v);
+  }
+
   onPick(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files) void this.uploadFileList(Array.from(input.files));
     input.value = '';
+    this.uploadMenuOpen.set(false);
   }
 
   // Đếm depth để overlay không nhấp nháy khi rê qua các card con.
@@ -691,7 +872,7 @@ export class FileExplorer {
     else if (batch.failed() > 0) batch.status.set('error');
     else batch.status.set('done');
 
-    void this.load();
+    void this.revalidate();
     this.refresh.bump();
   }
 

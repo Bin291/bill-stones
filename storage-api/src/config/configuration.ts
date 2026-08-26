@@ -19,6 +19,7 @@ export default () => ({
     jwtSecret: process.env.SUPABASE_JWT_SECRET,
     url: process.env.SUPABASE_URL,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    anonKey: process.env.SUPABASE_ANON_KEY,
     // Verify access token bằng JWKS (ES256 bất đối xứng — mặc định của Supabase mới).
     jwksUrl: process.env.SUPABASE_URL
       ? `${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/.well-known/jwks.json`

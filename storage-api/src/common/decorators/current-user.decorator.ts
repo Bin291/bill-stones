@@ -2,7 +2,9 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 /** Thông tin user lấy từ JWT Supabase (mục 3). */
 export interface AuthUser {
-  id: string; // sub trong JWT = user id Supabase
+  id: string; // ID tài khoản đã tách theo provider (sub, hoặc sub__oauth cho Google)
+  sub?: string; // sub gốc trong JWT (user id Supabase)
+  provider?: 'email' | 'oauth'; // phương thức đăng nhập của phiên
   email?: string;
   role?: string;
 }

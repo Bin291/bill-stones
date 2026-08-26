@@ -37,6 +37,9 @@
   --warning: #f1c21b;
   --danger: #da1e28;
   --star: #f1c21b;
+  /* Thanh cuộn tuỳ chỉnh (kiểu Grok) */
+  --scroll-thumb: rgba(0, 0, 0, 0.22);
+  --scroll-thumb-hover: rgba(0, 0, 0, 0.38);
 
   /* Alias cũ -> Carbon (giữ tương thích class name) */
   --bg: var(--surface-1);
@@ -65,6 +68,8 @@
   --ink-subtle: #8d8d8d;
   --danger: #fa4d56;
   --star: #f1c21b;
+  --scroll-thumb: rgba(255, 255, 255, 0.22);
+  --scroll-thumb-hover: rgba(255, 255, 255, 0.4);
 
   --bg: var(--canvas);
   --surface: #262626;
@@ -84,6 +89,33 @@ body {
   line-height: 1.5;
   letter-spacing: 0.16px;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Thanh cuộn tuỳ chỉnh (kiểu Grok): mảnh, thumb bo tròn mờ, track trong suốt =====
+   Áp cho MỌI vùng cuộn (trang, sidebar, dialog, popover…) thay cho scrollbar mặc định. */
+* {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 999px;
+  /* viền trong suốt tạo khoảng đệm 2 bên → thumb trông mảnh như của Grok */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scroll-thumb-hover);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 * {
@@ -144,8 +176,9 @@ body {
   outline-offset: -2px;
 }
 .auth-btn {
+  width: 100%; /* kéo dài hết chiều ngang thẻ, dài hơn cảm giác so với ô nhập */
   margin-top: 28px;
-  padding: 12px 16px;
+  padding: 14px 16px;
   border: none;
   border-radius: 0;
   display: flex;
@@ -154,10 +187,9 @@ body {
   background: var(--primary);
   color: var(--on-primary);
   font-weight: 400;
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: 0.16px;
   cursor: pointer;
-  text-align: left;
 }
 .auth-btn:hover {
   background: var(--primary-hover);
@@ -250,8 +282,14 @@ body {
   border-right: 1px solid var(--hairline);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden; /* chỉ danh sách thẻ (.tag-scroll) cuộn, không cuộn cả sidebar */
   padding: 8px 0;
+}
+/* Danh sách thẻ trong sidebar tự cuộn khi quá nhiều — không kéo theo cả sidebar */
+.tag-scroll {
+  flex: 1 1 auto;
+  min-height: 40px;
+  overflow-y: auto;
 }
 .brand {
   font-size: 18px;
@@ -407,8 +445,10 @@ body {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 14px;
+  height: 38px; /* cùng chiều cao để mọi nút trên toolbar thẳng hàng */
+  padding: 0 14px;
   border-radius: 0;
   border: 1px solid var(--hairline);
   background: var(--canvas);
@@ -418,6 +458,8 @@ body {
   letter-spacing: 0.16px;
   cursor: pointer;
   font-family: inherit;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 .btn:hover {
   background: var(--surface-1);
@@ -432,7 +474,11 @@ body {
   border-color: var(--primary-hover);
 }
 .btn-icon {
-  padding: 9px;
+  padding: 0;
+  width: 38px;
+  height: 38px;
+  justify-content: center; /* icon canh giữa, không lệch */
+  gap: 0;
 }
 
 /* ===== File grid / list ===== */
@@ -448,10 +494,14 @@ body {
   background: var(--canvas);
   border: 1px solid var(--hairline);
   border-radius: 0;
-  overflow: hidden;
+  /* overflow visible để khung "+N" thoát ra ngoài card; ảnh vẫn được .card-preview cắt */
+  overflow: visible;
   cursor: pointer;
   transition: background 0.1s;
   position: relative;
+}
+.card:hover {
+  z-index: 10; /* nâng card đang hover để khung thẻ dư không bị card khác che */
 }
 .card:hover {
   background: var(--surface-1);
@@ -477,8 +527,14 @@ body {
   object-fit: cover;
   display: block;
 }
+/* Ảnh: hiện TRỌN theo tỉ lệ gốc (không cắt), card giữ nguyên kích thước */
+.card-preview img.thumb-contain {
+  object-fit: contain;
+}
 .card-meta {
   padding: 14px 16px;
+  background: var(--canvas); /* nền thông tin file đồng nhất mọi card */
+  border-top: 1px solid var(--hairline);
 }
 .card-name {
   font-size: 14px;
@@ -487,6 +543,20 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Ô sửa tên tại chỗ (tạo/đổi tên thư mục kiểu Explorer) */
+.inline-name {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.16px;
+  padding: 2px 4px;
+  border: 1px solid var(--primary);
+  border-radius: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  outline: none;
 }
 .card-sub {
   font-size: 12px;
@@ -555,7 +625,19 @@ body {
   border-bottom: 1px solid var(--hairline);
   display: flex;
   justify-content: space-between;
+  align-items: center;
   background: var(--surface-1);
+}
+.upload-head-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.upload-head-sub {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--ink-subtle);
 }
 .upload-list {
   max-height: 260px;
@@ -615,6 +697,23 @@ body {
 }
 
 /* ===== Misc ===== */
+/* Màn hình splash khi mới vào app (tải trước mọi thứ) */
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  background: var(--canvas);
+}
+/* Vùng loading căn GIỮA cả trang (dùng cho <app-loader>) */
+.loading-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  width: 100%;
+}
 .empty {
   display: block;
   text-align: center;
@@ -699,11 +798,19 @@ body {
   border: 1px solid var(--hairline);
   border-radius: 0;
   width: 100%;
-  max-width: 540px;
+  max-width: 600px;
   max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+/* Hàng sửa thẻ: màu không xuống dòng, ô tên co lại để mọi thứ nằm 1 hàng */
+.tag-row--edit .tag-swatches {
+  flex-wrap: nowrap;
+}
+.tag-row--edit .tag-edit-name {
+  flex: 1 1 100px;
+  min-width: 90px;
 }
 .modal-head {
   display: flex;
@@ -718,9 +825,16 @@ body {
   vertical-align: middle;
   margin-right: 6px;
 }
+/* Icon trong nút (VD nút X đóng) KHÔNG dính margin của tiêu đề → luôn ở chính giữa */
+.modal-head .btn .mi,
+.btn-icon .mi {
+  margin: 0;
+}
 .modal-body {
   padding: 20px;
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0; /* cho phép body co lại + cuộn khi nội dung tràn quá 85vh */
 }
 .modal-section {
   font-size: 12px;
@@ -1395,6 +1509,9 @@ body {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
+  /* Chỉ CUỘN trong danh sách thẻ khi quá nhiều — không cuộn cả dialog */
+  max-height: 320px;
+  overflow-y: auto;
 }
 .tag-row {
   display: flex;
@@ -1407,7 +1524,7 @@ body {
   border-bottom: none;
 }
 .tag-row--edit {
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* input + màu + nút Lưu/Huỷ nằm cùng hàng, không xuống dòng */
 }
 .tag-name {
   flex: 1;
@@ -1479,11 +1596,70 @@ body {
 }
 
 /* Chấm màu thẻ trên card file */
+/* Dòng "dung lượng + thẻ" trên card — thẻ nằm cùng hàng với dung lượng */
+.card-metarow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* dung lượng bên trái, cụm thẻ dồn sang phải */
+  gap: 8px;
+  margin-top: 4px;
+  min-width: 0;
+}
+.card-size {
+  font-size: 12px;
+  letter-spacing: 0.32px;
+  color: var(--ink-subtle);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
 .card-tags {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* xếp dài ra 1 hàng; dư thì gộp "+N" */
+  min-width: 0;
+  overflow: visible;
+}
+/* Chip "+N" — di chuột vào hiện khung chứa thẻ dư */
+.card-tag-more {
+  position: relative;
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ink-muted);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 2px 6px;
+  cursor: default;
+}
+.card-tag-pop {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 150px;
+  max-height: 168px; /* ~5 dòng; dư nữa thì cuộn */
+  overflow-y: auto;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+  padding: 6px;
+}
+.card-tag-more:hover .card-tag-pop {
+  display: block;
+}
+.card-tag-pop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  white-space: nowrap;
+}
+.card-tag-pop-name {
+  font-size: 12px;
+  color: var(--ink);
 }
 .card-tag-dot {
   width: 8px;
@@ -1574,6 +1750,32 @@ body {
   background: rgba(0, 0, 0, 0.8);
 }
 
+/* Xem nội dung NGAY trên trang chia sẻ (không cần bấm "Xem") */
+.ps-inline {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+}
+.ps-inline-img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  display: block;
+}
+.ps-inline-frame {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  background: #fff;
+}
+.ps-inline-video {
+  max-width: 100%;
+  max-height: 70vh;
+  background: #000;
+}
+
 /* ===== Nút Sắp xếp (dropdown) ===== */
 .sort-menu {
   position: relative;
@@ -1583,11 +1785,20 @@ body {
   top: calc(100% + 4px);
   left: 0;
   z-index: 50;
-  min-width: 180px;
+  min-width: 210px;
   background: var(--canvas);
   border: 1px solid var(--border);
   padding: 4px 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+/* Dropdown "Tải lên": bằng ĐÚNG chiều rộng nút, canh phải để không tràn trang.
+   Bóng đổ chỉ xuống dưới (spread âm) để không loe sang 2 bên → nhìn bằng nút. */
+.upload-menu .sort-pop {
+  width: 100%;
+  min-width: 0;
+  left: auto;
+  right: 0;
+  box-shadow: 0 6px 10px -8px rgba(0, 0, 0, 0.55);
 }
 .sort-item {
   display: flex;
@@ -1612,9 +1823,28 @@ body {
 }
 .sort-item-label {
   flex: 1;
+  white-space: nowrap;
 }
 .sort-dir {
   font-size: 18px;
+}
+/* Mũi tên chiều sắp xếp hiển thị ngay trên nút */
+.sort-btn-dir {
+  font-size: 16px;
+}
+/* Tiêu đề nhỏ trong dropdown sắp xếp */
+.sort-pop-head {
+  font-size: 12px;
+  letter-spacing: 0.32px;
+  color: var(--ink-subtle);
+  padding: 6px 14px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+/* Nhãn "Tăng dần/Giảm dần" cạnh mũi tên trong dropdown */
+.sort-dir-label {
+  font-size: 11px;
+  color: var(--primary);
 }
 
 /* ===== Dialog chuyển đến thư mục ===== */

@@ -135,7 +135,7 @@
 
     @if (phase() === 'loading' || phase() === 'processing') {
       <div class="vp-overlay">
-        <span class="mi" style="font-size: 40px">hourglass_top</span>
+        <app-loader [dot]="10" [gap]="6" />
         <p>{{ phase() === 'processing' ? 'Đang xử lý video để phát trực tuyến…' : 'Đang tải…' }}</p>
       </div>
     }

@@ -17,7 +17,7 @@
 
     <div class="preview-body">
       @if (loading()) {
-        <div class="empty">Đang tải…</div>
+        <div class="empty"><app-loader [dot]="9" [gap]="6" /></div>
       } @else if (error()) {
         <div class="empty">{{ error() }}</div>
       } @else {

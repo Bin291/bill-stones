@@ -24,6 +24,11 @@ export const routes: Routes = [
     path: 'auth/callback',
     loadComponent: () => import('./features/auth/callback/callback').then((m) => m.AuthCallback),
   },
+  // Đặt lại mật khẩu (đích của liên kết trong email) — KHÔNG guard
+  {
+    path: 'auth/reset',
+    loadComponent: () => import('./features/auth/reset/reset').then((m) => m.AuthReset),
+  },
   // Trang công khai — ngoài authGuard (mục 12.F)
   {
     path: 's/:token',

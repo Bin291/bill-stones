@@ -1,3 +1,10 @@
+<!-- Splash: tải trước mọi thứ khi mới vào app, ẩn khi xong → sau đó ít loading -->
+@if (!prefetch.ready()) {
+  <div class="app-splash">
+    <app-loader [dot]="12" [gap]="8" />
+  </div>
+}
+
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
@@ -32,18 +39,20 @@
         <span class="mi">tune</span>
       </button>
     </div>
-    @for (tag of tags(); track tag.id) {
-      <a class="nav-item" [routerLink]="['/tag', tag.id]" routerLinkActive="active">
-        <span class="tag-dot" [style.background]="tag.color"></span>
-        {{ tag.name }}
-        <span class="nav-count">{{ tag.fileCount || '' }}</span>
-      </a>
-    } @empty {
-      <button class="nav-item" type="button" (click)="openTagManager()" style="color: var(--ink-subtle)">
-        <span class="mi">add</span>
-        {{ 'tags.addNew' | t }}
-      </button>
-    }
+    <div class="tag-scroll">
+      @for (tag of tags(); track tag.id) {
+        <a class="nav-item" [routerLink]="['/tag', tag.id]" routerLinkActive="active">
+          <span class="tag-dot" [style.background]="tag.color"></span>
+          {{ tag.name }}
+          <span class="nav-count">{{ tag.fileCount || '' }}</span>
+        </a>
+      } @empty {
+        <button class="nav-item" type="button" (click)="openTagManager()" style="color: var(--ink-subtle)">
+          <span class="mi">add</span>
+          {{ 'tags.addNew' | t }}
+        </button>
+      }
+    </div>
 
     <div class="sidebar-foot">
       <a class="nav-item" routerLink="/profile" routerLinkActive="active">
@@ -66,36 +75,6 @@
   </aside>
 
   <main class="content">
-    <div class="topbar">
-      <button class="bell" type="button" (click)="toggleNotif()" aria-label="Thông báo">
-        <span class="mi">notifications</span>
-        @if (notifications.unreadCount() > 0) {
-          <span class="bell-badge">{{ notifications.unreadCount() }}</span>
-        }
-      </button>
-    </div>
-
-    @if (notifOpen()) {
-      <div class="notif-dropdown">
-        <div class="upload-head">
-          {{ 'nav.shared' | t }}
-          <button class="btn btn-icon" type="button" (click)="markAllRead()" title="Đã đọc tất cả">
-            <span class="mi">done_all</span>
-          </button>
-        </div>
-        @for (n of notifications.items(); track n.id) {
-          <div class="notif-item" [class.unread]="!n.readAt" (click)="openNotif(n)">
-            <div style="font-weight: 600; font-size: 14px">{{ n.title }}</div>
-            @if (n.body) {
-              <div class="card-sub">{{ n.body }}</div>
-            }
-          </div>
-        } @empty {
-          <div class="empty" style="border: none; padding: 24px">—</div>
-        }
-      </div>
-    }
-
     <router-outlet />
   </main>
 </div>

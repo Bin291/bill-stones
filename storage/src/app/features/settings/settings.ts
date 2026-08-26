@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { SettingsService, ThemeMode, Density } from '../../core/services/settings.service';
+import { SettingsService, ThemeMode } from '../../core/services/settings.service';
 import { LangService } from '../../core/i18n/lang.service';
 import { Lang } from '../../core/i18n/dictionaries';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
@@ -39,22 +39,6 @@ import { AuthService } from '../../core/services/auth.service';
             (click)="lang.setLang(opt.value)"
           >
             {{ opt.label }}
-          </button>
-        }
-      </div>
-    </section>
-
-    <section class="settings-block">
-      <h2 class="settings-label">{{ 'settings.density' | t }}</h2>
-      <div class="seg">
-        @for (opt of densityOptions; track opt.value) {
-          <button
-            class="seg-btn"
-            type="button"
-            [class.active]="settings.density() === opt.value"
-            (click)="settings.setDensity(opt.value)"
-          >
-            {{ opt.labelKey | t }}
           </button>
         }
       </div>
@@ -139,9 +123,5 @@ export class Settings {
   protected readonly langOptions: { value: Lang; label: string }[] = [
     { value: 'vi', label: 'Tiếng Việt' },
     { value: 'en', label: 'English' },
-  ];
-  protected readonly densityOptions: { value: Density; labelKey: string }[] = [
-    { value: 'comfortable', labelKey: 'density.comfortable' },
-    { value: 'compact', labelKey: 'density.compact' },
   ];
 }

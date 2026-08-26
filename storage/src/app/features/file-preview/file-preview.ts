@@ -10,6 +10,7 @@ import {
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { FilesApiService } from '../../core/services/files-api.service';
+import { Loader } from '../ui/loader';
 import { StoredFile } from '../../core/models/file.model';
 import { categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
 
@@ -25,6 +26,7 @@ const DOC_EXT = new Set([
 /** Xem trước mọi loại file: ảnh, PDF, docx/excel/text (render HTML), khác → tải. */
 @Component({
   selector: 'app-file-preview',
+  imports: [Loader],
   templateUrl: './file-preview.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

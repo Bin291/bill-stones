@@ -9,6 +9,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { Loader } from '../../ui/loader';
 
 /**
  * Xử lý khi người dùng bấm Magic Link trong email (hoặc quay lại từ OAuth).
@@ -17,7 +18,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
  */
 @Component({
   selector: 'app-auth-callback',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, Loader],
   templateUrl: './callback.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -43,8 +44,8 @@ export class AuthCallback {
       if (this.navigated) return;
       if (this.auth.ready() && this.auth.isAuthenticated()) {
         this.navigated = true;
-        const target = new URLSearchParams(location.search).get('redirect') || '/files';
-        void this.router.navigateByUrl(target);
+        // Luôn về trang chính sau khi đăng nhập (không quay lại trang của phiên trước).
+        void this.router.navigateByUrl('/files');
       }
     });
 

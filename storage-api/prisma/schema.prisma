@@ -18,6 +18,20 @@ datasource db {
   extensions = [vector, unaccent, pg_trgm]
 }
 
+// Hồ sơ đăng nhập bằng TÊN ĐĂNG NHẬP + mật khẩu (mục Auth). Supabase Auth chỉ
+// đăng nhập bằng email/password, nên bảng này ánh xạ username -> userId/email để
+// cho phép đăng nhập bằng tên đăng nhập. `username` lưu chữ thường để tra không
+// phân biệt hoa/thường; `usernameDisplay` giữ nguyên chữ người dùng nhập.
+model UserProfile {
+  userId          String   @id // = auth.users.id (Supabase)
+  username        String   @unique // đã lowercased
+  usernameDisplay String
+  email           String
+  createdAt       DateTime @default(now())
+
+  @@index([email])
+}
+
 model Folder {
   id        String    @id @default(uuid())
   name      String
