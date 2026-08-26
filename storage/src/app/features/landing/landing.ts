@@ -12,6 +12,7 @@ import {
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -47,7 +48,7 @@ export interface BentoFeature {
 
 @Component({
   selector: 'app-landing',
-  imports: [CommonModule, MatIconModule, FormsModule],
+  imports: [CommonModule, MatIconModule, FormsModule, RouterLink],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +57,7 @@ export class Landing {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly destroyRef = inject(DestroyRef);
   private readonly hostEl = inject(ElementRef);
+  private readonly router = inject(Router);
 
   // UI State Signals
   readonly mobileMenuOpen = signal<boolean>(false);
@@ -63,7 +65,6 @@ export class Landing {
   readonly activeNavSection = signal<string>('hero');
   
   // Interactive Search State in Hero & Sandbox
-  readonly currentQuery = signal<string>('hóa đơn ăn tối Highlands');
   readonly currentTypingIndex = signal<number>(0);
   readonly selectedFilter = signal<'all' | 'invoice' | 'contract' | 'tech' | 'sheet'>('all');
   readonly selectedResult = signal<SearchResultItem | null>(null);
@@ -288,16 +289,22 @@ export class Landing {
   constructor() {
     afterNextRender(() => {
       if (isPlatformBrowser(this.platformId)) {
-        this.initGsapAnimations();
-        this.initTypewriterSimulation();
-        this.initScrollSpy();
+        // afterNextRender ở đây chạy TRƯỚC khi DOM thật sự "chốt" — nếu bind
+        // ScrollTrigger ngay, GSAP giữ tham chiếu tới node sẽ bị thay thế ngay
+        // sau đó (animation chạy nhưng vô hình vì áp lên node đã rời DOM).
+        // Delay 1 tick để chắc chắn bind đúng vào node đang gắn trong DOM thật.
+        setTimeout(() => {
+          this.initGsapAnimations();
+          this.initTypewriterSimulation();
+          this.initScrollSpy();
+        }, 100);
       }
     });
   }
 
-  // Set Search Query from chip click
+  // Truy vấn mẫu -> điều hướng thật sang /search (yêu cầu đăng nhập qua authGuard).
   setQuery(query: string): void {
-    this.currentQuery.set(query);
+    void this.router.navigate(['/search'], { queryParams: { q: query } });
   }
 
   setFilter(filter: 'all' | 'invoice' | 'contract' | 'tech' | 'sheet'): void {
@@ -444,22 +451,26 @@ export class Landing {
       });
     }
 
-    // 4. Bento Shutter Scatter (Pinned for 300vh)
     const featuresSection = this.hostEl.nativeElement.querySelector('#features');
+    const bentoContainer = this.hostEl.nativeElement.querySelector('.bento-shutter-container');
     const bentoTiles = this.hostEl.nativeElement.querySelectorAll('.bento-tile');
     const shutterGlowMsg = this.hostEl.nativeElement.querySelector('.shutter-glow-message');
 
-    if (featuresSection && isDesktop && bentoTiles.length > 0) {
+    if (bentoContainer && featuresSection && isDesktop && bentoTiles.length > 0) {
       const bentoTimeline = gsap.timeline({
         scrollTrigger: {
-          trigger: featuresSection,
-          start: 'top top',
-          end: '+=2400',
-          pin: true,
+          trigger: bentoContainer,
+          start: 'top 72px',
+          end: '+=3200',
+          pin: featuresSection,
           scrub: 1.2,
           anticipatePin: 1,
         },
       });
+
+      // Giữ nguyên lưới (đọc được hết 8 thẻ) trong ~15% quãng cuộn đầu,
+      // rồi mới bắt đầu phân rã — tránh vỡ tan ngay khi vừa pin xong.
+      const HOLD = 0.15;
 
       // Scatter each tile according to its metadata
       bentoTiles.forEach((tile: HTMLElement, idx: number) => {
@@ -477,7 +488,7 @@ export class Landing {
               duration: 1,
               ease: 'power2.inOut',
             },
-            0 // All scatter at the same time throughout the scroll
+            HOLD // All scatter at the same time, sau khi giữ lưới ổn định
           );
         }
       });
@@ -487,7 +498,7 @@ export class Landing {
           shutterGlowMsg,
           { opacity: 0.1, scale: 0.85 },
           { opacity: 1, scale: 1.05, duration: 1, ease: 'power2.out' },
-          0.3
+          HOLD + 0.3
         );
       }
     }

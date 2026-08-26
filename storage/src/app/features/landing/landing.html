@@ -91,21 +91,19 @@
 
       <!-- Action Buttons -->
       <div class="hidden sm:flex items-center gap-3">
-        <button
-          type="button"
-          (click)="openModal('signup')"
-          class="btn-ghost text-sm py-2 px-3 text-[#c6c6c6] hover:text-white"
+        <a
+          routerLink="/login"
+          class="btn-ghost text-sm py-2 px-3 text-[#c6c6c6] hover:text-white cursor-pointer"
         >
           Đăng nhập
-        </button>
-        <button
-          type="button"
-          (click)="openModal('signup')"
-          class="btn-primary text-sm py-2 px-4 flex items-center gap-2"
+        </a>
+        <a
+          routerLink="/register"
+          class="btn-primary text-sm py-2 px-4 flex items-center gap-2 cursor-pointer"
         >
           <span>Dùng thử miễn phí</span>
           <mat-icon class="text-sm scale-90">arrow_forward</mat-icon>
-        </button>
+        </a>
       </div>
 
       <!-- Mobile Menu Toggle Button -->
@@ -151,8 +149,8 @@
           Bảo mật &amp; Riêng tư
         </button>
         <div class="flex flex-col gap-2 pt-2">
-          <button type="button" (click)="openModal('signup')" class="btn-secondary w-full justify-center">Đăng nhập</button>
-          <button type="button" (click)="openModal('signup')" class="btn-primary w-full justify-center">Dùng thử miễn phí</button>
+          <a routerLink="/login" class="btn-secondary w-full justify-center cursor-pointer">Đăng nhập</a>
+          <a routerLink="/register" class="btn-primary w-full justify-center cursor-pointer">Dùng thử miễn phí</a>
         </div>
       </div>
     }
@@ -207,14 +205,13 @@
 
         <!-- Action CTAs -->
         <div class="flex flex-wrap items-center gap-4 pt-4">
-          <button
-            type="button"
-            (click)="openModal('signup')"
-            class="btn-primary"
+          <a
+            routerLink="/register"
+            class="btn-primary cursor-pointer"
           >
             <span>Khám phá Vault thông minh</span>
             <mat-icon>arrow_forward</mat-icon>
-          </button>
+          </a>
 
           <button
             type="button"
@@ -554,14 +551,14 @@
         
         <!-- Underlying Glowing Tech Message Revealed Upon Scroll Scatter -->
         <div class="shutter-glow-message px-4 text-center">
-          <div class="w-16 h-1 bg-[#0f62fe] mb-6"></div>
-          <h2 class="glowing-tech-text text-3xl sm:text-5xl lg:text-6xl font-light max-w-4xl uppercase leading-tight mb-4">
-            BẢO MẬT &amp; TRÍ TUỆ TRONG TỪNG DÒNG CODE
+          <div class="text-[10px] sm:text-xs font-mono text-[#78a9ff] tracking-[0.25em] mb-4 uppercase">
+            SECURITY &amp; PRIVACY AT CORE LEVEL
+          </div>
+          <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6">
+            BẢO MẬT &amp; TRÍ TUỆ<br class="hidden sm:inline" /> TRONG TỪNG DÒNG CODE
           </h2>
-          <p class="font-mono text-sm sm:text-base text-[#78a9ff] max-w-2xl mb-6">
-            // HYBRID STORAGE ARCHITECTURE POWERED BY IBM CARBON &amp; GEMINI VECTORS
-          </p>
-          <div class="flex flex-wrap items-center justify-center gap-4">
+          <div class="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+            <span class="carbon-tag carbon-tag-blue">AES-256-GCM ENCRYPTION</span>
             <span class="carbon-tag carbon-tag-blue">POSTGRESQL + PGVECTOR</span>
             <span class="carbon-tag carbon-tag-blue">HYBRID RRF SEARCH</span>
             <span class="carbon-tag carbon-tag-green">CÔ LẬP THEO TÀI KHOẢN</span>
@@ -1189,14 +1186,13 @@
                 <span>Sao chép ID</span>
               </button>
 
-              <button
-                type="button"
-                (click)="openModal('signup')"
-                class="btn-primary text-xs py-2 px-4"
+              <a
+                routerLink="/register"
+                class="btn-primary text-xs py-2 px-4 cursor-pointer"
               >
                 <mat-icon class="text-xs">download</mat-icon>
                 <span>Tải Presigned Link</span>
-              </button>
+              </a>
             </div>
 
           </div>

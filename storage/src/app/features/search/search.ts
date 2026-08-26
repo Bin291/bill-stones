@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   SearchApiService,
@@ -32,6 +32,7 @@ const MATCH_LABELS: Record<SearchMatchBranch, string> = {
 export class Search {
   private readonly api = inject(SearchApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly query = signal('');
   readonly results = signal<SearchResult[]>([]);
@@ -42,6 +43,15 @@ export class Search {
 
   readonly iconOf = iconOf;
   readonly formatBytes = formatBytes;
+
+  constructor() {
+    // Truy vấn mẫu từ Landing (?q=...) -> tự điền và tìm luôn.
+    const q = this.route.snapshot.queryParamMap.get('q')?.trim();
+    if (q) {
+      this.query.set(q);
+      void this.runSearch(q);
+    }
+  }
 
   /** Bậc màu cho badge % khớp — chỉ để hiển thị, không ảnh hưởng xếp hạng. */
   similarityBucket(similarity: number): 'high' | 'mid' | 'low' {
@@ -58,7 +68,10 @@ export class Search {
 
   async submit(event: Event): Promise<void> {
     event.preventDefault();
-    const q = this.query().trim();
+    await this.runSearch(this.query().trim());
+  }
+
+  private async runSearch(q: string): Promise<void> {
     if (q.length < 2) {
       this.note.set('Nhập ít nhất 2 ký tự.');
       return;
