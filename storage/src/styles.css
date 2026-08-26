@@ -1819,6 +1819,24 @@ body {
 .sort-dir {
   font-size: 18px;
 }
+/* Mũi tên chiều sắp xếp hiển thị ngay trên nút */
+.sort-btn-dir {
+  font-size: 16px;
+}
+/* Tiêu đề nhỏ trong dropdown sắp xếp */
+.sort-pop-head {
+  font-size: 12px;
+  letter-spacing: 0.32px;
+  color: var(--ink-subtle);
+  padding: 6px 14px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+/* Nhãn "Tăng dần/Giảm dần" cạnh mũi tên trong dropdown */
+.sort-dir-label {
+  font-size: 11px;
+  color: var(--primary);
+}
 
 /* ===== Dialog chuyển đến thư mục ===== */
 .move-modal {

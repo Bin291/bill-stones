@@ -121,6 +121,17 @@ export class FileExplorer {
   protected readonly sort = signal<ListFilesQuery['sort']>('createdAt');
   protected readonly order = signal<ListFilesQuery['order']>('desc');
   protected readonly sortMenuOpen = signal(false);
+  /** Nhãn trường đang sắp xếp — hiện trên nút để người dùng biết đang sắp theo gì. */
+  protected readonly sortLabelKey = computed(() => {
+    switch (this.sort()) {
+      case 'name':
+        return 'sort.name';
+      case 'size':
+        return 'sort.size';
+      default:
+        return 'sort.date';
+    }
+  });
   protected readonly uploadMenuOpen = signal(false);
 
   protected readonly uploadBatches = signal<UploadBatch[]>([]);
