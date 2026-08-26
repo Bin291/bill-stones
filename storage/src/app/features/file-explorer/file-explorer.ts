@@ -308,30 +308,22 @@ export class FileExplorer {
   }
 
   /**
-   * Nạp khung nhìn: nếu đã có trong cache (prefetch/lần trước) → hiện NGAY, KHÔNG
-   * spinner; luôn nạp lại nền để cập nhật. Chỉ hiện loading khi thật sự chưa có gì.
+   * Nạp khung nhìn: cache có → hiện NGAY; cache-miss → GIỮ hiển thị hiện tại rồi
+   * lấp im lặng. KHÔNG bao giờ hiện spinner trong nội dung — chỉ có 1 splash tổng
+   * lúc mới vào app (không lặp lại cho tới khi refresh trang).
    */
   async load(): Promise<void> {
     this.menu.set(null);
     const key = this.currentKey();
     const cached = this.prefetch.getView(key);
-    if (cached) {
-      this.applyBundle(cached);
-      this.loading.set(false);
-    } else {
-      this.loading.set(true);
-    }
+    if (cached) this.applyBundle(cached);
     try {
       const fresh = await this.fetchBundle();
       this.prefetch.setView(key, fresh);
       this.applyBundle(fresh);
     } catch {
-      if (!cached) {
-        this.folders.set([]);
-        this.files.set([]);
-      }
+      /* giữ hiển thị hiện tại nếu lỗi */
     } finally {
-      this.loading.set(false);
       this.scheduleThumbRefresh();
     }
   }

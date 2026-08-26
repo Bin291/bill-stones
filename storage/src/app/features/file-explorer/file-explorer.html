@@ -152,9 +152,7 @@
     </div>
   }
 
-  @if (loading()) {
-    <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
-  } @else if (folders().length === 0 && files().length === 0 && !creatingFolder()) {
+  @if (folders().length === 0 && files().length === 0 && !creatingFolder()) {
     <div class="empty" style="cursor: default">
       <div style="font-size: 40px">
         <span class="mi" style="font-size: 40px">folder_open</span>
