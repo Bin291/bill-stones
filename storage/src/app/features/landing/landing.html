@@ -7,12 +7,7 @@
   <header
     id="main-nav"
     class="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
-    [class.bg-[#161616]/90]="isScrolled()"
-    [class.backdrop-blur-md]="isScrolled()"
-    [class.border-b]="isScrolled()"
-    [class.border-[#262626]]="isScrolled()"
-    [class.py-3]="isScrolled()"
-    [class.py-5]="!isScrolled()"
+    [class.nav-scrolled]="isScrolled()"
   >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
       
@@ -36,13 +31,18 @@
       <nav class="hidden md:flex items-center gap-1">
         <button
           type="button"
+          (click)="scrollToSection('hero')"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'hero'"
+        >
+          {{ 'nav.intro' | t }}
+        </button>
+
+        <button
+          type="button"
           (click)="scrollToSection('features')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'features'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'features'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'features'"
-          [class.border-transparent]="activeNavSection() !== 'features'"
-          [class.hover:text-white]="true"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'features'"
         >
           {{ 'nav.features' | t }}
         </button>
@@ -50,40 +50,28 @@
         <button
           type="button"
           (click)="scrollToSection('how-it-works')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'how-it-works'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'how-it-works'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'how-it-works'"
-          [class.border-transparent]="activeNavSection() !== 'how-it-works'"
-          [class.hover:text-white]="true"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'how-it-works'"
         >
           {{ 'nav.howItWorks' | t }}
         </button>
 
         <button
           type="button"
-          (click)="scrollToSection('sandbox')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'sandbox'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'sandbox'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'sandbox'"
-          [class.border-transparent]="activeNavSection() !== 'sandbox'"
-          [class.hover:text-white]="true"
+          (click)="scrollToSection('security')"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'security'"
         >
-          {{ 'nav.sandbox' | t }}
+          {{ 'nav.securityPrivacy' | t }}
         </button>
 
         <button
           type="button"
-          (click)="scrollToSection('security')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'security'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'security'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'security'"
-          [class.border-transparent]="activeNavSection() !== 'security'"
-          [class.hover:text-white]="true"
+          (click)="scrollToSection('sandbox')"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'sandbox'"
         >
-          {{ 'nav.securityPrivacy' | t }}
+          {{ 'nav.sandbox' | t }}
         </button>
       </nav>
 
@@ -124,6 +112,13 @@
       <div class="md:hidden bg-[#1c1c1c] border-b border-[#262626] px-4 pt-3 pb-6 flex flex-col gap-3">
         <button
           type="button"
+          (click)="scrollToSection('hero')"
+          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+        >
+          {{ 'nav.intro' | t }}
+        </button>
+        <button
+          type="button"
           (click)="scrollToSection('features')"
           class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
         >
@@ -138,17 +133,17 @@
         </button>
         <button
           type="button"
-          (click)="scrollToSection('sandbox')"
-          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
-        >
-          {{ 'nav.sandbox' | t }}
-        </button>
-        <button
-          type="button"
           (click)="scrollToSection('security')"
           class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
         >
           {{ 'nav.securityPrivacy' | t }}
+        </button>
+        <button
+          type="button"
+          (click)="scrollToSection('sandbox')"
+          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+        >
+          {{ 'nav.sandbox' | t }}
         </button>
         <div class="flex flex-col gap-2 pt-2">
           @if (isAuthenticated()) {
@@ -378,6 +373,86 @@
   </section>
 
   <!-- ========================================== -->
+  <!-- 4. FEATURE BENTO SHUTTER GRID (300vh Pin)  -->
+  <!-- ========================================== -->
+  <section id="features" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center overflow-hidden">
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative">
+      
+      <!-- Section Title -->
+      <div class="mb-12 max-w-2xl z-20 relative">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-2 h-2 bg-[#0f62fe]"></div>
+          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+            {{ 'landing.bentoEyebrow' | t }}
+          </span>
+        </div>
+        <h2 class="heading-04 text-white">{{ 'landing.bentoTitle' | t }}</h2>
+        <p class="body-long-01 text-[#c6c6c6]">
+          Cuộn chuột để phân rã 8 khối module và khám phá triết lý bảo mật cốt lõi bên dưới.
+        </p>
+      </div>
+
+      <!-- Bento Shutter Container (Overlayed over glowing message) -->
+      <div class="bento-shutter-container relative min-h-[580px]">
+        
+        <!-- Underlying Glowing Tech Message Revealed Upon Scroll Scatter -->
+        <div class="shutter-glow-message px-4 text-center">
+          <div class="text-[10px] sm:text-xs font-mono text-[#78a9ff] tracking-[0.25em] mb-4 uppercase">
+            SECURITY &amp; PRIVACY AT CORE LEVEL
+          </div>
+          <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6" [innerHTML]="'landing.glowingText' | t">
+          </h2>
+          <div class="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+            <span class="carbon-tag carbon-tag-blue">AES-256-GCM ENCRYPTION</span>
+            <span class="carbon-tag carbon-tag-blue">POSTGRESQL + PGVECTOR</span>
+            <span class="carbon-tag carbon-tag-blue">HYBRID RRF SEARCH</span>
+            <span class="carbon-tag carbon-tag-green">{{ 'landing.heroAccountIsolation' | t | uppercase }}</span>
+          </div>
+        </div>
+
+        <!-- 8 Bento Grid Tiles -->
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-10">
+          
+          @for (feature of bentoFeatures; track feature.id) {
+            <div
+              [id]="feature.id"
+              class="bento-tile carbon-card p-5 flex flex-col justify-between {{ feature.colSpan }}"
+            >
+              <div>
+                <!-- Top Tag & Icon -->
+                <div class="flex items-center justify-between mb-4">
+                  <span class="carbon-tag text-[10px]">{{ feature.tag }}</span>
+                  <div class="w-8 h-8 bg-[#262626] flex items-center justify-center text-[#78a9ff]">
+                    <mat-icon class="text-lg">{{ feature.icon }}</mat-icon>
+                  </div>
+                </div>
+
+                <!-- Title & Subtitle -->
+                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title | t }}</h3>
+                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle | t }}</div>
+                
+                <!-- Description -->
+                <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed mb-4">
+                  {{ feature.description | t }}
+                </p>
+              </div>
+
+              <!-- Tech Spec Footer -->
+              <div class="pt-3 border-t border-[#262626] text-[11px] font-mono text-[#8d8d8d]">
+                <span class="break-words whitespace-normal block w-full">{{ feature.techSpec }}</span>
+              </div>
+            </div>
+          }
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
   <!-- 3. HOW BILLPRIME WORKS (Pinned Sequence)   -->
   <!-- ========================================== -->
   <section id="how-it-works" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center">
@@ -517,77 +592,158 @@
   </section>
 
   <!-- ========================================== -->
-  <!-- 4. FEATURE BENTO SHUTTER GRID (300vh Pin)  -->
+  <!-- 6. SECURITY & PRIVACY SECTION              -->
   <!-- ========================================== -->
-  <section id="features" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center overflow-hidden">
+  <section id="security" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex items-center">
     
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
       
-      <!-- Section Title -->
-      <div class="mb-12 max-w-2xl z-20 relative">
-        <div class="flex items-center gap-2 mb-3">
+      <!-- Left Column: Security Narrative & Cards -->
+      <div class="lg:col-span-7 flex flex-col gap-6">
+        
+        <div class="flex items-center gap-2">
           <div class="w-2 h-2 bg-[#0f62fe]"></div>
           <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-            {{ 'landing.bentoEyebrow' | t }}
+            {{ 'landing.securityEyebrow' | t }}
           </span>
         </div>
-        <h2 class="heading-04 text-white">{{ 'landing.bentoTitle' | t }}</h2>
-        <p class="body-long-01 text-[#c6c6c6]">
-          Cuộn chuột để phân rã 8 khối module và khám phá triết lý bảo mật cốt lõi bên dưới.
-        </p>
-      </div>
 
-      <!-- Bento Shutter Container (Overlayed over glowing message) -->
-      <div class="bento-shutter-container relative min-h-[580px]">
-        
-        <!-- Underlying Glowing Tech Message Revealed Upon Scroll Scatter -->
-        <div class="shutter-glow-message px-4 text-center">
-          <div class="text-[10px] sm:text-xs font-mono text-[#78a9ff] tracking-[0.25em] mb-4 uppercase">
-            SECURITY &amp; PRIVACY AT CORE LEVEL
+        <h2 class="heading-04 text-white">{{ 'landing.securityTitle' | t }}</h2>
+
+        <p class="body-long-01 text-[#c6c6c6]">
+          {{ 'landing.securityDesc' | t }}
+        </p>
+
+        <!-- 3 Security Pillars -->
+        <div class="flex flex-col gap-4 mt-2">
+
+          <!-- Pillar 1 -->
+          <div class="carbon-card p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-[#0f62fe]/10 border border-[#0f62fe]/40 text-[#78a9ff] flex items-center justify-center shrink-0">
+              <mat-icon>lock</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar1Title' | t }}</h3>
+              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+                {{ 'landing.securityPillar1Desc' | t }}
+              </p>
+            </div>
           </div>
-          <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6" [innerHTML]="'landing.glowingText' | t">
-          </h2>
-          <div class="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
-            <span class="carbon-tag carbon-tag-blue">AES-256-GCM ENCRYPTION</span>
-            <span class="carbon-tag carbon-tag-blue">POSTGRESQL + PGVECTOR</span>
-            <span class="carbon-tag carbon-tag-blue">HYBRID RRF SEARCH</span>
-            <span class="carbon-tag carbon-tag-green">{{ 'landing.heroAccountIsolation' | t | uppercase }}</span>
+
+          <!-- Pillar 2 -->
+          <div class="carbon-card p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-[#42be65]/10 border border-[#42be65]/40 text-[#42be65] flex items-center justify-center shrink-0">
+              <mat-icon>vpn_key</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar2Title' | t }}</h3>
+              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+                {{ 'landing.securityPillar2Desc' | t }}
+              </p>
+            </div>
           </div>
+
+          <!-- Pillar 3 -->
+          <div class="carbon-card p-4 flex items-start gap-4">
+            <div class="w-10 h-10 bg-[#8a3ffc]/10 border border-[#8a3ffc]/40 text-[#be95ff] flex items-center justify-center shrink-0">
+              <mat-icon>shield</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar3Title' | t }}</h3>
+              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+                {{ 'landing.securityPillar3Desc' | t }}
+              </p>
+            </div>
+          </div>
+
         </div>
 
-        <!-- 8 Bento Grid Tiles -->
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-10">
+      </div>
+
+      <!-- Right Column: Interactive Animated SVG Security Shield -->
+      <div class="lg:col-span-5 flex flex-col items-center justify-center relative">
+        
+        <!-- Shield Container Frame -->
+        <div class="relative w-full max-w-[380px] bg-[#1c1c1c] border border-[#393939] p-6 flex flex-col items-center">
           
-          @for (feature of bentoFeatures; track feature.id) {
-            <div
-              [id]="feature.id"
-              class="bento-tile carbon-card p-5 flex flex-col justify-between {{ feature.colSpan }}"
-            >
-              <div>
-                <!-- Top Tag & Icon -->
-                <div class="flex items-center justify-between mb-4">
-                  <span class="carbon-tag text-[10px]">{{ feature.tag }}</span>
-                  <div class="w-8 h-8 bg-[#262626] flex items-center justify-center text-[#78a9ff]">
-                    <mat-icon class="text-lg">{{ feature.icon }}</mat-icon>
-                  </div>
-                </div>
+          <div class="w-full flex items-center justify-between border-b border-[#262626] pb-3 mb-6 font-mono text-xs text-[#8d8d8d]">
+            <span>BILLPRIME_GUARD // ACCESS CONTROL</span>
+            <span class="text-[#42be65] flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[#42be65]"></span>
+              LIVE_SHIELD
+            </span>
+          </div>
 
-                <!-- Title & Subtitle -->
-                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title | t }}</h3>
-                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle | t }}</div>
-                
-                <!-- Description -->
-                <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed mb-4">
-                  {{ feature.description | t }}
-                </p>
-              </div>
+          <!-- Animated SVG Shield Graphic -->
+          <div class="relative w-64 h-64 flex items-center justify-center">
+            
+            <svg class="w-full h-full" viewBox="0 0 300 300">
+              <defs>
+                <linearGradient id="lockSweepGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#42be65" stop-opacity="0.9" />
+                  <stop offset="100%" stop-color="#42be65" stop-opacity="0" />
+                </linearGradient>
+              </defs>
 
-              <!-- Tech Spec Footer -->
-              <div class="pt-3 border-t border-[#262626] text-[11px] font-mono text-[#8d8d8d]">
-                <span class="break-words whitespace-normal block w-full">{{ feature.techSpec }}</span>
-              </div>
+              <!-- Vòng nền tĩnh -->
+              <circle cx="150" cy="150" r="120" fill="none" stroke="#262626" stroke-width="1.5" stroke-dasharray="4 10" />
+
+              <!-- Vòng "sóng radar" quét ra ngoài (thay 2 vòng xoay cũ) -->
+              <circle cx="150" cy="150" r="72" fill="none" stroke="#0f62fe" stroke-width="1.5" class="lock-pulse-ring" />
+              <circle cx="150" cy="150" r="72" fill="none" stroke="#42be65" stroke-width="1.5" class="lock-pulse-ring lock-pulse-ring--delay" />
+
+              <!-- Tia quét radar xoay -->
+              <line x1="150" y1="150" x2="150" y2="30" stroke="url(#lockSweepGrad)" stroke-width="2.5" class="lock-sweep" />
+
+              <!-- Ổ khoá: quai khoá (vẽ dần khi cuộn) -->
+              <path
+                d="M 116 158 L 116 122 A 34 34 0 0 1 184 122 L 184 158"
+                fill="none"
+                stroke="#4589ff"
+                stroke-width="7"
+                stroke-linecap="round"
+                class="shield-draw-path"
+              />
+
+              <!-- Thân khoá (vẽ dần khi cuộn) -->
+              <rect
+                x="94"
+                y="150"
+                width="112"
+                height="104"
+                rx="14"
+                fill="rgba(15, 98, 254, 0.06)"
+                stroke="#0f62fe"
+                stroke-width="2.5"
+                class="shield-draw-path"
+              />
+
+              <!-- Lỗ khoá -->
+              <circle cx="150" cy="192" r="13" fill="#0f62fe" />
+              <rect x="144" y="192" width="12" height="30" fill="#0f62fe" />
+              <circle cx="150" cy="192" r="5" fill="#ffffff" />
+            </svg>
+
+            <!-- Scanning Laser Line Overlay -->
+            <div class="absolute inset-x-8 h-0.5 bg-gradient-to-r from-transparent via-[#42be65] to-transparent shield-scan-line pointer-events-none"></div>
+
+          </div>
+
+          <!-- Real-Time Cryptographic Status Monitor -->
+          <div class="w-full mt-6 pt-4 border-t border-[#262626] font-mono text-[11px] text-[#8d8d8d] flex flex-col gap-1.5">
+            <div class="flex justify-between">
+              <span>STORAGE ENCRYPTION:</span>
+              <span class="text-white">AES-256 (Cloudflare R2)</span>
             </div>
-          }
+            <div class="flex justify-between">
+              <span>ACCESS MODEL:</span>
+              <span class="text-[#78a9ff]">Per-user scoped</span>
+            </div>
+            <div class="flex justify-between">
+              <span>CROSS-USER LEAK:</span>
+              <span class="text-[#42be65]">0% ({{ 'landing.securityTested' | t }})</span>
+            </div>
+          </div>
 
         </div>
 
@@ -738,172 +894,6 @@
 
           </div>
         }
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================== -->
-  <!-- 6. SECURITY & PRIVACY SECTION              -->
-  <!-- ========================================== -->
-  <section id="security" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex items-center">
-    
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-      
-      <!-- Left Column: Security Narrative & Cards -->
-      <div class="lg:col-span-7 flex flex-col gap-6">
-        
-        <div class="flex items-center gap-2">
-          <div class="w-2 h-2 bg-[#0f62fe]"></div>
-          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-            {{ 'landing.securityEyebrow' | t }}
-          </span>
-        </div>
-
-        <h2 class="heading-04 text-white">{{ 'landing.securityTitle' | t }}</h2>
-
-        <p class="body-long-01 text-[#c6c6c6]">
-          {{ 'landing.securityDesc' | t }}
-        </p>
-
-        <!-- 3 Security Pillars -->
-        <div class="flex flex-col gap-4 mt-2">
-
-          <!-- Pillar 1 -->
-          <div class="carbon-card p-4 flex items-start gap-4">
-            <div class="w-10 h-10 bg-[#0f62fe]/10 border border-[#0f62fe]/40 text-[#78a9ff] flex items-center justify-center shrink-0">
-              <mat-icon>lock</mat-icon>
-            </div>
-            <div>
-              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar1Title' | t }}</h3>
-              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
-                {{ 'landing.securityPillar1Desc' | t }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Pillar 2 -->
-          <div class="carbon-card p-4 flex items-start gap-4">
-            <div class="w-10 h-10 bg-[#42be65]/10 border border-[#42be65]/40 text-[#42be65] flex items-center justify-center shrink-0">
-              <mat-icon>vpn_key</mat-icon>
-            </div>
-            <div>
-              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar2Title' | t }}</h3>
-              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
-                {{ 'landing.securityPillar2Desc' | t }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Pillar 3 -->
-          <div class="carbon-card p-4 flex items-start gap-4">
-            <div class="w-10 h-10 bg-[#8a3ffc]/10 border border-[#8a3ffc]/40 text-[#be95ff] flex items-center justify-center shrink-0">
-              <mat-icon>shield</mat-icon>
-            </div>
-            <div>
-              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar3Title' | t }}</h3>
-              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
-                {{ 'landing.securityPillar3Desc' | t }}
-              </p>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- Right Column: Interactive Animated SVG Security Shield -->
-      <div class="lg:col-span-5 flex flex-col items-center justify-center relative">
-        
-        <!-- Shield Container Frame -->
-        <div class="relative w-full max-w-[380px] bg-[#1c1c1c] border border-[#393939] p-6 flex flex-col items-center">
-          
-          <div class="w-full flex items-center justify-between border-b border-[#262626] pb-3 mb-6 font-mono text-xs text-[#8d8d8d]">
-            <span>BILLPRIME_GUARD // ACCESS CONTROL</span>
-            <span class="text-[#42be65] flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-[#42be65]"></span>
-              LIVE_SHIELD
-            </span>
-          </div>
-
-          <!-- Animated SVG Shield Graphic -->
-          <div class="relative w-64 h-64 flex items-center justify-center">
-            
-            <svg class="w-full h-full" viewBox="0 0 300 300">
-              <!-- Outer Hexagonal Cypher Ring 1 -->
-              <circle
-                cx="150"
-                cy="150"
-                r="135"
-                fill="none"
-                stroke="#262626"
-                stroke-width="1.5"
-                stroke-dasharray="6 8"
-                class="shield-ring-rotate"
-              />
-
-              <!-- Inner Concentric Ring 2 -->
-              <circle
-                cx="150"
-                cy="150"
-                r="115"
-                fill="none"
-                stroke="#393939"
-                stroke-width="1"
-                stroke-dasharray="12 12"
-                class="shield-ring-reverse"
-              />
-
-              <!-- Outer Shield Path with Scroll-Triggered Draw -->
-              <path
-                d="M 150 40 L 230 75 L 230 160 C 230 215 150 255 150 255 C 150 255 70 215 70 160 L 70 75 Z"
-                fill="rgba(15, 98, 254, 0.05)"
-                stroke="#0f62fe"
-                stroke-width="2.5"
-                class="shield-draw-path"
-              />
-
-              <!-- Inner Shield Accent -->
-              <path
-                d="M 150 65 L 210 92 L 210 155 C 210 198 150 230 150 230 C 150 230 90 198 90 155 L 90 92 Z"
-                fill="none"
-                stroke="#4589ff"
-                stroke-width="1.5"
-                stroke-dasharray="4 4"
-                class="shield-draw-path"
-              />
-
-              <!-- Central Keylock Core -->
-              <circle cx="150" cy="135" r="16" fill="#0f62fe" />
-              <rect x="145" y="135" width="10" height="28" fill="#0f62fe" />
-
-              <!-- Active Status Indicators -->
-              <circle cx="150" cy="135" r="5" fill="#ffffff" />
-            </svg>
-
-            <!-- Scanning Laser Line Overlay -->
-            <div class="absolute inset-x-8 h-0.5 bg-gradient-to-r from-transparent via-[#42be65] to-transparent shield-scan-line pointer-events-none"></div>
-
-          </div>
-
-          <!-- Real-Time Cryptographic Status Monitor -->
-          <div class="w-full mt-6 pt-4 border-t border-[#262626] font-mono text-[11px] text-[#8d8d8d] flex flex-col gap-1.5">
-            <div class="flex justify-between">
-              <span>STORAGE ENCRYPTION:</span>
-              <span class="text-white">AES-256 (Cloudflare R2)</span>
-            </div>
-            <div class="flex justify-between">
-              <span>ACCESS MODEL:</span>
-              <span class="text-[#78a9ff]">Per-user scoped</span>
-            </div>
-            <div class="flex justify-between">
-              <span>CROSS-USER LEAK:</span>
-              <span class="text-[#42be65]">0% ({{ 'landing.securityTested' | t }})</span>
-            </div>
-          </div>
-
-        </div>
-
       </div>
 
     </div>

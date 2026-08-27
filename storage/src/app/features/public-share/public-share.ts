@@ -9,6 +9,7 @@ import {
 } from '../../core/services/public-share-api.service';
 import { categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
 import { Loader } from '../ui/loader';
+import { PasswordInput } from '../ui/password-input';
 
 type ViewKind = 'image' | 'pdf' | 'video' | 'audio';
 
@@ -22,7 +23,7 @@ interface ViewerState {
 /** Trang công khai /s/:token (mục 12.E nhóm B) — ngoài authGuard. */
 @Component({
   selector: 'app-public-share',
-  imports: [Loader],
+  imports: [Loader, PasswordInput],
   templateUrl: './public-share.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

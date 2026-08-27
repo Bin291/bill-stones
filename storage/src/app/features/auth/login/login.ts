@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LangService } from '../../../core/i18n/lang.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { PasswordInput } from '../../ui/password-input';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -12,7 +13,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  */
 @Component({
   selector: 'app-login',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, PasswordInput],
   templateUrl: './login.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

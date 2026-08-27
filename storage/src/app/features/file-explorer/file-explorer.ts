@@ -106,7 +106,12 @@ interface UploadBatch {
     Autofocus,
   ],
   templateUrl: './file-explorer.html',
-  host: { class: 'explorer-host' },
+  host: {
+    class: 'explorer-host',
+    // Lăn chuột ở bất kỳ đâu → đóng context menu (mục yêu cầu: menu biến mất khi cuộn).
+    '(window:wheel)': 'onWindowScroll()',
+    '(window:scroll)': 'onWindowScroll()',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileExplorer {
@@ -229,6 +234,22 @@ export class FileExplorer {
       this.selectedCount() > 0 &&
       this.selectedCount() === this.files().length + this.folders().length,
   );
+
+  // --- Kéo chuột chọn vùng (marquee) kiểu Google Drive ---
+  /** Hình chữ nhật vùng chọn (toạ độ viewport, position:fixed). null = không kéo. */
+  protected readonly marqueeRect = signal<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  private marqueeStart: { x: number; y: number } | null = null;
+  private marqueeActive = false;
+  private marqueeWasSelectionMode = false;
+  private marqueeBaseFiles = new Set<string>();
+  private marqueeBaseFolders = new Set<string>();
+  private readonly onMarqueeMoveBound = (e: MouseEvent): void => this.onMarqueeMove(e);
+  private readonly onMarqueeUpBound = (): void => this.onMarqueeUp();
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
@@ -579,6 +600,32 @@ export class FileExplorer {
     this.menu.set(null);
   }
 
+  /** Cuộn chuột (bánh xe hoặc trang) → ẩn context menu nếu đang mở. */
+  onWindowScroll(): void {
+    if (this.menu()) this.menu.set(null);
+  }
+
+  /**
+   * Chuột phải vào VÙNG TRỐNG (không phải card) → chặn menu mặc định của trình
+   * duyệt. Card tự gọi preventDefault + stopPropagation trong openMenu() nên
+   * handler này chỉ chạy cho vùng trống.
+   */
+  onRootContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    this.menu.set(null);
+  }
+
+  /**
+   * Bấm chuột trái vào VÙNG TRỐNG: đóng mọi menu đang mở. KHÔNG chọn/huỷ chọn gì
+   * (để tránh "bao quát hết") — chỉ dọn menu. Card tự stopPropagation nên click
+   * trên card không lọt tới đây.
+   */
+  onRootClick(): void {
+    this.menu.set(null);
+    this.sortMenuOpen.set(false);
+    this.uploadMenuOpen.set(false);
+  }
+
   openShare(): void {
     const m = this.menu();
     if (!m) return;
@@ -621,6 +668,84 @@ export class FileExplorer {
     }
     this.selectedFileIds.set(new Set(this.files().map((f) => f.id)));
     this.selectedFolderIds.set(new Set(this.folders().map((f) => f.id)));
+  }
+
+  /**
+   * Bắt đầu kéo chọn vùng khi nhấn chuột trái ở VÙNG TRỐNG (không phải card/nút).
+   * Giữ Ctrl/Shift để CỘNG thêm vào lựa chọn hiện có. Chỉ là "click" (không kéo) thì
+   * không làm gì — vượt ngưỡng 6px mới coi là kéo (mục yêu cầu #5/#6).
+   */
+  onRootMouseDown(event: MouseEvent): void {
+    if (event.button !== 0) return;
+    const t = event.target as HTMLElement;
+    if (
+      t.closest(
+        '.card, button, a, input, textarea, label, .toolbar, .select-bar, .menu, .sort-pop, .explorer-section-title, .inline-name, .uploads-panel',
+      )
+    ) {
+      return;
+    }
+    const additive = event.ctrlKey || event.metaKey || event.shiftKey;
+    this.marqueeStart = { x: event.clientX, y: event.clientY };
+    this.marqueeActive = false;
+    this.marqueeWasSelectionMode = this.selectionMode();
+    this.marqueeBaseFiles = additive ? new Set(this.selectedFileIds()) : new Set();
+    this.marqueeBaseFolders = additive ? new Set(this.selectedFolderIds()) : new Set();
+    window.addEventListener('mousemove', this.onMarqueeMoveBound);
+    window.addEventListener('mouseup', this.onMarqueeUpBound);
+  }
+
+  private onMarqueeMove(event: MouseEvent): void {
+    const start = this.marqueeStart;
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!this.marqueeActive) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; // chưa đủ để coi là kéo
+      this.marqueeActive = true;
+      if (this.marqueeBaseFiles.size === 0 && this.marqueeBaseFolders.size === 0) {
+        this.clearSelection();
+      }
+    }
+    const left = Math.min(start.x, event.clientX);
+    const top = Math.min(start.y, event.clientY);
+    const width = Math.abs(dx);
+    const height = Math.abs(dy);
+    this.marqueeRect.set({ left, top, width, height });
+    this.applyMarqueeSelection(left, top, left + width, top + height);
+    event.preventDefault();
+  }
+
+  /** Chọn mọi card giao với hình chữ nhật (toạ độ viewport). */
+  private applyMarqueeSelection(l: number, t: number, r: number, b: number): void {
+    const files = new Set(this.marqueeBaseFiles);
+    const folders = new Set(this.marqueeBaseFolders);
+    const cards = document.querySelectorAll<HTMLElement>('.explorer-root .card[data-id]');
+    cards.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const hit = rect.left < r && rect.right > l && rect.top < b && rect.bottom > t;
+      if (!hit) return;
+      const id = el.dataset['id'];
+      if (!id) return;
+      if (el.dataset['kind'] === 'folder') folders.add(id);
+      else files.add(id);
+    });
+    this.selectedFileIds.set(files);
+    this.selectedFolderIds.set(folders);
+    if ((files.size > 0 || folders.size > 0) && !this.selectionMode()) {
+      this.selectionMode.set(true);
+    }
+  }
+
+  private onMarqueeUp(): void {
+    window.removeEventListener('mousemove', this.onMarqueeMoveBound);
+    window.removeEventListener('mouseup', this.onMarqueeUpBound);
+    this.marqueeStart = null;
+    this.marqueeRect.set(null);
+    if (!this.marqueeActive) return;
+    this.marqueeActive = false;
+    // Kéo nhưng không trúng gì → khôi phục trạng thái chọn trước đó (không kẹt ở chế độ chọn rỗng).
+    if (this.selectedCount() === 0) this.selectionMode.set(this.marqueeWasSelectionMode);
   }
 
   /** Gắn/bỏ sao cho toàn bộ mục đang chọn — cập nhật tại chỗ, không nhấp nháy. */

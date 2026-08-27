@@ -9,6 +9,38 @@
   overflow-x: hidden;
 }
 
+/* Thanh điều hướng: nền/mờ/viền khi cuộn (thay các class Tailwind giá trị tuỳ ý
+   không được JIT sinh ra — nguyên nhân hiệu ứng chuyển bị lỗi). transition-all
+   trên header lo phần chuyển mượt. */
+#main-nav {
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+}
+#main-nav.nav-scrolled {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background-color: rgba(22, 22, 22, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #262626;
+}
+
+/* Link điều hướng: gạch chân xanh khi đang ở mục đó, chuyển màu mượt khi hover. */
+.nav-link {
+  color: #c6c6c6;
+  border-bottom: 2px solid transparent;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+.nav-link:hover {
+  color: #ffffff;
+}
+.nav-link-active {
+  color: #ffffff;
+  border-bottom-color: #0f62fe;
+}
+
 /* IBM Carbon Precision Typography */
 .display-01 {
   font-size: clamp(2.75rem, 5.5vw, 4.75rem);
@@ -319,6 +351,30 @@
 @keyframes spinShieldReverse {
   from { transform: rotate(360deg); }
   to { transform: rotate(0deg); }
+}
+
+/* Ổ khoá: sóng radar quét ra ngoài + tia quét xoay (thay 2 vòng xoay của khiên cũ) */
+.lock-pulse-ring {
+  transform-origin: 150px 150px;
+  opacity: 0;
+  animation: lockSonar 2.8s ease-out infinite;
+}
+.lock-pulse-ring--delay {
+  animation-delay: 1.4s;
+}
+@keyframes lockSonar {
+  0% { transform: scale(0.55); opacity: 0; }
+  15% { opacity: 0.85; }
+  100% { transform: scale(1.85); opacity: 0; }
+}
+
+.lock-sweep {
+  transform-origin: 150px 150px;
+  animation: lockRadarSweep 4s infinite linear;
+}
+@keyframes lockRadarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Pinned Bento responsive scaling to fit viewports */
