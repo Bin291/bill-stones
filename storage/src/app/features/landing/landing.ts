@@ -18,7 +18,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { LangService } from '../../core/i18n/lang.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
-import { SettingsService } from '../../core/services/settings.service';
 
 export interface SearchResultItem {
   id: string;
@@ -65,16 +64,6 @@ export class Landing {
   readonly langService = inject(LangService);
   private readonly auth = inject(AuthService);
   readonly isAuthenticated = this.auth.isAuthenticated;
-  readonly settings = inject(SettingsService);
-
-  toggleTheme(): void {
-    const current = this.settings.theme();
-    if (current === 'dark') {
-      this.settings.setTheme('light');
-    } else {
-      this.settings.setTheme('dark');
-    }
-  }
 
   // UI State Signals
   readonly mobileMenuOpen = signal<boolean>(false);
@@ -594,7 +583,7 @@ export class Landing {
       const scrollY = window.scrollY;
       this.isScrolled.set(scrollY > 40);
 
-      const sections = ['hero', 'features', 'how-it-works', 'security', 'sandbox', 'pricing'];
+      const sections = ['hero', 'how-it-works', 'features', 'sandbox', 'security', 'pricing'];
       for (const sectionId of sections) {
         const el = document.getElementById(sectionId);
         if (el) {
