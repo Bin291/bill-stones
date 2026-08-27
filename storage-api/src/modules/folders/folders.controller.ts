@@ -52,12 +52,17 @@ export class FoldersController {
     await archive.finalize();
   }
 
-  /** GET /folders?parentId=... — con trực tiếp (lazy load cây, mục 11.C). */
+  /**
+   * GET /folders?parentId=... — con trực tiếp (lazy load cây, mục 11.C).
+   * GET /folders?starred=true — mọi thư mục đã gắn sao, bất kể ở đâu (mục Gắn sao).
+   */
   @Get()
   list(
     @CurrentUser('id') userId: string,
     @Query('parentId') parentId?: string,
+    @Query('starred') starred?: string,
   ) {
+    if (starred === 'true') return this.folders.listStarred(userId);
     return this.folders.listChildren(userId, parentId ?? null);
   }
 

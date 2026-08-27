@@ -17,6 +17,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { FilesApiService } from '../../core/services/files-api.service';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import { SettingsApiService } from '../../core/services/settings-api.service';
+import { SharedApiService } from '../../core/services/shared-api.service';
 import { LangService } from '../../core/i18n/lang.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { RefreshService } from '../../core/services/refresh.service';
@@ -56,6 +57,7 @@ export class MainLayout implements OnInit {
   private readonly filesApi = inject(FilesApiService);
   private readonly tagsApi = inject(TagsApiService);
   private readonly settingsApi = inject(SettingsApiService);
+  private readonly sharedApi = inject(SharedApiService);
   private readonly lang = inject(LangService);
   private readonly router = inject(Router);
   private readonly refresh = inject(RefreshService);
@@ -73,6 +75,7 @@ export class MainLayout implements OnInit {
   protected readonly tagDialogOpen = signal(false);
 
   private readonly stats = signal<ExtensionStat[]>([]);
+  protected readonly sharedCount = signal(0);
 
   protected readonly browseItems: NavItem[] = [
     { icon: 'cloud', labelKey: 'nav.myStorage', path: '/files' },
@@ -117,7 +120,10 @@ export class MainLayout implements OnInit {
         filter((e) => e instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() => this.loadStats());
+      .subscribe(() => {
+        this.loadStats();
+        this.loadSharedCount();
+      });
   }
 
   ngOnInit(): void {
@@ -125,6 +131,17 @@ export class MainLayout implements OnInit {
     // Tải trước MỌI dữ liệu 1 lần (splash) → các lần chuyển lăng kính sau không loading.
     void this.prefetch.prefetchAll();
     void this.loadCustomAvatar();
+    this.loadSharedCount();
+  }
+
+  /** Số mục người khác đã chia sẻ với mình — hiện cạnh "Được chia sẻ với tôi". */
+  loadSharedCount(): void {
+    this.sharedApi.list().subscribe({
+      next: (items) => this.sharedCount.set(items.length),
+      error: () => {
+        /* lỗi tạm thời: giữ nguyên số đếm cũ */
+      },
+    });
   }
 
   /** Nạp avatar tuỳ chỉnh (nếu có) 1 lần khi vào app, để sidebar hiển thị đúng

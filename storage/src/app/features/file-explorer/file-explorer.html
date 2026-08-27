@@ -228,6 +228,12 @@
                       </span>
                     }
                   </div>
+                  @if (folder.folderPath && folder.folderPath.length) {
+                    <div class="card-path" (click)="goToFolderParent(folder); $event.stopPropagation()">
+                      <span class="mi" style="font-size: 13px">folder</span>
+                      {{ folder.folderPath[folder.folderPath.length - 1].name }}
+                    </div>
+                  }
                 }
               </div>
             </div>
@@ -469,7 +475,14 @@
 
 <!-- Context menu -->
 @if (menu(); as m) {
-  <div class="menu" [style.left.px]="m.x" [style.top.px]="m.y" (click)="$event.stopPropagation()">
+  <div
+    class="menu"
+    #menuEl
+    [style.left.px]="m.x"
+    [style.top.px]="m.y"
+    [style.visibility]="m.visible ? 'visible' : 'hidden'"
+    (click)="$event.stopPropagation()"
+  >
     @if (m.kind === 'file') {
       <button class="menu-item" type="button" (click)="download(fileById(m.id))">
         <span class="mi">download</span> {{ 'action.download' | t }}
