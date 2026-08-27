@@ -95,15 +95,17 @@ export class MainLayout implements OnInit {
   });
 
   constructor() {
-    // Nạp lại số đếm khi có tín hiệu dữ liệu đổi (upload/xoá).
+    // Nạp lại số đếm khi có tín hiệu dữ liệu đổi (upload/xoá). CHỜ có phiên đăng
+    // nhập (đọc isAuthenticated) — tránh gọi API lúc reload khi token chưa sẵn sàng
+    // → 401 → danh sách rỗng và không tự nạp lại.
     effect(() => {
       this.refresh.filesChanged();
-      this.loadStats();
+      if (this.auth.isAuthenticated()) this.loadStats();
     });
-    // Nạp lại danh sách thẻ khi có thay đổi (tạo/sửa/xoá/gán).
+    // Nạp lại danh sách thẻ khi có thay đổi (tạo/sửa/xoá/gán) hoặc khi phiên sẵn sàng.
     effect(() => {
       this.refresh.tagsChanged();
-      this.loadTags();
+      if (this.auth.isAuthenticated()) this.loadTags();
     });
     // Nạp lại số đếm mỗi khi điều hướng (chuyển lăng kính/thư mục).
     this.router.events
@@ -123,14 +125,18 @@ export class MainLayout implements OnInit {
   loadStats(): void {
     this.filesApi.stats().subscribe({
       next: (s) => this.stats.set(s),
-      error: () => this.stats.set([]),
+      error: () => {
+        /* lỗi tạm thời: giữ nguyên số đếm cũ, không xoá trắng */
+      },
     });
   }
 
   loadTags(): void {
     this.tagsApi.list().subscribe({
       next: (t) => this.tags.set(t),
-      error: () => this.tags.set([]),
+      error: () => {
+        /* lỗi tạm thời: giữ nguyên danh sách thẻ cũ, không xoá trắng */
+      },
     });
   }
 
