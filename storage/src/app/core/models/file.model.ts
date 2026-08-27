@@ -54,6 +54,8 @@ export interface Folder {
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Chỉ có khi list ở lăng kính Gắn sao (starred=true).
+  folderPath?: BreadcrumbCrumb[];
   // Thẻ đang gắn cho thư mục (luôn kèm khi list).
   tags?: Tag[];
 }

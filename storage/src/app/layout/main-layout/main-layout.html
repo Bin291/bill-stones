@@ -21,6 +21,9 @@
       >
         <span class="mi">{{ item.icon }}</span>
         {{ item.labelKey | t }}
+        @if (item.path === '/shared') {
+          <span class="nav-count">{{ sharedCount() || '' }}</span>
+        }
       </a>
     }
 

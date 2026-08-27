@@ -18,6 +18,10 @@ export interface FolderWithTags extends Folder {
   tags: Tag[];
 }
 
+export interface FolderWithPath extends FolderWithTags {
+  folderPath?: BreadcrumbCrumb[];
+}
+
 @Injectable()
 export class FoldersService {
   constructor(
@@ -52,6 +56,29 @@ export class FoldersService {
       ...bare,
       tags: tags.map((ft) => ft.tag),
     }));
+  }
+
+  /** Mọi thư mục đã gắn sao của user, bất kể nằm ở thư mục cha nào (mục Gắn sao). */
+  async listStarred(userId: string): Promise<FolderWithPath[]> {
+    const folders = await this.prisma.folder.findMany({
+      where: { userId, isStarred: true, deletedAt: null },
+      orderBy: { name: 'asc' },
+      include: { tags: { include: { tag: true } } },
+    });
+    const cache = new Map<string, BreadcrumbCrumb[]>();
+    const result: FolderWithPath[] = [];
+    for (const f of folders) {
+      const { tags, ...bare } = f;
+      let folderPath: BreadcrumbCrumb[] = [];
+      if (f.parentId) {
+        if (!cache.has(f.parentId)) {
+          cache.set(f.parentId, await this.breadcrumb(userId, f.parentId));
+        }
+        folderPath = cache.get(f.parentId)!;
+      }
+      result.push({ ...bare, folderPath, tags: tags.map((ft) => ft.tag) });
+    }
+    return result;
   }
 
   async create(

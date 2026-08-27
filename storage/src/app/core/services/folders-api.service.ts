@@ -15,6 +15,11 @@ export class FoldersApiService {
     return this.http.get<Folder[]>(this.base, { params });
   }
 
+  /** Mọi thư mục đã gắn sao, bất kể ở thư mục cha nào (lăng kính Gắn sao). */
+  listStarred(): Observable<Folder[]> {
+    return this.http.get<Folder[]>(this.base, { params: new HttpParams().set('starred', 'true') });
+  }
+
   breadcrumb(folderId: string): Observable<BreadcrumbCrumb[]> {
     return this.http.get<BreadcrumbCrumb[]>(`${this.base}/${folderId}/breadcrumb`);
   }
