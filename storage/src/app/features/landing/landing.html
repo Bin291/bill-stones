@@ -1,5 +1,5 @@
 <!-- BillPrime - IBM Carbon Dark Theme Landing Page -->
-<div class="relative min-h-screen bg-[#161616] text-[#f4f4f4] overflow-x-hidden font-sans selection:bg-[#0f62fe] selection:text-white">
+<div class="relative min-h-screen bg-[var(--canvas)] text-[var(--ink)] overflow-x-hidden font-sans selection:bg-[#0f62fe] selection:text-white transition-colors duration-300">
 
   <!-- ========================================== -->
   <!-- 1. STICKY HEADER NAVIGATION                -->
@@ -7,10 +7,10 @@
   <header
     id="main-nav"
     class="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
-    [class.bg-[#161616]/90]="isScrolled()"
+    [class.bg-[var(--canvas)]/90]="isScrolled()"
     [class.backdrop-blur-md]="isScrolled()"
     [class.border-b]="isScrolled()"
-    [class.border-[#262626]]="isScrolled()"
+    [class.border-[var(--hairline)]]="isScrolled()"
     [class.py-3]="isScrolled()"
     [class.py-5]="!isScrolled()"
   >
@@ -23,12 +23,12 @@
         (click)="scrollToSection('hero')"
         aria-label="BillPrime Home"
       >
-        <img class="w-8 h-8 object-contain" src="logo.png" alt="Logo" />
+        <img class="w-8 h-8 object-contain brand-logo" src="logo.png" alt="Logo" />
         <div class="flex flex-col">
           <div class="flex items-center gap-2">
-            <span class="font-sans font-semibold text-lg tracking-tight text-white">BillPrime</span>
+            <span class="font-sans font-semibold text-lg tracking-tight text-[var(--ink)]">BillPrime</span>
           </div>
-          <span class="text-[10px] text-[#8d8d8d] font-mono -mt-1 hidden sm:block">AI-HYBRID FILE INTELLIGENCE</span>
+          <span class="text-[10px] text-[var(--ink-subtle)] font-mono -mt-1 hidden sm:block">AI-HYBRID FILE INTELLIGENCE</span>
         </div>
       </button>
 
@@ -38,11 +38,11 @@
           type="button"
           (click)="scrollToSection('features')"
           class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'features'"
+          [class.text-[var(--ink)]]="activeNavSection() === 'features'"
           [class.border-[#0f62fe]]="activeNavSection() === 'features'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'features'"
+          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'features'"
           [class.border-transparent]="activeNavSection() !== 'features'"
-          [class.hover:text-white]="true"
+          [class.hover:text-[var(--ink)]]="true"
         >
           {{ 'nav.features' | t }}
         </button>
@@ -51,11 +51,11 @@
           type="button"
           (click)="scrollToSection('how-it-works')"
           class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'how-it-works'"
+          [class.text-[var(--ink)]]="activeNavSection() === 'how-it-works'"
           [class.border-[#0f62fe]]="activeNavSection() === 'how-it-works'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'how-it-works'"
+          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'how-it-works'"
           [class.border-transparent]="activeNavSection() !== 'how-it-works'"
-          [class.hover:text-white]="true"
+          [class.hover:text-[var(--ink)]]="true"
         >
           {{ 'nav.howItWorks' | t }}
         </button>
@@ -64,11 +64,11 @@
           type="button"
           (click)="scrollToSection('sandbox')"
           class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'sandbox'"
+          [class.text-[var(--ink)]]="activeNavSection() === 'sandbox'"
           [class.border-[#0f62fe]]="activeNavSection() === 'sandbox'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'sandbox'"
+          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'sandbox'"
           [class.border-transparent]="activeNavSection() !== 'sandbox'"
-          [class.hover:text-white]="true"
+          [class.hover:text-[var(--ink)]]="true"
         >
           {{ 'nav.sandbox' | t }}
         </button>
@@ -77,11 +77,11 @@
           type="button"
           (click)="scrollToSection('security')"
           class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-white]="activeNavSection() === 'security'"
+          [class.text-[var(--ink)]]="activeNavSection() === 'security'"
           [class.border-[#0f62fe]]="activeNavSection() === 'security'"
-          [class.text-[#c6c6c6]]="activeNavSection() !== 'security'"
+          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'security'"
           [class.border-transparent]="activeNavSection() !== 'security'"
-          [class.hover:text-white]="true"
+          [class.hover:text-[var(--ink)]]="true"
         >
           {{ 'nav.securityPrivacy' | t }}
         </button>
@@ -89,6 +89,16 @@
 
       <!-- Action Buttons -->
       <div class="hidden sm:flex items-center gap-3">
+        <!-- Theme Toggle Button -->
+        <button
+          type="button"
+          (click)="toggleTheme()"
+          class="w-10 h-10 flex items-center justify-center text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors cursor-pointer border border-transparent focus:outline-none"
+          [title]="'Theme: ' + (settings.theme() === 'dark' ? 'Tối' : settings.theme() === 'light' ? 'Sáng' : 'Hệ thống')"
+        >
+          <mat-icon>{{ settings.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
         @if (isAuthenticated()) {
           <a
             routerLink="/files"
@@ -112,7 +122,7 @@
       <button
         type="button"
         (click)="toggleMobileMenu()"
-        class="md:hidden p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
+        class="md:hidden p-2 text-[var(--ink-muted)] hover:text-[var(--ink)] focus:outline-none"
         aria-label="Toggle Navigation Menu"
       >
         <mat-icon>{{ mobileMenuOpen() ? 'close' : 'menu' }}</mat-icon>
@@ -121,35 +131,46 @@
 
     <!-- Mobile Dropdown Menu -->
     @if (mobileMenuOpen()) {
-      <div class="md:hidden bg-[#1c1c1c] border-b border-[#262626] px-4 pt-3 pb-6 flex flex-col gap-3">
+      <div class="md:hidden bg-[var(--surface-1)] border-b border-[var(--hairline)] px-4 pt-3 pb-6 flex flex-col gap-3">
         <button
           type="button"
           (click)="scrollToSection('features')"
-          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
         >
           {{ 'nav.features' | t }}
         </button>
         <button
           type="button"
           (click)="scrollToSection('how-it-works')"
-          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
         >
           {{ 'nav.howItWorks' | t }}
         </button>
         <button
           type="button"
           (click)="scrollToSection('sandbox')"
-          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
         >
           {{ 'nav.sandbox' | t }}
         </button>
         <button
           type="button"
           (click)="scrollToSection('security')"
-          class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
+          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
         >
           {{ 'nav.securityPrivacy' | t }}
         </button>
+        
+        <!-- Mobile Theme Toggle -->
+        <button
+          type="button"
+          (click)="toggleTheme()"
+          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)] flex items-center justify-between"
+        >
+          <span>Giao diện ({{ settings.theme() === 'dark' ? 'Tối' : settings.theme() === 'light' ? 'Sáng' : 'Hệ thống' }})</span>
+          <mat-icon>{{ settings.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
         <div class="flex flex-col gap-2 pt-2">
           @if (isAuthenticated()) {
             <a routerLink="/files" class="btn-primary w-full justify-center cursor-pointer">{{ 'nav.myStorage' | t }}</a>
@@ -174,23 +195,23 @@
       <div class="lg:col-span-6 flex flex-col gap-6 z-10">
 
         <!-- Hero Display Title -->
-        <h1 class="display-01 text-white" [innerHTML]="'landing.heroTitle' | t">
+        <h1 class="display-01 text-[var(--ink)]" [innerHTML]="'landing.heroTitle' | t">
         </h1>
 
         <!-- Subheading -->
-        <p class="body-long-01 max-w-xl text-[#c6c6c6]">
+        <p class="body-long-01 max-w-xl text-[var(--ink-muted)]">
           {{ 'landing.heroSubtitle' | t }}
         </p>
 
         <!-- Search Suggestions Chips -->
         <div class="flex flex-col gap-2 pt-1">
-          <span class="text-xs font-mono text-[#8d8d8d]">{{ 'landing.heroTrySuggestions' | t }}</span>
+          <span class="text-xs font-mono text-[var(--ink-subtle)]">{{ 'landing.heroTrySuggestions' | t }}</span>
           <div class="flex flex-wrap gap-2">
             @for (prompt of typingPrompts; track prompt) {
               <button
                 type="button"
                 (click)="setQuery(prompt)"
-                class="carbon-tag hover:border-[#0f62fe] hover:text-white transition-colors cursor-pointer text-left"
+                class="carbon-tag hover:border-[#0f62fe] hover:text-[var(--ink)] transition-colors cursor-pointer text-left"
               >
                 <mat-icon class="text-xs text-[#0f62fe]">search</mat-icon>
                 <span>{{ prompt | t }}</span>
@@ -237,15 +258,15 @@
         
         <div
           id="hero-mockup"
-          class="hero-3d-mockup bg-[#1c1c1c] border border-[#393939] overflow-hidden"
+          class="hero-3d-mockup bg-[var(--surface-1)] border border-[var(--hairline)] overflow-hidden"
         >
           <!-- Mockup Window Bar -->
-          <div class="bg-[#262626] px-4 py-2.5 flex items-center justify-between border-b border-[#333333]">
+          <div class="bg-[var(--surface-2)] px-4 py-2.5 flex items-center justify-between border-b border-[var(--hairline)]">
             <div class="flex items-center gap-2">
               <div class="w-3 h-3 bg-[#fa4d56]"></div>
               <div class="w-3 h-3 bg-[#f1c21b]"></div>
               <div class="w-3 h-3 bg-[#42be65]"></div>
-              <span class="font-mono text-xs text-[#8d8d8d] ml-2">billprime://vault/semantic-indexer</span>
+              <span class="font-mono text-xs text-[var(--ink-subtle)] ml-2">billprime://vault/semantic-indexer</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-[#42be65] animate-ping"></span>
@@ -254,16 +275,16 @@
           </div>
 
           <!-- Mockup Search Input Simulation -->
-          <div class="p-5 border-b border-[#262626] bg-[#161616]/60">
-            <div class="flex items-center bg-[#262626] border border-[#0f62fe] px-3.5 py-2.5 gap-3">
+          <div class="p-5 border-b border-[var(--hairline)] bg-[var(--canvas)]/60">
+            <div class="flex items-center bg-[var(--surface-1)] border border-[#0f62fe] px-3.5 py-2.5 gap-3">
               <mat-icon class="text-[#0f62fe]">search</mat-icon>
-              <div class="flex-1 font-mono text-sm text-white flex items-center">
-                <span id="hero-typed-input" class="text-white"></span>
+              <div class="flex-1 font-mono text-sm text-[var(--ink)] flex items-center">
+                <span id="hero-typed-input" class="text-[var(--ink)]"></span>
                 <span class="typewriter-cursor ml-0.5"></span>
               </div>
               <span class="carbon-tag carbon-tag-blue text-[10px] hidden sm:inline-flex">768-D EMBED</span>
             </div>
-            <div class="flex items-center justify-between text-[11px] text-[#8d8d8d] font-mono mt-2 px-1">
+            <div class="flex items-center justify-between text-[11px] text-[var(--ink-subtle)] font-mono mt-2 px-1">
               <span>{{ 'landing.mockupTitle' | t }}</span>
               <span>{{ 'landing.mockupResults' | t }}</span>
             </div>
@@ -284,10 +305,10 @@
                     PDF
                   </div>
                   <div>
-                    <div class="font-medium text-sm text-white flex items-center gap-2">
+                    <div class="font-medium text-sm text-[var(--ink)] flex items-center gap-2">
                       <span>Highlands_Coffee_Invoice_Aug2024.pdf</span>
                     </div>
-                    <div class="text-xs text-[#8d8d8d] font-mono">1.2 MB // Cập nhật: 18/08/2024</div>
+                    <div class="text-xs text-[var(--ink-subtle)] font-mono">1.2 MB // Cập nhật: 18/08/2024</div>
                   </div>
                 </div>
                 <div class="flex items-center gap-1.5 bg-[#42be65]/10 border border-[#42be65]/30 px-2 py-0.5 text-[#42be65] text-xs font-mono font-medium">
@@ -297,17 +318,17 @@
               </div>
 
               <!-- OCR Extract Highlight -->
-              <div class="bg-[#161616] p-2.5 border-l-2 border-[#0f62fe] text-xs text-[#c6c6c6] font-mono leading-relaxed w-full">
-                <span class="text-[#8d8d8d]">{{ 'landing.mockupOcrExtract' | t }}:</span>
+              <div class="bg-[var(--canvas)] p-2.5 border-l-2 border-[#0f62fe] text-xs text-[var(--ink-muted)] font-mono leading-relaxed w-full">
+                <span class="text-[var(--ink-subtle)]">{{ 'landing.mockupOcrExtract' | t }}:</span>
                 TỔNG TIỀN: <span class="bg-[#0f62fe]/30 text-white px-1">245.000 VNĐ</span>. Chi tiết: 02 Cà phê phin sữa đá, 01 Trà sen vàng. MST: 0302821264.
               </div>
 
-              <div class="flex items-center justify-between text-[11px] text-[#8d8d8d] pt-1 w-full">
+              <div class="flex items-center justify-between text-[11px] text-[var(--ink-subtle)] pt-1 w-full">
                 <div class="flex items-center gap-2">
                   <span class="carbon-tag text-[9px] py-0.5">MÃ HÓA AES-256</span>
                   <span class="carbon-tag text-[9px] py-0.5">PRESIGNED 10M</span>
                 </div>
-                <span class="text-[#0f62fe] hover:underline flex items-center gap-0.5 font-medium">
+                <span class="text-[var(--primary)] hover:underline flex items-center gap-0.5 font-medium">
                   {{ 'landing.mockupDetail' | t }} <mat-icon class="text-xs">chevron_right</mat-icon>
                 </span>
               </div>
@@ -316,47 +337,47 @@
             <!-- Result Item 2 -->
             <button
               type="button"
-              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[#0f62fe] transition-colors cursor-pointer text-left w-full"
+              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[var(--primary)] transition-colors cursor-pointer text-left w-full"
               (click)="openModal('preview', allSearchResults[1])"
             >
               <div class="flex items-start justify-between w-full">
                 <div class="flex items-center gap-2.5">
-                  <div class="w-7 h-7 bg-[#0f62fe]/20 text-[#78a9ff] flex items-center justify-center font-mono text-xs">
+                  <div class="w-7 h-7 bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-mono text-xs">
                     DOC
                   </div>
                   <div>
-                    <div class="font-medium text-sm text-white">HopDong_ThueCanHo_Landmark_Signed.pdf</div>
-                    <div class="text-xs text-[#8d8d8d] font-mono">4.8 MB // Cập nhật: 12/05/2024</div>
+                    <div class="font-medium text-sm text-[var(--ink)]">HopDong_ThueCanHo_Landmark_Signed.pdf</div>
+                    <div class="text-xs text-[var(--ink-subtle)] font-mono">4.8 MB // Cập nhật: 12/05/2024</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 bg-[#42be65]/10 border border-[#42be65]/30 px-2 py-0.5 text-[#42be65] text-xs font-mono font-medium">
+                <div class="flex items-center gap-1.5 bg-[var(--success)]/10 border border-[var(--success)]/20 px-2 py-0.5 text-[var(--success)] text-xs font-mono font-medium">
                   <mat-icon class="text-xs scale-75">verified</mat-icon>
                   <span>97.8% MATCH</span>
                 </div>
               </div>
-              <div class="bg-[#161616] p-2.5 border-l-2 border-[#4589ff] text-xs text-[#c6c6c6] font-mono leading-relaxed w-full">
-                <span class="text-[#8d8d8d]">{{ 'landing.mockupOcrExtract' | t }}:</span>
-                HỢP ĐỒNG THUÊ: <span class="bg-[#0f62fe]/30 text-white px-1">Landmark 81</span>. Giá: 28.000.000 VNĐ/tháng. Thời hạn 12 tháng.
+              <div class="bg-[var(--canvas)] p-2.5 border-l-2 border-[var(--primary)] text-xs text-[var(--ink-muted)] font-mono leading-relaxed w-full">
+                <span class="text-[var(--ink-subtle)]">{{ 'landing.mockupOcrExtract' | t }}:</span>
+                HỢP ĐỒNG THUÊ: <span class="bg-[var(--primary)]/20 text-[var(--ink)] px-1">Landmark 81</span>. Giá: 28.000.000 VNĐ/tháng. Thời hạn 12 tháng.
               </div>
             </button>
 
             <!-- Result Item 3 -->
             <button
               type="button"
-              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[#0f62fe] transition-colors cursor-pointer text-left w-full"
+              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[var(--primary)] transition-colors cursor-pointer text-left w-full"
               (click)="openModal('preview', allSearchResults[2])"
             >
               <div class="flex items-start justify-between w-full">
                 <div class="flex items-center gap-2.5">
-                  <div class="w-7 h-7 bg-[#8a3ffc]/20 text-[#be95ff] flex items-center justify-center font-mono text-xs">
+                  <div class="w-7 h-7 bg-[#8a3ffc]/10 text-[#8a3ffc] flex items-center justify-center font-mono text-xs">
                     IMG
                   </div>
                   <div>
-                    <div class="font-medium text-sm text-white">System_Architecture_Payment_Flow.png</div>
-                    <div class="text-xs text-[#8d8d8d] font-mono">3.1 MB // Vision OCR</div>
+                    <div class="font-medium text-sm text-[var(--ink)]">System_Architecture_Payment_Flow.png</div>
+                    <div class="text-xs text-[var(--ink-subtle)] font-mono">3.1 MB // Vision OCR</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 bg-[#0f62fe]/10 border border-[#0f62fe]/30 px-2 py-0.5 text-[#78a9ff] text-xs font-mono font-medium">
+                <div class="flex items-center gap-1.5 bg-[var(--primary)]/10 border border-[var(--primary)]/20 px-2 py-0.5 text-[var(--primary)] text-xs font-mono font-medium">
                   <span>95.6% MATCH</span>
                 </div>
               </div>
@@ -365,9 +386,9 @@
           </div>
 
           <!-- Mockup Status Footer -->
-          <div class="bg-[#262626] px-4 py-2 flex items-center justify-between text-[11px] font-mono text-[#8d8d8d] border-t border-[#333333]">
+          <div class="bg-[var(--surface-2)] px-4 py-2 flex items-center justify-between text-[11px] font-mono text-[var(--ink-subtle)] border-t border-[var(--hairline)]">
             <span>HASH: sha256:7f8e...4b1c</span>
-            <span class="text-[#4589ff]">CÔ LẬP THEO TÀI KHOẢN</span>
+            <span class="text-[var(--primary)]">CÔ LẬP THEO TÀI KHOẢN</span>
           </div>
 
         </div>
@@ -380,20 +401,20 @@
   <!-- ========================================== -->
   <!-- 3. HOW BILLPRIME WORKS (Pinned Sequence)   -->
   <!-- ========================================== -->
-  <section id="how-it-works" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center">
+  <section id="how-it-works" class="relative min-h-screen py-24 bg-[var(--canvas)] border-t border-[var(--hairline)] flex flex-col justify-center">
     
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
       
       <!-- Section Header -->
       <div class="mb-16 max-w-2xl">
         <div class="flex items-center gap-2 mb-3">
-          <div class="w-2 h-2 bg-[#0f62fe]"></div>
-          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+          <div class="w-2 h-2 bg-[var(--brand)]"></div>
+          <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
             {{ 'landing.howItWorksEyebrow' | t }}
           </span>
         </div>
-        <h2 class="heading-04 text-white">{{ 'landing.howItWorksTitle' | t }}</h2>
-        <p class="body-long-01 text-[#c6c6c6] mt-2">
+        <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.howItWorksTitle' | t }}</h2>
+        <p class="body-long-01 text-[var(--ink-muted)] mt-2">
           {{ 'landing.howItWorksSubtitle' | t }}
         </p>
       </div>
@@ -408,35 +429,35 @@
           viewBox="0 0 1000 50"
         >
           <!-- Background Track 1 -->
-          <line x1="280" y1="25" x2="380" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <line x1="280" y1="25" x2="380" y2="25" stroke="var(--hairline)" stroke-width="2" stroke-dasharray="4 4" />
           <!-- Animated Draw Path 1 -->
-          <path id="pipeline-path-1" d="M 280 25 L 380 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
+          <path id="pipeline-path-1" d="M 280 25 L 380 25" stroke="var(--brand)" stroke-width="2" class="pipeline-draw" />
 
           <!-- Background Track 2 -->
-          <line x1="620" y1="25" x2="720" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <line x1="620" y1="25" x2="720" y2="25" stroke="var(--hairline)" stroke-width="2" stroke-dasharray="4 4" />
           <!-- Animated Draw Path 2 -->
-          <path id="pipeline-path-2" d="M 620 25 L 720 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
+          <path id="pipeline-path-2" d="M 620 25 L 720 25" stroke="var(--brand)" stroke-width="2" class="pipeline-draw" />
         </svg>
 
         <!-- STEP 1 CARD -->
-        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[#1c1c1c]">
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10">
           <div>
             <div class="flex items-center justify-between mb-6">
-              <span class="font-mono text-3xl font-light text-[#0f62fe]">01</span>
+              <span class="font-mono text-3xl font-light text-[var(--brand)]">01</span>
               <span class="carbon-tag text-[10px]">INGESTION & SHARDING</span>
             </div>
             
-            <h3 class="heading-02 text-white mb-3">{{ 'landing.step1Title' | t }}</h3>
+            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step1Title' | t }}</h3>
             <p class="body-short-01 mb-6">
               {{ 'landing.step1Desc' | t }}
             </p>
           </div>
 
           <!-- Step Feature Visual Pill -->
-          <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
-            <div class="flex justify-between text-[#c6c6c6]">
+          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[var(--ink-muted)]">
               <span>{{ 'landing.step1Meta1' | t }}</span>
-              <span class="text-[#42be65]">{{ 'landing.step1Meta1Val' | t }}</span>
+              <span class="text-[var(--success)]">{{ 'landing.step1Meta1Val' | t }}</span>
             </div>
             <div class="flex justify-between">
               <span>{{ 'landing.step1Meta2' | t }}</span>
@@ -444,34 +465,34 @@
             </div>
             <div class="flex justify-between">
               <span>{{ 'landing.step1Meta3' | t }}</span>
-              <span class="text-[#78a9ff]">{{ 'landing.step1Meta3Val' | t }}</span>
+              <span class="text-[var(--brand-light)]">{{ 'landing.step1Meta3Val' | t }}</span>
             </div>
           </div>
         </div>
 
         <!-- STEP 2 CARD -->
-        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[#1c1c1c]">
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10">
           <div>
             <div class="flex items-center justify-between mb-6">
-              <span class="font-mono text-3xl font-light text-[#0f62fe]">02</span>
+              <span class="font-mono text-3xl font-light text-[var(--brand)]">02</span>
               <span class="carbon-tag carbon-tag-blue text-[10px]">AI OCR & VECTORIZATION</span>
             </div>
             
-            <h3 class="heading-02 text-white mb-3">{{ 'landing.step2Title' | t }}</h3>
+            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step2Title' | t }}</h3>
             <p class="body-short-01 mb-6">
               {{ 'landing.step2Desc' | t }}
             </p>
           </div>
 
           <!-- Step Feature Visual Pill -->
-          <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
-            <div class="flex justify-between text-[#c6c6c6]">
+          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[var(--ink-muted)]">
               <span>{{ 'landing.step2Meta1' | t }}</span>
-              <span class="text-[#78a9ff]">{{ 'landing.step2Meta1Val' | t }}</span>
+              <span class="text-[var(--brand-light)]">{{ 'landing.step2Meta1Val' | t }}</span>
             </div>
             <div class="flex justify-between">
               <span>{{ 'landing.step2Meta2' | t }}</span>
-              <span class="text-[#42be65]">{{ 'landing.step2Meta2Val' | t }}</span>
+              <span class="text-[var(--success)]">{{ 'landing.step2Meta2Val' | t }}</span>
             </div>
             <div class="flex justify-between">
               <span>{{ 'landing.step2Meta3' | t }}</span>
@@ -481,24 +502,24 @@
         </div>
 
         <!-- STEP 3 CARD -->
-        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[#1c1c1c]">
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10">
           <div>
             <div class="flex items-center justify-between mb-6">
-              <span class="font-mono text-3xl font-light text-[#0f62fe]">03</span>
+              <span class="font-mono text-3xl font-light text-[var(--brand)]">03</span>
               <span class="carbon-tag carbon-tag-green text-[10px]">SEMANTIC RETRIEVAL</span>
             </div>
             
-            <h3 class="heading-02 text-white mb-3">{{ 'landing.step3Title' | t }}</h3>
+            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step3Title' | t }}</h3>
             <p class="body-short-01 mb-6">
               {{ 'landing.step3Desc' | t }}
             </p>
           </div>
 
           <!-- Step Feature Visual Pill -->
-          <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
-            <div class="flex justify-between text-[#c6c6c6]">
+          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[var(--ink-muted)]">
               <span>{{ 'landing.step3Meta1' | t }}</span>
-              <span class="text-[#42be65]">{{ 'landing.step3Meta1Val' | t }}</span>
+              <span class="text-[var(--success)]">{{ 'landing.step3Meta1Val' | t }}</span>
             </div>
             <div class="flex justify-between">
               <span>{{ 'landing.step3Meta2' | t }}</span>
@@ -519,20 +540,20 @@
   <!-- ========================================== -->
   <!-- 4. FEATURE BENTO SHUTTER GRID (300vh Pin)  -->
   <!-- ========================================== -->
-  <section id="features" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center overflow-hidden">
+  <section id="features" class="relative min-h-screen py-24 bg-[var(--canvas)] border-t border-[var(--hairline)] flex flex-col justify-center overflow-hidden">
     
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative">
       
       <!-- Section Title -->
       <div class="mb-12 max-w-2xl z-20 relative">
         <div class="flex items-center gap-2 mb-3">
-          <div class="w-2 h-2 bg-[#0f62fe]"></div>
-          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+          <div class="w-2 h-2 bg-[var(--primary)]"></div>
+          <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
             {{ 'landing.bentoEyebrow' | t }}
           </span>
         </div>
-        <h2 class="heading-04 text-white">{{ 'landing.bentoTitle' | t }}</h2>
-        <p class="body-long-01 text-[#c6c6c6]">
+        <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.bentoTitle' | t }}</h2>
+        <p class="body-long-01 text-[var(--ink-muted)]">
           Cuộn chuột để phân rã 8 khối module và khám phá triết lý bảo mật cốt lõi bên dưới.
         </p>
       </div>
@@ -542,7 +563,7 @@
         
         <!-- Underlying Glowing Tech Message Revealed Upon Scroll Scatter -->
         <div class="shutter-glow-message px-4 text-center">
-          <div class="text-[10px] sm:text-xs font-mono text-[#78a9ff] tracking-[0.25em] mb-4 uppercase">
+          <div class="text-[10px] sm:text-xs font-mono text-[var(--primary)] tracking-[0.25em] mb-4 uppercase">
             SECURITY &amp; PRIVACY AT CORE LEVEL
           </div>
           <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6" [innerHTML]="'landing.glowingText' | t">
@@ -567,23 +588,23 @@
                 <!-- Top Tag & Icon -->
                 <div class="flex items-center justify-between mb-4">
                   <span class="carbon-tag text-[10px]">{{ feature.tag }}</span>
-                  <div class="w-8 h-8 bg-[#262626] flex items-center justify-center text-[#78a9ff]">
+                  <div class="w-8 h-8 bg-[var(--surface-2)] flex items-center justify-center text-[var(--primary)]">
                     <mat-icon class="text-lg">{{ feature.icon }}</mat-icon>
                   </div>
                 </div>
 
                 <!-- Title & Subtitle -->
-                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title | t }}</h3>
-                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle | t }}</div>
+                <h3 class="text-base sm:text-lg font-medium text-[var(--ink)] mb-1">{{ feature.title | t }}</h3>
+                <div class="text-xs text-[var(--primary)] font-mono mb-3">{{ feature.subtitle | t }}</div>
                 
                 <!-- Description -->
-                <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed mb-4">
+                <p class="text-xs sm:text-sm text-[var(--ink-muted)] leading-relaxed mb-4">
                   {{ feature.description | t }}
                 </p>
               </div>
 
               <!-- Tech Spec Footer -->
-              <div class="pt-3 border-t border-[#262626] text-[11px] font-mono text-[#8d8d8d]">
+              <div class="pt-3 border-t border-[var(--hairline)] text-[11px] font-mono text-[var(--ink-subtle)]">
                 <span class="break-words whitespace-normal block w-full">{{ feature.techSpec }}</span>
               </div>
             </div>
@@ -599,20 +620,20 @@
   <!-- ========================================== -->
   <!-- 5. INTERACTIVE SEARCH SANDBOX EXPLORER    -->
   <!-- ========================================== -->
-  <section id="sandbox" class="relative py-24 bg-[#1c1c1c] border-t border-[#262626]">
+  <section id="sandbox" class="relative py-24 bg-[var(--surface-1)] border-t border-[var(--hairline)]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
       
       <!-- Section Header -->
       <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>
           <div class="flex items-center gap-2 mb-3">
-            <div class="w-2 h-2 bg-[#0f62fe]"></div>
-            <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+            <div class="w-2 h-2 bg-[var(--primary)]"></div>
+            <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
               {{ 'landing.sandboxEyebrow' | t }}
             </span>
           </div>
-          <h2 class="heading-04 text-white">{{ 'landing.sandboxTitle' | t }}</h2>
-          <p class="body-long-01 text-[#c6c6c6] mt-2 max-w-xl">
+          <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.sandboxTitle' | t }}</h2>
+          <p class="body-long-01 text-[var(--ink-muted)] mt-2 max-w-xl">
             {{ 'landing.sandboxSubtitle' | t }}
           </p>
         </div>
@@ -624,7 +645,7 @@
             (click)="setFilter('all')"
             class="carbon-tag cursor-pointer transition-colors"
             [class.carbon-tag-blue]="selectedFilter() === 'all'"
-            [class.border-[#0f62fe]]="selectedFilter() === 'all'"
+            [class.border-[var(--primary)]]="selectedFilter() === 'all'"
           >
             {{ 'landing.sandboxAll' | t }} ({{ allSearchResults.length }})
           </button>
@@ -665,7 +686,7 @@
 
       <!-- Feedback toast -->
       @if (copyFeedback()) {
-        <div class="fixed bottom-6 right-6 z-50 bg-[#0f62fe] text-white px-4 py-3 font-mono text-xs flex items-center gap-2 shadow-2xl">
+        <div class="fixed bottom-6 right-6 z-50 bg-[var(--primary)] text-white px-4 py-3 font-mono text-xs flex items-center gap-2 shadow-2xl">
           <mat-icon class="text-sm">check_circle</mat-icon>
           <span>{{ copyFeedback() }}</span>
         </div>
@@ -674,24 +695,24 @@
       <!-- Sandbox Grid List -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         @for (item of filteredResults(); track item.id) {
-          <div class="carbon-card p-5 flex flex-col justify-between gap-4 hover:border-[#0f62fe] transition-all">
+          <div class="carbon-card p-5 flex flex-col justify-between gap-4 hover:border-[var(--primary)] transition-all">
             
             <div>
               <!-- Header info -->
               <div class="flex items-start justify-between gap-3 mb-3">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-[#262626] border border-[#393939] flex items-center justify-center font-mono text-xs text-[#78a9ff]">
+                  <div class="w-10 h-10 bg-[var(--surface-2)] border border-[var(--hairline)] flex items-center justify-center font-mono text-xs text-[var(--primary)]">
                     {{ item.fileType.split(' ')[0] }}
                   </div>
                   <div>
                     <button
                       type="button"
-                      class="font-medium text-base text-white hover:text-[#78a9ff] transition-colors cursor-pointer text-left bg-transparent border-0 p-0 focus:outline-none"
+                      class="font-medium text-base text-[var(--ink)] hover:text-[var(--primary)] transition-colors cursor-pointer text-left bg-transparent border-0 p-0 focus:outline-none"
                       (click)="openModal('preview', item)"
                     >
                       {{ item.title }}
                     </button>
-                    <div class="flex items-center gap-3 text-xs text-[#8d8d8d] font-mono mt-0.5">
+                    <div class="flex items-center gap-3 text-xs text-[var(--ink-subtle)] font-mono mt-0.5">
                       <span>{{ item.categoryLabel }}</span>
                       <span>•</span>
                       <span>{{ item.fileSize }}</span>
@@ -703,33 +724,33 @@
 
                 <div class="flex flex-col items-end">
                   <span class="carbon-tag carbon-tag-green text-[10px]">{{ item.matchScore }}% MATCH</span>
-                  <span class="text-[10px] font-mono text-[#8d8d8d] mt-1">Dist: {{ item.vectorDistance }}</span>
+                  <span class="text-[10px] font-mono text-[var(--ink-subtle)] mt-1">Dist: {{ item.vectorDistance }}</span>
                 </div>
               </div>
 
               <!-- OCR Snippet block -->
-              <div class="bg-[#161616] p-3 border-l-2 border-[#0f62fe] text-xs text-[#c6c6c6] font-mono leading-relaxed mb-4">
-                <div class="text-[10px] text-[#8d8d8d] uppercase tracking-wider mb-1">{{ 'landing.mockupOcrExtract' | t }}:</div>
+              <div class="bg-[var(--canvas)] p-3 border-l-2 border-[var(--primary)] text-xs text-[var(--ink-muted)] font-mono leading-relaxed mb-4">
+                <div class="text-[10px] text-[var(--ink-subtle)] uppercase tracking-wider mb-1">{{ 'landing.mockupOcrExtract' | t }}:</div>
                 <p>{{ item.ocrSnippet }}</p>
               </div>
 
               <!-- Extracted Entities Tags -->
               <div class="flex flex-wrap gap-2 mb-2">
                 @for (entity of item.extractedEntities; track entity.label) {
-                  <div class="bg-[#262626] border border-[#393939] px-2.5 py-1 text-[11px] font-mono flex items-center gap-1.5">
-                    <span class="text-[#8d8d8d]">{{ entity.label }}:</span>
-                    <span class="text-white font-medium">{{ entity.value }}</span>
+                  <div class="bg-[var(--surface-2)] border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-mono flex items-center gap-1.5">
+                    <span class="text-[var(--ink-subtle)]">{{ entity.label }}:</span>
+                    <span class="text-[var(--ink)] font-medium">{{ entity.value }}</span>
                   </div>
                 }
               </div>
             </div>
 
             <!-- Actions row -->
-            <div class="pt-3 border-t border-[#262626] flex items-center">
+            <div class="pt-3 border-t border-[var(--hairline)] flex items-center">
               <button
                 type="button"
                 (click)="openModal('preview', item)"
-                class="text-xs text-[#78a9ff] hover:text-white font-mono flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                class="text-xs text-[var(--primary)] hover:text-[var(--ink)] font-mono flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
               >
                 <mat-icon class="text-sm">visibility</mat-icon>
                 <span>{{ 'landing.sandboxViewOcr' | t }}</span>
@@ -746,7 +767,7 @@
   <!-- ========================================== -->
   <!-- 6. SECURITY & PRIVACY SECTION              -->
   <!-- ========================================== -->
-  <section id="security" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex items-center">
+  <section id="security" class="relative min-h-screen py-24 bg-[var(--canvas)] border-t border-[var(--hairline)] flex items-center">
     
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
       
@@ -754,15 +775,15 @@
       <div class="lg:col-span-7 flex flex-col gap-6">
         
         <div class="flex items-center gap-2">
-          <div class="w-2 h-2 bg-[#0f62fe]"></div>
-          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+          <div class="w-2 h-2 bg-[var(--primary)]"></div>
+          <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
             {{ 'landing.securityEyebrow' | t }}
           </span>
         </div>
 
-        <h2 class="heading-04 text-white">{{ 'landing.securityTitle' | t }}</h2>
+        <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.securityTitle' | t }}</h2>
 
-        <p class="body-long-01 text-[#c6c6c6]">
+        <p class="body-long-01 text-[var(--ink-muted)]">
           {{ 'landing.securityDesc' | t }}
         </p>
 
@@ -771,12 +792,12 @@
 
           <!-- Pillar 1 -->
           <div class="carbon-card p-4 flex items-start gap-4">
-            <div class="w-10 h-10 bg-[#0f62fe]/10 border border-[#0f62fe]/40 text-[#78a9ff] flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 bg-[var(--primary)]/10 border border-[var(--primary)]/40 text-[var(--primary)] flex items-center justify-center shrink-0">
               <mat-icon>lock</mat-icon>
             </div>
             <div>
-              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar1Title' | t }}</h3>
-              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+              <h3 class="text-base font-medium text-[var(--ink)] mb-1">{{ 'landing.securityPillar1Title' | t }}</h3>
+              <p class="text-xs sm:text-sm text-[var(--ink-muted)] leading-relaxed">
                 {{ 'landing.securityPillar1Desc' | t }}
               </p>
             </div>
@@ -784,12 +805,12 @@
 
           <!-- Pillar 2 -->
           <div class="carbon-card p-4 flex items-start gap-4">
-            <div class="w-10 h-10 bg-[#42be65]/10 border border-[#42be65]/40 text-[#42be65] flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 bg-[var(--success)]/10 border border-[var(--success)]/40 text-[var(--success)] flex items-center justify-center shrink-0">
               <mat-icon>vpn_key</mat-icon>
             </div>
             <div>
-              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar2Title' | t }}</h3>
-              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+              <h3 class="text-base font-medium text-[var(--ink)] mb-1">{{ 'landing.securityPillar2Title' | t }}</h3>
+              <p class="text-xs sm:text-sm text-[var(--ink-muted)] leading-relaxed">
                 {{ 'landing.securityPillar2Desc' | t }}
               </p>
             </div>
@@ -801,8 +822,8 @@
               <mat-icon>shield</mat-icon>
             </div>
             <div>
-              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar3Title' | t }}</h3>
-              <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
+              <h3 class="text-base font-medium text-[var(--ink)] mb-1">{{ 'landing.securityPillar3Title' | t }}</h3>
+              <p class="text-xs sm:text-sm text-[var(--ink-muted)] leading-relaxed">
                 {{ 'landing.securityPillar3Desc' | t }}
               </p>
             </div>
@@ -816,12 +837,12 @@
       <div class="lg:col-span-5 flex flex-col items-center justify-center relative">
         
         <!-- Shield Container Frame -->
-        <div class="relative w-full max-w-[380px] bg-[#1c1c1c] border border-[#393939] p-6 flex flex-col items-center">
+        <div class="relative w-full max-w-[380px] bg-[var(--surface-1)] border border-[var(--hairline)] p-6 flex flex-col items-center">
           
-          <div class="w-full flex items-center justify-between border-b border-[#262626] pb-3 mb-6 font-mono text-xs text-[#8d8d8d]">
+          <div class="w-full flex items-center justify-between border-b border-[var(--hairline)] pb-3 mb-6 font-mono text-xs text-[var(--ink-subtle)]">
             <span>BILLPRIME_GUARD // ACCESS CONTROL</span>
-            <span class="text-[#42be65] flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-[#42be65]"></span>
+            <span class="text-[var(--success)] flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[var(--success)]"></span>
               LIVE_SHIELD
             </span>
           </div>
@@ -836,7 +857,7 @@
                 cy="150"
                 r="135"
                 fill="none"
-                stroke="#262626"
+                stroke="var(--hairline)"
                 stroke-width="1.5"
                 stroke-dasharray="6 8"
                 class="shield-ring-rotate"
@@ -848,7 +869,7 @@
                 cy="150"
                 r="115"
                 fill="none"
-                stroke="#393939"
+                stroke="var(--hairline)"
                 stroke-width="1"
                 stroke-dasharray="12 12"
                 class="shield-ring-reverse"
@@ -858,7 +879,7 @@
               <path
                 d="M 150 40 L 230 75 L 230 160 C 230 215 150 255 150 255 C 150 255 70 215 70 160 L 70 75 Z"
                 fill="rgba(15, 98, 254, 0.05)"
-                stroke="#0f62fe"
+                stroke="var(--primary)"
                 stroke-width="2.5"
                 class="shield-draw-path"
               />
@@ -867,15 +888,15 @@
               <path
                 d="M 150 65 L 210 92 L 210 155 C 210 198 150 230 150 230 C 150 230 90 198 90 155 L 90 92 Z"
                 fill="none"
-                stroke="#4589ff"
+                stroke="var(--primary)"
                 stroke-width="1.5"
                 stroke-dasharray="4 4"
                 class="shield-draw-path"
               />
 
               <!-- Central Keylock Core -->
-              <circle cx="150" cy="135" r="16" fill="#0f62fe" />
-              <rect x="145" y="135" width="10" height="28" fill="#0f62fe" />
+              <circle cx="150" cy="135" r="16" fill="var(--primary)" />
+              <rect x="145" y="135" width="10" height="28" fill="var(--primary)" />
 
               <!-- Active Status Indicators -->
               <circle cx="150" cy="135" r="5" fill="#ffffff" />
@@ -887,18 +908,18 @@
           </div>
 
           <!-- Real-Time Cryptographic Status Monitor -->
-          <div class="w-full mt-6 pt-4 border-t border-[#262626] font-mono text-[11px] text-[#8d8d8d] flex flex-col gap-1.5">
+          <div class="w-full mt-6 pt-4 border-t border-[var(--hairline)] font-mono text-[11px] text-[var(--ink-subtle)] flex flex-col gap-1.5">
             <div class="flex justify-between">
               <span>STORAGE ENCRYPTION:</span>
-              <span class="text-white">AES-256 (Cloudflare R2)</span>
+              <span class="text-[var(--ink)]">AES-256 (Cloudflare R2)</span>
             </div>
             <div class="flex justify-between">
               <span>ACCESS MODEL:</span>
-              <span class="text-[#78a9ff]">Per-user scoped</span>
+              <span class="text-[var(--primary)]">Per-user scoped</span>
             </div>
             <div class="flex justify-between">
               <span>CROSS-USER LEAK:</span>
-              <span class="text-[#42be65]">0% ({{ 'landing.securityTested' | t }})</span>
+              <span class="text-[var(--success)]">0% ({{ 'landing.securityTested' | t }})</span>
             </div>
           </div>
 
@@ -912,17 +933,15 @@
   <!-- ========================================== -->
   <!-- 8. BOTTOM CTA SECTION                      -->
   <!-- ========================================== -->
-  <section id="pricing" class="relative py-28 bg-[#161616] border-t border-[#262626] text-center carbon-grid-lines">
+  <section id="pricing" class="relative py-28 bg-[var(--canvas)] border-t border-[var(--hairline)] text-center carbon-grid-lines">
     
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      
-
-      <h2 class="display-01 text-white mb-6">
+      <h2 class="display-01 text-[var(--ink)] mb-6">
         {{ 'landing.ctaTitle' | t }}
       </h2>
 
-      <p class="body-long-01 text-[#c6c6c6] max-w-2xl mx-auto mb-10">
+      <p class="body-long-01 text-[var(--ink-muted)] max-w-2xl mx-auto mb-10">
         {{ 'landing.ctaDesc' | t }}
       </p>
 
@@ -934,7 +953,7 @@
           aria-label="Email"
           [(ngModel)]="registerEmail"
           [placeholder]="'landing.emailPlaceholder' | t"
-          class="flex-1 bg-[#262626] border border-[#393939] focus:border-[#0f62fe] px-4 py-3 text-sm text-white font-mono placeholder:text-[#8d8d8d] focus:outline-none rounded-none"
+          class="flex-1 bg-[var(--surface-1)] border border-[var(--hairline)] focus:border-[var(--primary)] px-4 py-3 text-sm text-[var(--ink)] font-mono placeholder:text-[var(--ink-subtle)] focus:outline-none rounded-none"
         />
         <button
           type="button"
@@ -947,17 +966,17 @@
       </div>
 
       <!-- Trust signals -->
-      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[#8d8d8d] font-mono">
+      <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[var(--ink-subtle)] font-mono">
         <span class="flex items-center gap-1.5">
-          <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
+          <mat-icon class="text-sm text-[var(--success)]">check_circle</mat-icon>
           {{ 'landing.trustNoCard' | t }}
         </span>
         <span class="flex items-center gap-1.5">
-          <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
+          <mat-icon class="text-sm text-[var(--success)]">check_circle</mat-icon>
           {{ 'landing.trustNoPublicUrl' | t }}
         </span>
         <span class="flex items-center gap-1.5">
-          <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
+          <mat-icon class="text-sm text-[var(--success)]">check_circle</mat-icon>
           {{ 'landing.trustZipDownload' | t }}
         </span>
       </div>
@@ -968,50 +987,50 @@
   <!-- ========================================== -->
   <!-- 9. FOOTER SECTION (IBM Carbon Dark)        -->
   <!-- ========================================== -->
-  <footer class="bg-[#111111] border-t border-[#262626] pt-16 pb-12 text-base text-[#8d8d8d]">
+  <footer class="bg-[var(--surface-1)] border-t border-[var(--hairline)] pt-16 pb-12 text-base text-[var(--ink-muted)]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-[#262626]">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-[var(--hairline)]">
         
         <!-- Brand Column -->
         <div class="md:col-span-2 flex flex-col gap-4">
           <div class="flex items-center gap-3">
-            <img class="w-7 h-7 object-contain" src="logo.png" alt="Logo" />
-            <span class="font-sans font-semibold text-lg text-white">BillPrime</span>
+            <img class="w-7 h-7 object-contain brand-logo" src="logo.png" alt="Logo" />
+            <span class="font-sans font-semibold text-lg text-[var(--ink)]">BillPrime</span>
           </div>
-          <p class="text-sm text-[#8d8d8d] leading-relaxed max-w-sm">
+          <p class="text-sm text-[var(--ink-subtle)] leading-relaxed max-w-sm">
             {{ 'landing.footerDesc' | t }}
           </p>
         </div>
 
         <!-- Col 1: Sản phẩm -->
         <div class="flex flex-col gap-3">
-          <div class="font-mono text-sm text-white uppercase tracking-wider">{{ 'landing.footerProduct' | t }}</div>
-          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.prod1' | t }}</a>
-          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.prod2' | t }}</a>
-          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.footer.prod3' | t }}</a>
-          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.prod4' | t }}</a>
-          <a href="#pricing" class="hover:text-white transition-colors">{{ 'landing.footer.prod5' | t }}</a>
+          <div class="font-mono text-sm text-[var(--ink)] uppercase tracking-wider">{{ 'landing.footerProduct' | t }}</div>
+          <a href="#features" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.prod1' | t }}</a>
+          <a href="#features" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.prod2' | t }}</a>
+          <a href="#security" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.prod3' | t }}</a>
+          <a href="#features" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.prod4' | t }}</a>
+          <a href="#pricing" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.prod5' | t }}</a>
         </div>
 
         <!-- Col 2: Công nghệ -->
         <div class="flex flex-col gap-3">
-          <div class="font-mono text-sm text-white uppercase tracking-wider">{{ 'landing.footerTech' | t }}</div>
-          <a href="#how-it-works" class="hover:text-white transition-colors">{{ 'landing.footer.tech1' | t }}</a>
-          <a href="#how-it-works" class="hover:text-white transition-colors">{{ 'landing.footer.tech2' | t }}</a>
-          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.footer.tech3' | t }}</a>
-          <a href="#how-it-works" class="hover:text-white transition-colors">{{ 'landing.footer.tech4' | t }}</a>
-          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.tech5' | t }}</a>
+          <div class="font-mono text-sm text-[var(--ink)] uppercase tracking-wider">{{ 'landing.footerTech' | t }}</div>
+          <a href="#how-it-works" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.tech1' | t }}</a>
+          <a href="#how-it-works" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.tech2' | t }}</a>
+          <a href="#security" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.tech3' | t }}</a>
+          <a href="#how-it-works" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.tech4' | t }}</a>
+          <a href="#features" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.footer.tech5' | t }}</a>
         </div>
 
         <!-- Col 3: Pháp lý & Bảo mật -->
         <div class="flex flex-col gap-3">
-          <div class="font-mono text-sm text-white uppercase tracking-wider">{{ 'landing.footerLegal' | t }}</div>
-          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.privacyCommitment' | t }}</a>
-          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.dataPrivacyPolicy' | t }}</a>
-          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.howWeProtectData' | t }}</a>
-          <a href="#pricing" class="hover:text-white transition-colors">{{ 'landing.termsOfUse' | t }}</a>
-          <a href="#pricing" class="hover:text-white transition-colors">{{ 'landing.contactSupport' | t }}</a>
+          <div class="font-mono text-sm text-[var(--ink)] uppercase tracking-wider">{{ 'landing.footerLegal' | t }}</div>
+          <a href="#security" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.privacyCommitment' | t }}</a>
+          <a href="#security" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.dataPrivacyPolicy' | t }}</a>
+          <a href="#security" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.howWeProtectData' | t }}</a>
+          <a href="#pricing" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.termsOfUse' | t }}</a>
+          <a href="#pricing" class="hover:text-[var(--ink)] transition-colors">{{ 'landing.contactSupport' | t }}</a>
         </div>
 
       </div>
@@ -1022,8 +1041,8 @@
           © 2026 BillPrime Technologies. All rights reserved.
         </div>
         <div class="flex items-center gap-6">
-          <span (click)="langService.setLang('vi')" class="hover:text-white cursor-pointer transition-colors" [class.text-[#0f62fe]]="langService.lang() === 'vi'">VIETNAMESE (VI)</span>
-          <span (click)="langService.setLang('en')" class="hover:text-white cursor-pointer transition-colors" [class.text-[#0f62fe]]="langService.lang() === 'en'">ENGLISH (EN)</span>
+          <span (click)="langService.setLang('vi')" class="hover:text-[var(--ink)] cursor-pointer transition-colors" [class.text-[var(--primary)]]="langService.lang() === 'vi'">VIETNAMESE (VI)</span>
+          <span (click)="langService.setLang('en')" class="hover:text-[var(--ink)] cursor-pointer transition-colors" [class.text-[var(--primary)]]="langService.lang() === 'en'">ENGLISH (EN)</span>
         </div>
       </div>
 
@@ -1035,13 +1054,13 @@
   <!-- ========================================== -->
   @if (showModal()) {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div class="relative w-full max-w-lg bg-[#1c1c1c] border border-[#393939] shadow-2xl p-6 flex flex-col gap-5 animate-in fade-in zoom-in duration-200">
+      <div class="relative w-full max-w-lg bg-[var(--surface-1)] border border-[var(--hairline)] shadow-2xl p-6 flex flex-col gap-5 animate-in fade-in zoom-in duration-200">
         
         <!-- Modal Header -->
-        <div class="flex items-center justify-between border-b border-[#262626] pb-4">
+        <div class="flex items-center justify-between border-b border-[var(--hairline)] pb-4">
           <div class="flex items-center gap-2">
-            <div class="w-2.5 h-2.5 bg-[#0f62fe]"></div>
-            <h3 class="text-lg font-medium text-white">
+            <div class="w-2.5 h-2.5 bg-[var(--primary)]"></div>
+            <h3 class="text-lg font-medium text-[var(--ink)]">
               @if (modalType() === 'signup') {
                 Khởi tạo Tài khoản BillPrime Vault
               } @else if (modalType() === 'preview' && selectedResult()) {
@@ -1054,7 +1073,7 @@
           <button
             type="button"
             (click)="closeModal()"
-            class="text-[#8d8d8d] hover:text-white p-1"
+            class="text-[var(--ink-subtle)] hover:text-[var(--ink)] p-1 cursor-pointer"
             aria-label="Close dialog"
           >
             <mat-icon>close</mat-icon>
@@ -1064,27 +1083,27 @@
         <!-- Modal Body Content -->
         @if (modalType() === 'signup') {
           @if (registerSuccess()) {
-            <div class="p-6 bg-[#42be65]/10 border border-[#42be65] text-center flex flex-col items-center gap-3">
-              <mat-icon class="text-4xl text-[#42be65]">check_circle</mat-icon>
-              <div class="text-lg font-medium text-white">Chào mừng bạn đến với BillPrime!</div>
-              <p class="text-xs text-[#c6c6c6] font-mono">
-                Liên kết kích hoạt Vault an toàn đã được gửi tới email của bạn. Hãy kiểm tra hòm thư.
+            <div class="p-6 bg-[var(--success)]/10 border border-[var(--success)] text-center flex flex-col items-center gap-3">
+              <mat-icon class="text-4xl text-[var(--success)]">check_circle</mat-icon>
+              <div class="text-lg font-medium text-[var(--ink)]">Chào mừng bạn đến với BillPrime!</div>
+              <p class="text-xs text-[var(--ink-muted)] font-mono">
+                Liên kết kích hoạt Vault an sau khi gửi tới email của bạn. Hãy kiểm tra hòm thư.
               </p>
             </div>
           } @else {
             <div class="flex flex-col gap-4">
-              <p class="text-xs text-[#c6c6c6] leading-relaxed">
+              <p class="text-xs text-[var(--ink-muted)] leading-relaxed">
                 Tạo tài khoản BillPrime miễn phí. Tận hưởng 15GB dung lượng với đầy đủ tính năng Semantic Search và OCR đa phương thức.
               </p>
               
               <div class="flex flex-col gap-1.5">
-                <label for="modal-register-email" class="text-xs font-mono text-[#8d8d8d]">EMAIL CỦA BẠN</label>
+                <label for="modal-register-email" class="text-xs font-mono text-[var(--ink-subtle)]">EMAIL CỦA BẠN</label>
                 <input
                   type="email"
                   id="modal-register-email"
                   [(ngModel)]="registerEmail"
                   placeholder="name@company.com"
-                  class="bg-[#262626] border border-[#393939] focus:border-[#0f62fe] p-3 text-sm text-white font-mono focus:outline-none"
+                  class="bg-[var(--surface-2)] border border-[var(--hairline)] focus:border-[var(--primary)] p-3 text-sm text-[var(--ink)] font-mono focus:outline-none"
                 />
               </div>
 
@@ -1110,28 +1129,28 @@
         } @else if (modalType() === 'preview' && selectedResult(); as res) {
           <div class="flex flex-col gap-4 font-mono text-xs">
             
-            <div class="bg-[#161616] p-4 border border-[#262626] flex flex-col gap-2">
-              <div class="text-[#8d8d8d] uppercase tracking-wider text-[10px]">{{ 'landing.previewOcr' | t }}:</div>
-              <div class="text-white text-sm leading-relaxed font-sans">{{ res.ocrSnippet }}</div>
+            <div class="bg-[var(--canvas)] p-4 border border-[var(--hairline)] flex flex-col gap-2">
+              <div class="text-[var(--ink-subtle)] uppercase tracking-wider text-[10px]">{{ 'landing.previewOcr' | t }}:</div>
+              <div class="text-[var(--ink)] text-sm leading-relaxed font-sans">{{ res.ocrSnippet }}</div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
-              <div class="bg-[#262626] p-2.5 border border-[#393939]">
-                <div class="text-[#8d8d8d] text-[10px]">{{ 'landing.previewMatch' | t }}:</div>
-                <div class="text-[#42be65] text-sm font-bold">{{ res.matchScore }}% (d = {{ res.vectorDistance }})</div>
+              <div class="bg-[var(--surface-2)] p-2.5 border border-[var(--hairline)]">
+                <div class="text-[var(--ink-subtle)] text-[10px]">{{ 'landing.previewMatch' | t }}:</div>
+                <div class="text-[var(--success)] text-sm font-bold">{{ res.matchScore }}% (d = {{ res.vectorDistance }})</div>
               </div>
-              <div class="bg-[#262626] p-2.5 border border-[#393939]">
-                <div class="text-[#8d8d8d] text-[10px]">{{ 'landing.previewFormat' | t }}:</div>
-                <div class="text-[#78a9ff] text-sm font-bold">{{ res.fileType }} ({{ res.fileSize }})</div>
+              <div class="bg-[var(--surface-2)] p-2.5 border border-[var(--hairline)]">
+                <div class="text-[var(--ink-subtle)] text-[10px]">{{ 'landing.previewFormat' | t }}:</div>
+                <div class="text-[var(--primary)] text-sm font-bold">{{ res.fileType }} ({{ res.fileSize }})</div>
               </div>
             </div>
 
-            <div class="bg-[#262626] p-3 border border-[#393939] flex flex-col gap-1.5">
-              <div class="text-[#8d8d8d] text-[10px]">{{ 'landing.previewEntities' | t }}:</div>
+            <div class="bg-[var(--surface-2)] p-3 border border-[var(--hairline)] flex flex-col gap-1.5">
+              <div class="text-[var(--ink-subtle)] text-[10px]">{{ 'landing.previewEntities' | t }}:</div>
               @for (entity of res.extractedEntities; track entity.label) {
-                <div class="flex justify-between text-[#c6c6c6]">
+                <div class="flex justify-between text-[var(--ink-muted)]">
                   <span>{{ entity.label }}:</span>
-                  <span class="text-white font-semibold">{{ entity.value }}</span>
+                  <span class="text-[var(--ink)] font-semibold">{{ entity.value }}</span>
                 </div>
               }
             </div>

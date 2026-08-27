@@ -40,6 +40,7 @@
   /* Thanh cuộn tuỳ chỉnh (kiểu Grok) */
   --scroll-thumb: rgba(0, 0, 0, 0.22);
   --scroll-thumb-hover: rgba(0, 0, 0, 0.38);
+  --grid-line: rgba(0, 0, 0, 0.04);
 
   /* Alias cũ -> Carbon (giữ tương thích class name) */
   --bg: var(--surface-1);
@@ -70,6 +71,7 @@
   --star: #f1c21b;
   --scroll-thumb: rgba(255, 255, 255, 0.22);
   --scroll-thumb-hover: rgba(255, 255, 255, 0.4);
+  --grid-line: rgba(255, 255, 255, 0.03);
 
   --bg: var(--canvas);
   --surface: #262626;
@@ -2203,8 +2205,8 @@ tr.selected {
 .carbon-grid-lines {
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
 }
 
 .carbon-subtle-border {
