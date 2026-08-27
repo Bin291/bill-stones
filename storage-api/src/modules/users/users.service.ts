@@ -14,6 +14,10 @@ export interface SettingsResponse {
   displayName: string | null;
   avatarUrl: string | null;
   hasCustomAvatar: boolean;
+  /** Đã đặt mật khẩu chưa (đăng nhập được bằng email + mật khẩu). Đọc thẳng
+   * `auth.users.encrypted_password` — KHÔNG dùng `identities`, vì
+   * updateUser({password}) không tạo identity 'email' cho tài khoản gốc Google. */
+  hasPassword: boolean;
   email: string;
   plan: 'free';
   storageQuotaBytes: string;
@@ -46,9 +50,10 @@ export class UsersService {
   }
 
   async getSettings(userId: string, email: string): Promise<SettingsResponse> {
-    const [profile, usedBytes] = await Promise.all([
+    const [profile, usedBytes, hasPassword] = await Promise.all([
       this.prisma.userProfile.findUnique({ where: { userId } }),
       this.usedBytes(userId),
+      this.hasPassword(userId),
     ]);
     const avatarUrl = profile?.avatarKey
       ? await this.storage.presignGet(profile.avatarKey, { expiresIn: 3600 })
@@ -57,6 +62,7 @@ export class UsersService {
       displayName: profile?.displayName ?? null,
       avatarUrl,
       hasCustomAvatar: !!profile?.avatarKey,
+      hasPassword,
       email,
       plan: 'free',
       storageQuotaBytes: (profile?.storageQuotaBytes ?? DEFAULT_QUOTA_BYTES).toString(),
@@ -124,6 +130,23 @@ export class UsersService {
       update: { avatarKey: null },
     });
     return this.getSettings(userId, email);
+  }
+
+  /**
+   * Đã có mật khẩu chưa — đọc thẳng `auth.users.encrypted_password`. Không
+   * dùng `identities`: `updateUser({password})` chỉ set mật khẩu, không tạo
+   * identity 'email' cho tài khoản gốc Google.
+   */
+  private async hasPassword(userId: string): Promise<boolean> {
+    try {
+      const rows = await this.prisma.$queryRaw<{ has: boolean }[]>`
+        select (encrypted_password is not null and encrypted_password != '') as has
+        from auth.users where id = ${userId}::uuid
+      `;
+      return rows[0]?.has ?? false;
+    } catch {
+      return false;
+    }
   }
 
   /** Tổng dung lượng đang dùng (file chưa xoá) — dùng cho thanh dung lượng + chặn quota. */
