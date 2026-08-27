@@ -126,8 +126,9 @@ export class FileExplorer {
   protected readonly folders = signal<Folder[]>([]);
   protected readonly files = signal<StoredFile[]>([]);
 
-  // Tìm theo TÊN (lọc tại chỗ trên mọi lăng kính).
   protected readonly nameFilter = signal('');
+  protected readonly foldersExpanded = signal(true);
+  protected readonly filesExpanded = signal(true);
   protected readonly displayFolders = computed(() => this.filterByName(this.folders()));
   protected readonly displayFiles = computed(() => this.filterByName(this.files()));
   private filterByName<T extends { name: string }>(list: T[]): T[] {

@@ -163,161 +163,35 @@
       <p style="font-size: 13px">{{ 'files.emptyHint' | t }}</p>
     </div>
   } @else if (settings.viewMode() === 'grid') {
-    <div class="file-grid">
-      @for (folder of displayFolders(); track folder.id) {
-        <div
-          class="card"
-          [class.selected]="isSelected('folder', folder.id)"
-          (click)="openFolder(folder)"
-          (contextmenu)="openMenu($event, 'folder', folder)"
-        >
-          @if (selectionMode()) {
-            <span class="card-check" [class.on]="isSelected('folder', folder.id)">
-              <span class="mi">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
-            </span>
-          }
-          @if (folder.isStarred) {
-            <span class="mi card-star">star</span>
-          }
-          <div class="card-preview"><span class="mi" style="font-size: 46px; color: var(--primary)">folder</span></div>
-          <div class="card-meta">
-            @if (renamingId() === folder.id) {
-              <input
-                class="inline-name"
-                appAutofocus
-                [value]="renameName()"
-                (click)="$event.stopPropagation()"
-                (input)="renameName.set($any($event.target).value)"
-                (keydown.enter)="confirmRename()"
-                (keydown.escape)="cancelRename()"
-                (blur)="confirmRename()"
-              />
-            } @else {
-              <div class="card-name">{{ folderDisplayName(folder.name) }}</div>
-              <div class="card-metarow">
-                <span class="card-sub">{{ 'common.folder' | t }}</span>
-                @if (folder.tags && folder.tags.length) {
-                  <span class="card-tags">
-                    @for (tg of visibleTags(folder.tags); track tg.id) {
-                      <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
-                    }
-                    @if (overflowTags(folder.tags).length) {
-                      <span class="card-tag-more" (click)="$event.stopPropagation()">
-                        +{{ overflowTags(folder.tags).length }}
-                        <span class="card-tag-pop">
-                          @for (tg of overflowTags(folder.tags); track tg.id) {
-                            <span class="card-tag-pop-item">
-                              <span class="card-tag-dot" [style.background]="tg.color"></span>
-                              <span class="card-tag-pop-name">{{ tg.name }}</span>
-                            </span>
-                          }
-                        </span>
-                      </span>
-                    }
-                  </span>
-                }
-              </div>
-            }
-          </div>
-        </div>
-      }
-      @for (file of displayFiles(); track file.id) {
-        <div
-          class="card"
-          [class.selected]="isSelected('file', file.id)"
-          (click)="openFile(file)"
-          (contextmenu)="openMenu($event, 'file', file)"
-        >
-          @if (selectionMode()) {
-            <span class="card-check" [class.on]="isSelected('file', file.id)">
-              <span class="mi">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
-            </span>
-          }
-          @if (file.isStarred) {
-            <span class="mi card-star">star</span>
-          }
-          <div class="card-preview">
-            @if (file.thumbnailUrl) {
-              <img [src]="file.thumbnailUrl" [alt]="file.name" [class.thumb-contain]="isImage(file.extension)" />
-            } @else {
-              <span class="mi" style="font-size: 42px; color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
-            }
-          </div>
-          <div class="card-meta">
-            @if (renamingId() === file.id) {
-              <input
-                class="inline-name"
-                appAutofocus
-                [value]="renameName()"
-                (click)="$event.stopPropagation()"
-                (input)="renameName.set($any($event.target).value)"
-                (keydown.enter)="confirmRename()"
-                (keydown.escape)="cancelRename()"
-                (blur)="confirmRename()"
-              />
-            } @else {
-              <div class="card-name" [title]="file.name">{{ file.name }}</div>
-            }
-            <div class="card-metarow">
-              <span class="card-size">
-                {{ formatBytes(file.size) }}
-                @if (file.status !== 'ready') {
-                  · {{ file.status }}
-                }
-              </span>
-              @if (file.tags && file.tags.length) {
-                <span class="card-tags">
-                  @for (tg of visibleTags(file.tags); track tg.id) {
-                    <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
-                  }
-                  @if (overflowTags(file.tags).length) {
-                    <span class="card-tag-more" (click)="$event.stopPropagation()">
-                      +{{ overflowTags(file.tags).length }}
-                      <span class="card-tag-pop">
-                        @for (tg of overflowTags(file.tags); track tg.id) {
-                          <span class="card-tag-pop-item">
-                            <span class="card-tag-dot" [style.background]="tg.color"></span>
-                            <span class="card-tag-pop-name">{{ tg.name }}</span>
-                          </span>
-                        }
-                      </span>
-                    </span>
-                  }
+    @if (displayFolders().length > 0) {
+      <h2
+        class="explorer-section-title"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        (click)="foldersExpanded.set(!foldersExpanded())"
+      >
+        <span class="mi" style="transition: transform 0.2s;" [style.transform]="foldersExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
+        <span class="mi" style="font-size: 20px; color: var(--ink-subtle);">folder</span>
+        {{ 'files.suggestedFolders' | t }}
+      </h2>
+      @if (foldersExpanded()) {
+        <div class="file-grid" style="margin-bottom: 24px;">
+          @for (folder of displayFolders(); track folder.id) {
+            <div
+              class="card"
+              [class.selected]="isSelected('folder', folder.id)"
+              (click)="openFolder(folder)"
+              (contextmenu)="openMenu($event, 'folder', folder)"
+            >
+              @if (selectionMode()) {
+                <span class="card-check" [class.on]="isSelected('folder', folder.id)">
+                  <span class="mi">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
                 </span>
               }
-            </div>
-            @if (file.folderPath && file.folderPath.length) {
-              <div class="card-path" (click)="goToFilePath(file); $event.stopPropagation()">
-                <span class="mi" style="font-size: 13px">folder</span>
-                {{ file.folderPath[file.folderPath.length - 1].name }}
-              </div>
-            }
-          </div>
-        </div>
-      }
-    </div>
-  } @else {
-    <table class="file-list">
-      <thead>
-        <tr>
-          <th>{{ 'files.name' | t }}</th>
-          <th>{{ 'files.size' | t }}</th>
-          <th>{{ 'files.modified' | t }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (folder of displayFolders(); track folder.id) {
-          <tr
-            [class.selected]="isSelected('folder', folder.id)"
-            (click)="openFolder(folder)"
-            (contextmenu)="openMenu($event, 'folder', folder)"
-          >
-            <td>
-              <div class="name-cell-inner">
-                @if (selectionMode()) {
-                  <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
-                }
-                <span class="mi" style="color: var(--primary)">folder</span>
+              @if (folder.isStarred) {
+                <span class="mi card-star">star</span>
+              }
+              <div class="card-preview"><span class="mi" style="font-size: 46px; color: var(--primary)">folder</span></div>
+              <div class="card-meta">
                 @if (renamingId() === folder.id) {
                   <input
                     class="inline-name"
@@ -330,37 +204,73 @@
                     (blur)="confirmRename()"
                   />
                 } @else {
-                  {{ folderDisplayName(folder.name) }}
-                  @if (folder.tags && folder.tags.length) {
-                    <span class="card-tags" style="margin-left: 6px">
-                      @for (tg of visibleTags(folder.tags); track tg.id) {
-                        <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
-                      }
-                    </span>
-                  }
+                  <div class="card-name">{{ folderDisplayName(folder.name) }}</div>
+                  <div class="card-metarow">
+                    <span class="card-sub">{{ 'common.folder' | t }}</span>
+                    @if (folder.tags && folder.tags.length) {
+                      <span class="card-tags">
+                        @for (tg of visibleTags(folder.tags); track tg.id) {
+                          <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                        }
+                        @if (overflowTags(folder.tags).length) {
+                          <span class="card-tag-more" (click)="$event.stopPropagation()">
+                            +{{ overflowTags(folder.tags).length }}
+                            <span class="card-tag-pop">
+                              @for (tg of overflowTags(folder.tags); track tg.id) {
+                                <span class="card-tag-pop-item">
+                                  <span class="card-tag-dot" [style.background]="tg.color"></span>
+                                  <span class="card-tag-pop-name">{{ tg.name }}</span>
+                                </span>
+                              }
+                            </span>
+                          </span>
+                        }
+                      </span>
+                    }
+                  </div>
                 }
               </div>
-            </td>
-            <td>—</td>
-            <td>{{ folder.updatedAt | date: 'short' }}</td>
-          </tr>
-        }
-        @for (file of displayFiles(); track file.id) {
-          <tr
-            [class.selected]="isSelected('file', file.id)"
-            (click)="openFile(file)"
-            (contextmenu)="openMenu($event, 'file', file)"
-          >
-            <td>
-              <div class="name-cell-inner">
-                @if (selectionMode()) {
-                  <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
-                }
+            </div>
+          }
+        </div>
+      }
+    }
+
+    @if (displayFiles().length > 0) {
+      <h2
+        class="explorer-section-title"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        (click)="filesExpanded.set(!filesExpanded())"
+      >
+        <span class="mi" style="transition: transform 0.2s;" [style.transform]="filesExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
+        <span class="mi" style="font-size: 20px; color: var(--ink-subtle);">description</span>
+        {{ 'files.suggestedFiles' | t }}
+      </h2>
+      @if (filesExpanded()) {
+        <div class="file-grid">
+          @for (file of displayFiles(); track file.id) {
+            <div
+              class="card"
+              [class.selected]="isSelected('file', file.id)"
+              (click)="openFile(file)"
+              (contextmenu)="openMenu($event, 'file', file)"
+            >
+              @if (selectionMode()) {
+                <span class="card-check" [class.on]="isSelected('file', file.id)">
+                  <span class="mi">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                </span>
+              }
+              @if (file.isStarred) {
+                <span class="mi card-star">star</span>
+              }
+              <div class="card-preview">
                 @if (file.thumbnailUrl) {
-                  <img [src]="file.thumbnailUrl" [alt]="file.name" class="row-thumb" />
+                  <img [src]="file.thumbnailUrl" [alt]="file.name" [class.thumb-contain]="isImage(file.extension)" />
                 } @else {
-                  <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
+                  <span class="mi" style="font-size: 42px; color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
                 }
+              </div>
+              <div class="card-meta">
                 @if (renamingId() === file.id) {
                   <input
                     class="inline-name"
@@ -373,16 +283,173 @@
                     (blur)="confirmRename()"
                   />
                 } @else {
-                  {{ file.name }}
+                  <div class="card-name" [title]="file.name">{{ file.name }}</div>
+                }
+                <div class="card-metarow">
+                  <span class="card-size">
+                    {{ formatBytes(file.size) }}
+                    @if (file.status !== 'ready') {
+                      · {{ file.status }}
+                    }
+                  </span>
+                  @if (file.tags && file.tags.length) {
+                    <span class="card-tags">
+                      @for (tg of visibleTags(file.tags); track tg.id) {
+                        <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                      }
+                      @if (overflowTags(file.tags).length) {
+                        <span class="card-tag-more" (click)="$event.stopPropagation()">
+                          +{{ overflowTags(file.tags).length }}
+                          <span class="card-tag-pop">
+                            @for (tg of overflowTags(file.tags); track tg.id) {
+                              <span class="card-tag-pop-item">
+                                <span class="card-tag-dot" [style.background]="tg.color"></span>
+                                <span class="card-tag-pop-name">{{ tg.name }}</span>
+                              </span>
+                            }
+                          </span>
+                        </span>
+                      }
+                    </span>
+                  }
+                </div>
+                @if (file.folderPath && file.folderPath.length) {
+                  <div class="card-path" (click)="goToFilePath(file); $event.stopPropagation()">
+                    <span class="mi" style="font-size: 13px">folder</span>
+                    {{ file.folderPath[file.folderPath.length - 1].name }}
+                  </div>
                 }
               </div>
-            </td>
-            <td>{{ formatBytes(file.size) }}</td>
-            <td>{{ file.updatedAt | date: 'short' }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
+            </div>
+          }
+        </div>
+      }
+    }
+  } @else {
+    @if (displayFolders().length > 0) {
+      <h2
+        class="explorer-section-title"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        (click)="foldersExpanded.set(!foldersExpanded())"
+      >
+        <span class="mi" style="transition: transform 0.2s;" [style.transform]="foldersExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
+        <span class="mi" style="font-size: 20px; color: var(--ink-subtle);">folder</span>
+        {{ 'files.suggestedFolders' | t }}
+      </h2>
+      @if (foldersExpanded()) {
+        <table class="file-list" style="margin-bottom: 24px;">
+          <thead>
+            <tr>
+              <th>{{ 'files.name' | t }}</th>
+              <th>{{ 'files.size' | t }}</th>
+              <th>{{ 'files.modified' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (folder of displayFolders(); track folder.id) {
+              <tr
+                [class.selected]="isSelected('folder', folder.id)"
+                (click)="openFolder(folder)"
+                (contextmenu)="openMenu($event, 'folder', folder)"
+              >
+                <td>
+                  <div class="name-cell-inner">
+                    @if (selectionMode()) {
+                      <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                    }
+                    <span class="mi" style="color: var(--primary)">folder</span>
+                    @if (renamingId() === folder.id) {
+                      <input
+                        class="inline-name"
+                        appAutofocus
+                        [value]="renameName()"
+                        (click)="$event.stopPropagation()"
+                        (input)="renameName.set($any($event.target).value)"
+                        (keydown.enter)="confirmRename()"
+                        (keydown.escape)="cancelRename()"
+                        (blur)="confirmRename()"
+                      />
+                    } @else {
+                      {{ folderDisplayName(folder.name) }}
+                      @if (folder.tags && folder.tags.length) {
+                        <span class="card-tags" style="margin-left: 6px">
+                          @for (tg of visibleTags(folder.tags); track tg.id) {
+                            <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                          }
+                        </span>
+                      }
+                    }
+                  </div>
+                </td>
+                <td>—</td>
+                <td>{{ folder.updatedAt | date: 'short' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+
+    @if (displayFiles().length > 0) {
+      <h2
+        class="explorer-section-title"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        (click)="filesExpanded.set(!filesExpanded())"
+      >
+        <span class="mi" style="transition: transform 0.2s;" [style.transform]="filesExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
+        <span class="mi" style="font-size: 20px; color: var(--ink-subtle);">description</span>
+        {{ 'files.suggestedFiles' | t }}
+      </h2>
+      @if (filesExpanded()) {
+        <table class="file-list">
+          <thead>
+            <tr>
+              <th>{{ 'files.name' | t }}</th>
+              <th>{{ 'files.size' | t }}</th>
+              <th>{{ 'files.modified' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (file of displayFiles(); track file.id) {
+              <tr
+                [class.selected]="isSelected('file', file.id)"
+                (click)="openFile(file)"
+                (contextmenu)="openMenu($event, 'file', file)"
+              >
+                <td>
+                  <div class="name-cell-inner">
+                    @if (selectionMode()) {
+                      <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                    }
+                    @if (file.thumbnailUrl) {
+                      <img [src]="file.thumbnailUrl" [alt]="file.name" class="row-thumb" />
+                    } @else {
+                      <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
+                    }
+                    @if (renamingId() === file.id) {
+                      <input
+                        class="inline-name"
+                        appAutofocus
+                        [value]="renameName()"
+                        (click)="$event.stopPropagation()"
+                        (input)="renameName.set($any($event.target).value)"
+                        (keydown.enter)="confirmRename()"
+                        (keydown.escape)="cancelRename()"
+                        (blur)="confirmRename()"
+                      />
+                    } @else {
+                      {{ file.name }}
+                    }
+                  </div>
+                </td>
+                <td>{{ formatBytes(file.size) }}</td>
+                <td>{{ file.updatedAt | date: 'short' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
   }
 
   <!-- Overlay "thả tệp vào đây" — chỉ hiện khi kéo file (pointer-events: none) -->
