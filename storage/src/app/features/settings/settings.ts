@@ -16,6 +16,7 @@ import { FolderPickerDialog } from '../ui/folder-picker-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { formatBytes } from '../../core/util/file-types';
 import { CanComponentDeactivate } from '../../core/guards/unsaved-changes.guard';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-settings',
@@ -32,6 +33,7 @@ export class Settings implements OnInit, CanComponentDeactivate {
   protected readonly auth = inject(AuthService);
   private readonly settingsApi = inject(SettingsApiService);
   private readonly foldersApi = inject(FoldersApiService);
+  private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
   protected readonly formatBytes = formatBytes;
@@ -178,7 +180,12 @@ export class Settings implements OnInit, CanComponentDeactivate {
     }
   }
 
-  /** Lưu TẤT CẢ thay đổi trong một lần (thay cho các nút Lưu từng mục). */
+  /**
+   * Lưu TẤT CẢ thay đổi trong một lần (thay cho các nút Lưu từng mục).
+   * PHẢI báo rõ thành/bại — trước đây lỗi bị nuốt im lặng, người dùng tưởng
+   * đã lưu (thanh nhắc biến mất) nhưng thực ra chưa, thấy tên "tự trở về mặc
+   * định" ở lần tải trang sau vì server chưa từng nhận được thay đổi.
+   */
   async saveAll(): Promise<void> {
     if (this.saveBusy() || !this.dirty()) return;
     this.saveBusy.set(true);
@@ -196,6 +203,9 @@ export class Settings implements OnInit, CanComponentDeactivate {
       if (this.uploadWarnInput() != null) update.uploadWarnSizeMb = this.uploadWarnInput()!;
       const a = await firstValueFrom(this.settingsApi.update(update));
       this.applyAccount(a);
+      this.toast.success(this.lang.translate('settings.saved'));
+    } catch {
+      this.toast.error(this.lang.translate('toast.actionFailed'));
     } finally {
       this.saveBusy.set(false);
     }
@@ -272,15 +282,21 @@ export class Settings implements OnInit, CanComponentDeactivate {
 
   // --- Bảo mật ---
   /**
-   * Đổi mật khẩu: nếu user đã có mật khẩu từ trước (identity 'email') thì BẮT
-   * BUỘC xác minh mật khẩu cũ trước khi cho đổi. User chỉ đăng nhập Google
-   * (chưa từng đặt mật khẩu) thì bỏ qua bước này — không có gì để xác minh.
+   * Đổi mật khẩu: nếu user đã có mật khẩu từ trước thì BẮT BUỘC xác minh mật
+   * khẩu cũ trước khi cho đổi. User chỉ đăng nhập Google (chưa từng đặt mật
+   * khẩu) thì bỏ qua bước này — không có gì để xác minh.
+   *
+   * Dùng `account()?.hasPassword` (backend đọc thẳng auth.users.encrypted_
+   * password) — KHÔNG dùng identities phía client: updateUser({password})
+   * không tạo identity 'email' cho tài khoản gốc Google nên identities không
+   * phản ánh đúng việc "đã có mật khẩu hay chưa".
    */
   async submitPasswordChange(): Promise<void> {
     if (this.passwordBusy()) return;
     const pw = this.newPassword();
+    const hadPassword = !!this.account()?.hasPassword;
     this.passwordMsg.set(null);
-    if (this.auth.hasPasswordIdentity() && !this.currentPassword()) {
+    if (hadPassword && !this.currentPassword()) {
       this.passwordMsg.set(this.lang.translate('settings.currentPasswordRequired'));
       return;
     }
@@ -294,7 +310,7 @@ export class Settings implements OnInit, CanComponentDeactivate {
     }
     this.passwordBusy.set(true);
     try {
-      if (this.auth.hasPasswordIdentity()) {
+      if (hadPassword) {
         const ok = await this.auth.verifyPassword(this.currentPassword());
         if (!ok) {
           this.passwordMsg.set(this.lang.translate('settings.currentPasswordWrong'));
@@ -306,6 +322,10 @@ export class Settings implements OnInit, CanComponentDeactivate {
       this.newPassword.set('');
       this.confirmPassword.set('');
       this.passwordMsg.set(this.lang.translate('settings.passwordChanged'));
+      // Nạp lại account settings ngay — để hint + ô "mật khẩu hiện tại" cập
+      // nhật tức thì (không cần reload) khi vừa đặt mật khẩu lần đầu.
+      const a = await firstValueFrom(this.settingsApi.get());
+      this.applyAccount(a);
     } catch (e) {
       this.passwordMsg.set(this.extractError(e));
     } finally {

@@ -50,7 +50,7 @@ export class AuthCallback {
       // từ trước ⇒ Supabase tự liên kết chung 1 user, nhưng app coi đây là 2
       // "tài khoản" khác nhau (dữ liệu tách riêng qua sub__oauth ở backend) —
       // chặn lại, không cho tự nhiên rơi vào 1 không gian dữ liệu rỗng khác.
-      if (viaGoogle && this.auth.hasPasswordIdentity()) {
+      if (viaGoogle && this.auth.hasEmailIdentity()) {
         void this.auth.signOut().then(() => this.status.set('blocked'));
         return;
       }

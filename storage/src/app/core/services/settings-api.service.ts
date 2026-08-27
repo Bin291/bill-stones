@@ -7,6 +7,8 @@ export interface AccountSettings {
   displayName: string | null;
   avatarUrl: string | null;
   hasCustomAvatar: boolean;
+  /** Đã đặt mật khẩu chưa — đọc thẳng auth.users.encrypted_password ở backend. */
+  hasPassword: boolean;
   email: string;
   plan: 'free';
   storageQuotaBytes: string;

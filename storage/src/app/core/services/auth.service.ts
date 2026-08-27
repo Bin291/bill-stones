@@ -48,11 +48,18 @@ export class AuthService {
   readonly accessToken = computed(() => this._session()?.access_token ?? null);
 
   /**
-   * User đã có identity 'email' (tức đã từng đặt mật khẩu) hay chưa. User chỉ
-   * đăng nhập Google (chưa từng đặt mật khẩu) sẽ không có identity này —
-   * dùng để quyết định có bắt nhập mật khẩu cũ khi đổi mật khẩu hay không.
+   * User có identity 'email' thật (tức TÀI KHOẢN GỐC được tạo bằng đăng ký
+   * email + mật khẩu qua signUp()) hay không. CHỈ dùng để phát hiện Google
+   * đăng nhập trùng vào 1 tài khoản email đã tồn tại (mục chặn trùng tài
+   * khoản ở /auth/callback).
+   *
+   * LƯU Ý: KHÔNG dùng cờ này để hỏi "user đã đặt mật khẩu chưa" — với tài
+   * khoản gốc Google, gọi updateUser({password}) chỉ set mật khẩu, KHÔNG tạo
+   * identity 'email' mới, nên cờ này vẫn false dù đã có mật khẩu. Muốn biết
+   * "đã có mật khẩu" thật sự thì dùng `AccountSettings.hasPassword` (backend
+   * đọc thẳng auth.users.encrypted_password).
    */
-  readonly hasPasswordIdentity = computed<boolean>(() =>
+  readonly hasEmailIdentity = computed<boolean>(() =>
     (this._session()?.user.identities ?? []).some((i) => i.provider === 'email'),
   );
 
@@ -202,10 +209,18 @@ export class AuthService {
     if (error) throw error;
   }
 
-  /** Đặt mật khẩu mới (trang /auth/reset sau khi bấm link trong email). */
+  /**
+   * Đặt mật khẩu mới (trang /auth/reset sau khi bấm link trong email, hoặc
+   * đổi mật khẩu trong Cài đặt). Cập nhật lại session ngay để các phần đọc
+   * `profile()`/`session()` (VD sidebar) phản ánh đúng user mới nhất. Riêng
+   * việc biết "đã có mật khẩu chưa" thì đọc `AccountSettings.hasPassword` từ
+   * backend (xem chú thích ở `hasEmailIdentity` — updateUser({password})
+   * không tạo identity 'email' nên không dùng session để suy ra được).
+   */
   async updatePassword(password: string): Promise<void> {
-    const { error } = await this.supabase.updatePassword(password);
+    const { data, error } = await this.supabase.updatePassword(password);
     if (error) throw error;
+    if (data.user) this._session.update((s) => (s ? { ...s, user: data.user } : s));
   }
 
   /**
