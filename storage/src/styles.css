@@ -446,6 +446,46 @@ body {
   flex: 1;
 }
 /* Nút tertiary: nền trắng, viền hairline, chữ ink */
+/* Ô tìm theo tên ở giữa thanh công cụ (mọi lăng kính) */
+.toolbar-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  flex: 1 1 auto;
+  max-width: 380px;
+  padding: 0 10px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-1);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+.toolbar-search .mi {
+  color: var(--ink-subtle);
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+.toolbar-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.16px;
+}
+.toolbar-search-clear {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-subtle);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
 .btn {
   display: inline-flex;
   align-items: center;

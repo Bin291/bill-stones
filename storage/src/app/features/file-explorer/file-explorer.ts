@@ -118,6 +118,15 @@ export class FileExplorer {
 
   protected readonly folders = signal<Folder[]>([]);
   protected readonly files = signal<StoredFile[]>([]);
+
+  // Tìm theo TÊN (lọc tại chỗ trên mọi lăng kính).
+  protected readonly nameFilter = signal('');
+  protected readonly displayFolders = computed(() => this.filterByName(this.folders()));
+  protected readonly displayFiles = computed(() => this.filterByName(this.files()));
+  private filterByName<T extends { name: string }>(list: T[]): T[] {
+    const q = this.nameFilter().trim().toLowerCase();
+    return q ? list.filter((x) => x.name.toLowerCase().includes(q)) : list;
+  }
   protected readonly breadcrumb = signal<BreadcrumbCrumb[]>([]);
   protected readonly loading = signal(false);
   protected readonly dragOver = signal(false);
@@ -269,6 +278,7 @@ export class FileExplorer {
     this.tagId.set(tagId);
     if (this.mode() === 'tag' && tagId) void this.loadTagMeta(tagId);
     this.clearSelection();
+    this.nameFilter.set(''); // đổi lăng kính/thư mục → xoá bộ lọc tên
     this.thumbRetries = 0;
     void this.load();
   }

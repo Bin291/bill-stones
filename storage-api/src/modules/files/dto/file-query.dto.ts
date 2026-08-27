@@ -14,6 +14,11 @@ export class ListFilesQueryDto {
   @IsString()
   extensions?: string; // "png,jpg,webp"
 
+  // Lăng kính "Khác": lấy file có đuôi KHÔNG thuộc danh sách này (các nhóm đã biết).
+  @IsOptional()
+  @IsString()
+  excludeExtensions?: string;
+
   // Lăng kính Thẻ: chỉ lấy file được gắn thẻ này (cắt ngang mọi folder).
   @IsOptional()
   @IsString()

@@ -13,10 +13,11 @@ export class FilesApiService {
     let params = new HttpParams();
     if (query.folderId !== undefined && query.folderId !== null) {
       params = params.set('folderId', query.folderId);
-    } else if (query.folderId === null && !query.extensions) {
+    } else if (query.folderId === null && !query.extensions && !query.excludeExtensions) {
       params = params.set('folderId', '');
     }
     if (query.extensions) params = params.set('extensions', query.extensions);
+    if (query.excludeExtensions) params = params.set('excludeExtensions', query.excludeExtensions);
     if (query.tagId) params = params.set('tagId', query.tagId);
     if (query.sort) params = params.set('sort', query.sort);
     if (query.order) params = params.set('order', query.order);

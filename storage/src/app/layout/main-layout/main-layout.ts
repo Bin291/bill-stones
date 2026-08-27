@@ -62,8 +62,8 @@ export class MainLayout implements OnInit {
   protected readonly prefetch = inject(PrefetchService);
 
   protected readonly profile = this.auth.profile;
-  // Bỏ mục "Khác" khỏi sidebar theo yêu cầu (vẫn giữ trong CATEGORIES cho nơi khác).
-  protected readonly categories = CATEGORIES.filter((c) => c.key !== 'other');
+  // Hiện đủ các nhóm loại, gồm cả "Khác" (đã bỏ nhóm Code — file code rơi vào Khác).
+  protected readonly categories = CATEGORIES;
   protected readonly notifOpen = signal(false);
   protected readonly tags = signal<TagWithCount[]>([]);
   protected readonly tagDialogOpen = signal(false);

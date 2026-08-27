@@ -184,6 +184,7 @@ export const vi: Dict = {
   'search.noResult': 'Không tìm thấy kết quả',
   'search.min2': 'Nhập ít nhất 2 ký tự.',
   'search.failed': 'Tìm kiếm lỗi.',
+  'search.byName': 'Tìm theo tên…',
 };
 
 export const en: Dict = {
@@ -366,6 +367,7 @@ export const en: Dict = {
   'search.noResult': 'No results found',
   'search.min2': 'Enter at least 2 characters.',
   'search.failed': 'Search failed.',
+  'search.byName': 'Search by name…',
 };
 
 export const dictionaries: Record<Lang, Dict> = { vi, en };

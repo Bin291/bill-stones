@@ -62,6 +62,13 @@ export class FilesService {
     // Lăng kính Thẻ / Loại cắt ngang mọi folder; ngược lại lọc theo folder.
     if (q.tagId) {
       where.tags = { some: { tagId: q.tagId } };
+    } else if (q.excludeExtensions) {
+      // Lăng kính "Khác": file có đuôi KHÔNG thuộc các nhóm đã biết.
+      const exts = q.excludeExtensions
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+      where.extension = { notIn: exts };
     } else if (q.extensions) {
       const exts = q.extensions
         .split(',')

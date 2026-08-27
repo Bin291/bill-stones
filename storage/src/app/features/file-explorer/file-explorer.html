@@ -27,6 +27,23 @@
 
     <span class="spacer"></span>
 
+    <label class="toolbar-search">
+      <span class="mi">search</span>
+      <input
+        type="text"
+        [placeholder]="'search.byName' | t"
+        [value]="nameFilter()"
+        (input)="nameFilter.set($any($event.target).value)"
+      />
+      @if (nameFilter()) {
+        <button class="toolbar-search-clear" type="button" (click)="nameFilter.set('')" [title]="'select.clear' | t">
+          <span class="mi">close</span>
+        </button>
+      }
+    </label>
+
+    <span class="spacer"></span>
+
     <div class="sort-menu">
       <button
         class="btn"
@@ -141,7 +158,7 @@
     </div>
   }
 
-  @if (folders().length === 0 && files().length === 0) {
+  @if (displayFolders().length === 0 && displayFiles().length === 0) {
     <div class="empty" style="cursor: default">
       <div style="font-size: 40px">
         <span class="mi" style="font-size: 40px">folder_open</span>
@@ -151,7 +168,7 @@
     </div>
   } @else if (settings.viewMode() === 'grid') {
     <div class="file-grid">
-      @for (folder of folders(); track folder.id) {
+      @for (folder of displayFolders(); track folder.id) {
         <div
           class="card"
           [class.selected]="isSelected('folder', folder.id)"
@@ -186,7 +203,7 @@
           </div>
         </div>
       }
-      @for (file of files(); track file.id) {
+      @for (file of displayFiles(); track file.id) {
         <div
           class="card"
           [class.selected]="isSelected('file', file.id)"
@@ -271,7 +288,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (folder of folders(); track folder.id) {
+        @for (folder of displayFolders(); track folder.id) {
           <tr
             [class.selected]="isSelected('folder', folder.id)"
             (click)="openFolder(folder)"
@@ -301,7 +318,7 @@
             <td>{{ folder.updatedAt | date: 'short' }}</td>
           </tr>
         }
-        @for (file of files(); track file.id) {
+        @for (file of displayFiles(); track file.id) {
           <tr
             [class.selected]="isSelected('file', file.id)"
             (click)="openFile(file)"

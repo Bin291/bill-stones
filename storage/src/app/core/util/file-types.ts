@@ -37,19 +37,19 @@ export const CATEGORIES: Category[] = [
     extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'wma'],
   },
   {
-    key: 'code',
-    labelKey: 'cat.code',
-    icon: 'code',
-    extensions: ['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'scss', 'json', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'rs', 'rb', 'php', 'sh', 'sql', 'yml', 'yaml', 'xml'],
-  },
-  {
     key: 'archive',
     labelKey: 'cat.archive',
     icon: 'folder_zip',
     extensions: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'],
   },
+  // "Khác": mọi file có đuôi KHÔNG thuộc các nhóm trên (gồm cả code, và đuôi lạ).
   { key: 'other', labelKey: 'cat.other', icon: 'insert_drive_file', extensions: [] },
 ];
+
+/** Union đuôi của mọi nhóm ĐÃ BIẾT (trừ "Khác") — dùng để lọc lăng kính "Khác". */
+export const NAMED_EXTENSIONS: string[] = CATEGORIES.filter((c) => c.key !== 'other').flatMap(
+  (c) => c.extensions,
+);
 
 const EXT_TO_CATEGORY = new Map<string, CategoryKey>();
 for (const c of CATEGORIES) for (const e of c.extensions) EXT_TO_CATEGORY.set(e, c.key);

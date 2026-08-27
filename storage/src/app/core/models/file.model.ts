@@ -65,6 +65,7 @@ export interface ExtensionStat {
 export interface ListFilesQuery {
   folderId?: string | null;
   extensions?: string;
+  excludeExtensions?: string;
   tagId?: string;
   sort?: 'name' | 'createdAt' | 'updatedAt' | 'size';
   order?: 'asc' | 'desc';
