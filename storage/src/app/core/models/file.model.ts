@@ -54,6 +54,8 @@ export interface Folder {
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Thẻ đang gắn cho thư mục (luôn kèm khi list).
+  tags?: Tag[];
 }
 
 export interface ExtensionStat {

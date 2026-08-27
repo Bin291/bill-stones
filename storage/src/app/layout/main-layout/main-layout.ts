@@ -12,9 +12,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { FilesApiService } from '../../core/services/files-api.service';
 import { TagsApiService } from '../../core/services/tags-api.service';
+import { SettingsApiService } from '../../core/services/settings-api.service';
 import { LangService } from '../../core/i18n/lang.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { RefreshService } from '../../core/services/refresh.service';
@@ -53,6 +55,7 @@ export class MainLayout implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly filesApi = inject(FilesApiService);
   private readonly tagsApi = inject(TagsApiService);
+  private readonly settingsApi = inject(SettingsApiService);
   private readonly lang = inject(LangService);
   private readonly router = inject(Router);
   private readonly refresh = inject(RefreshService);
@@ -62,6 +65,7 @@ export class MainLayout implements OnInit {
   protected readonly prefetch = inject(PrefetchService);
 
   protected readonly profile = this.auth.profile;
+  protected readonly avatarUrl = this.auth.effectiveAvatarUrl;
   // Bỏ mục "Khác" khỏi sidebar theo yêu cầu (vẫn giữ trong CATEGORIES cho nơi khác).
   protected readonly categories = CATEGORIES.filter((c) => c.key !== 'other');
   protected readonly notifOpen = signal(false);
@@ -118,6 +122,18 @@ export class MainLayout implements OnInit {
     void this.notifications.refresh();
     // Tải trước MỌI dữ liệu 1 lần (splash) → các lần chuyển lăng kính sau không loading.
     void this.prefetch.prefetchAll();
+    void this.loadCustomAvatar();
+  }
+
+  /** Nạp avatar tuỳ chỉnh (nếu có) 1 lần khi vào app, để sidebar hiển thị đúng
+   * ngay cả khi chưa từng mở trang Cài đặt trong phiên này. */
+  private async loadCustomAvatar(): Promise<void> {
+    try {
+      const a = await firstValueFrom(this.settingsApi.get());
+      this.auth.setCustomAvatarUrl(a.avatarUrl);
+    } catch {
+      /* fail-soft — sidebar vẫn dùng avatar Google/metadata làm dự phòng */
+    }
   }
 
   loadStats(): void {

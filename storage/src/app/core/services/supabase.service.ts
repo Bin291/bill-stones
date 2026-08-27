@@ -89,6 +89,21 @@ export class SupabaseService {
     return this.client.auth.updateUser({ password });
   }
 
+  /** Đổi tên hiển thị (lưu trong user_metadata — không có bảng User riêng). */
+  updateDisplayName(displayName: string) {
+    return this.client.auth.updateUser({ data: { display_name: displayName } });
+  }
+
+  /** Đổi email — Supabase tự gửi email xác nhận tới địa chỉ mới trước khi áp dụng. */
+  updateEmail(email: string) {
+    return this.client.auth.updateUser({ email });
+  }
+
+  /** Đăng xuất mọi phiên KHÁC phiên hiện tại (mục Bảo mật — không cần liệt kê thiết bị). */
+  signOutOthers() {
+    return this.client.auth.signOut({ scope: 'others' });
+  }
+
   /**
    * Gửi email đăng nhập/đăng ký không mật khẩu (mục Auth): email chứa CẢ Magic
    * Link lẫn mã OTP 6 số (nếu template có {{ .Token }}).

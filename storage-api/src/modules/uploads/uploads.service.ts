@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -14,6 +15,8 @@ import { FoldersService } from '../folders/folders.service';
 import { ThumbnailService } from '../thumbnail/thumbnail.service';
 import { HlsTranscodeService } from '../hls/hls-transcode.service';
 import { IndexingService } from '../search/indexing.service';
+import { DocPreviewService } from '../files/doc-preview.service';
+import { UsersService } from '../users/users.service';
 import {
   resolveNameCollision,
   extractExtension,
@@ -40,6 +43,8 @@ export class UploadsService {
     private readonly thumbnails: ThumbnailService,
     private readonly hls: HlsTranscodeService,
     private readonly indexing: IndexingService,
+    private readonly docPreview: DocPreviewService,
+    private readonly users: UsersService,
     config: ConfigService,
   ) {
     this.maxFileSize =
@@ -55,6 +60,7 @@ export class UploadsService {
     sizeStr: string,
     mimeType: string | undefined,
     folderId: string | null,
+    duplicateAction?: 'rename' | 'overwrite',
   ): Promise<InitUploadResult> {
     let size: bigint;
     try {
@@ -70,16 +76,52 @@ export class UploadsService {
     }
     if (folderId) await this.folders.assertOwned(folderId, userId);
 
-    // Giải trùng tên trong folder đích (mục 2.1 — trường hợp upload).
+    // Chặn upload vượt hạn mức lưu trữ (mục Cài đặt — Gói & Dung lượng).
+    const [usedBytes, quotaBytes] = await Promise.all([
+      this.users.usedBytes(userId),
+      this.users.quotaBytes(userId),
+    ]);
+    if (usedBytes + size > quotaBytes) {
+      const usedGb = (Number(usedBytes) / 1024 / 1024 / 1024).toFixed(2);
+      const quotaGb = (Number(quotaBytes) / 1024 / 1024 / 1024).toFixed(0);
+      throw new BadRequestException(
+        `Đã dùng ${usedGb}GB / ${quotaGb}GB — tệp này vượt hạn mức lưu trữ`,
+      );
+    }
+
     const siblings = await this.prisma.file.findMany({
       where: { userId, folderId: folderId ?? null, deletedAt: null },
-      select: { name: true },
+      select: { id: true, name: true },
     });
-    const finalName = resolveNameCollision(
-      name,
-      siblings.map((s) => s.name),
-      false,
-    );
+    const collision = siblings.find((s) => s.name.toLowerCase() === name.trim().toLowerCase());
+
+    // Trùng tên: theo lựa chọn client gửi cho lần này, hoặc mặc định đã lưu ở Cài đặt.
+    const policy = duplicateAction ?? (await this.users.duplicatePolicy(userId));
+    let finalName = name;
+    if (collision) {
+      if (policy === 'ask') {
+        throw new ConflictException({
+          code: 'DUPLICATE_NAME',
+          message: `Đã có tệp "${name}" trong thư mục này`,
+          existingFileId: collision.id,
+          name,
+        });
+      }
+      if (policy === 'overwrite') {
+        // Đưa file trùng tên cũ vào Thùng rác — giữ tên gốc cho file mới.
+        await this.prisma.file.update({
+          where: { id: collision.id },
+          data: { deletedAt: new Date() },
+        });
+      } else {
+        // rename (mặc định, mục 2.1): tự thêm hậu tố " (2)", " (3)"…
+        finalName = resolveNameCollision(
+          name,
+          siblings.map((s) => s.name),
+          false,
+        );
+      }
+    }
     const extension = extractExtension(finalName);
 
     const file = await this.prisma.file.create({
@@ -161,6 +203,8 @@ export class UploadsService {
     if (this.indexing.supports(updated.extension)) {
       this.indexing.indexInBackground(updated);
     }
+    // Render + cache trước HTML preview cho file nhỏ — mở lần đầu cũng nhanh (mục 1.5).
+    this.docPreview.pregenerateInBackground(updated);
     return updated;
   }
 

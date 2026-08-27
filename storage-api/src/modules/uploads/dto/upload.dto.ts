@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -28,6 +29,12 @@ export class InitUploadDto {
   @IsOptional()
   @IsString()
   folderId?: string | null;
+
+  // Client chỉ định cách xử lý trùng tên CHO LẦN NÀY (ghi đè lựa chọn mặc định
+  // trong Cài đặt) — dùng khi frontend đã hỏi lại user sau khi backend báo trùng.
+  @IsOptional()
+  @IsIn(['rename', 'overwrite'])
+  duplicateAction?: 'rename' | 'overwrite';
 }
 
 export class CompletedPartDto {

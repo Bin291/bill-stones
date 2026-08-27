@@ -23,9 +23,7 @@
         (click)="scrollToSection('hero')"
         aria-label="BillPrime Home"
       >
-        <div class="w-8 h-8 bg-[#0f62fe] flex items-center justify-center text-white font-mono font-bold text-base select-none">
-          SA
-        </div>
+        <img class="w-8 h-8 object-contain" src="logo.png" alt="Logo" />
         <div class="flex flex-col">
           <div class="flex items-center gap-2">
             <span class="font-sans font-semibold text-lg tracking-tight text-white">BillPrime</span>
@@ -46,7 +44,7 @@
           [class.border-transparent]="activeNavSection() !== 'features'"
           [class.hover:text-white]="true"
         >
-          Tính năng
+          {{ 'nav.features' | t }}
         </button>
 
         <button
@@ -59,7 +57,7 @@
           [class.border-transparent]="activeNavSection() !== 'how-it-works'"
           [class.hover:text-white]="true"
         >
-          Cách hoạt động
+          {{ 'nav.howItWorks' | t }}
         </button>
 
         <button
@@ -72,7 +70,7 @@
           [class.border-transparent]="activeNavSection() !== 'sandbox'"
           [class.hover:text-white]="true"
         >
-          Trải nghiệm thử
+          {{ 'nav.sandbox' | t }}
         </button>
 
         <button
@@ -85,25 +83,29 @@
           [class.border-transparent]="activeNavSection() !== 'security'"
           [class.hover:text-white]="true"
         >
-          Bảo mật &amp; Riêng tư
+          {{ 'nav.securityPrivacy' | t }}
         </button>
       </nav>
 
       <!-- Action Buttons -->
       <div class="hidden sm:flex items-center gap-3">
-        <a
-          routerLink="/login"
-          class="btn-ghost text-sm py-2 px-3 text-[#c6c6c6] hover:text-white cursor-pointer"
-        >
-          Đăng nhập
-        </a>
-        <a
-          routerLink="/register"
-          class="btn-primary text-sm py-2 px-4 flex items-center gap-2 cursor-pointer"
-        >
-          <span>Dùng thử miễn phí</span>
-          <mat-icon class="text-sm scale-90">arrow_forward</mat-icon>
-        </a>
+        @if (isAuthenticated()) {
+          <a
+            routerLink="/files"
+            class="btn-primary text-sm py-2 px-4 flex items-center gap-2 cursor-pointer"
+          >
+            <span>{{ 'nav.myStorage' | t }}</span>
+            <mat-icon class="text-sm scale-90">arrow_forward</mat-icon>
+          </a>
+        } @else {
+          <a
+            routerLink="/login"
+            class="btn-primary text-sm py-2 px-4 flex items-center gap-2 cursor-pointer"
+          >
+            <span>{{ 'auth.login' | t }}</span>
+            <mat-icon class="text-sm scale-90">arrow_forward</mat-icon>
+          </a>
+        }
       </div>
 
       <!-- Mobile Menu Toggle Button -->
@@ -125,32 +127,35 @@
           (click)="scrollToSection('features')"
           class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
         >
-          Tính năng
+          {{ 'nav.features' | t }}
         </button>
         <button
           type="button"
           (click)="scrollToSection('how-it-works')"
           class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
         >
-          Cách hoạt động
+          {{ 'nav.howItWorks' | t }}
         </button>
         <button
           type="button"
           (click)="scrollToSection('sandbox')"
           class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
         >
-          Trải nghiệm thử
+          {{ 'nav.sandbox' | t }}
         </button>
         <button
           type="button"
           (click)="scrollToSection('security')"
           class="text-left py-2 text-base font-normal text-[#c6c6c6] hover:text-white border-b border-[#262626]"
         >
-          Bảo mật &amp; Riêng tư
+          {{ 'nav.securityPrivacy' | t }}
         </button>
         <div class="flex flex-col gap-2 pt-2">
-          <a routerLink="/login" class="btn-secondary w-full justify-center cursor-pointer">Đăng nhập</a>
-          <a routerLink="/register" class="btn-primary w-full justify-center cursor-pointer">Dùng thử miễn phí</a>
+          @if (isAuthenticated()) {
+            <a routerLink="/files" class="btn-primary w-full justify-center cursor-pointer">{{ 'nav.myStorage' | t }}</a>
+          } @else {
+            <a routerLink="/login" class="btn-primary w-full justify-center cursor-pointer">{{ 'auth.login' | t }}</a>
+          }
         </div>
       </div>
     }
@@ -167,28 +172,19 @@
       
       <!-- Left Column: Display Title & Actions -->
       <div class="lg:col-span-6 flex flex-col gap-6 z-10">
-        
-        <!-- IBM Header Tag -->
-        <div class="flex items-center gap-2">
-          <div class="w-2 h-2 bg-[#0f62fe]"></div>
-          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-            IBM CARBON ARCHITECTURE // 768-D VECTOR VAULT
-          </span>
-        </div>
 
         <!-- Hero Display Title -->
-        <h1 class="display-01 text-white">
-          Tìm mọi file bằng <span class="text-[#78a9ff] font-normal">ý nghĩa</span>, không chỉ tên file.
+        <h1 class="display-01 text-white" [innerHTML]="'landing.heroTitle' | t">
         </h1>
 
         <!-- Subheading -->
         <p class="body-long-01 max-w-xl text-[#c6c6c6]">
-          Kho lưu trữ tệp AI-hybrid cá nhân với công nghệ OCR đa phương thức và lập chỉ mục không gian vector. Quên đi cấu trúc thư mục rườm rà — chỉ cần diễn đạt những gì bạn nhớ.
+          {{ 'landing.heroSubtitle' | t }}
         </p>
 
         <!-- Search Suggestions Chips -->
         <div class="flex flex-col gap-2 pt-1">
-          <span class="text-xs font-mono text-[#8d8d8d]">THỬ TRUY VẤN MẪU:</span>
+          <span class="text-xs font-mono text-[#8d8d8d]">{{ 'landing.heroTrySuggestions' | t }}</span>
           <div class="flex flex-wrap gap-2">
             @for (prompt of typingPrompts; track prompt) {
               <button
@@ -197,7 +193,7 @@
                 class="carbon-tag hover:border-[#0f62fe] hover:text-white transition-colors cursor-pointer text-left"
               >
                 <mat-icon class="text-xs text-[#0f62fe]">search</mat-icon>
-                <span>{{ prompt }}</span>
+                <span>{{ prompt | t }}</span>
               </button>
             }
           </div>
@@ -205,39 +201,34 @@
 
         <!-- Action CTAs -->
         <div class="flex flex-wrap items-center gap-4 pt-4">
-          <a
-            routerLink="/register"
-            class="btn-primary cursor-pointer"
-          >
-            <span>Khám phá Vault thông minh</span>
-            <mat-icon>arrow_forward</mat-icon>
-          </a>
+          @if (isAuthenticated()) {
+            <a
+              routerLink="/files"
+              class="btn-primary cursor-pointer"
+            >
+              <span>{{ 'landing.heroExplore' | t }}</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </a>
+          } @else {
+            <a
+              routerLink="/login"
+              class="btn-primary cursor-pointer"
+            >
+              <span>{{ 'landing.heroExplore' | t }}</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </a>
+          }
 
           <button
             type="button"
             (click)="scrollToSection('sandbox')"
             class="btn-secondary"
           >
-            <span>Xem Demo tương tác</span>
+            <span>{{ 'landing.heroWatchDemo' | t }}</span>
             <mat-icon>play_circle_outline</mat-icon>
           </button>
         </div>
 
-        <!-- Metric strip -->
-        <div class="grid grid-cols-3 gap-4 pt-6 border-t border-[#262626]">
-          <div>
-            <div class="font-mono text-xl text-white font-medium">35+</div>
-            <div class="text-xs text-[#8d8d8d] font-mono">ĐỊNH DẠNG FILE HỖ TRỢ</div>
-          </div>
-          <div>
-            <div class="font-mono text-xl text-white font-medium">3 NHÁNH</div>
-            <div class="text-xs text-[#8d8d8d] font-mono">TÌM KIẾM HỢP NHẤT (RRF)</div>
-          </div>
-          <div>
-            <div class="font-mono text-xl text-white font-medium">100%</div>
-            <div class="text-xs text-[#8d8d8d] font-mono">CÔ LẬP THEO TÀI KHOẢN</div>
-          </div>
-        </div>
 
       </div>
 
@@ -254,7 +245,7 @@
               <div class="w-3 h-3 bg-[#fa4d56]"></div>
               <div class="w-3 h-3 bg-[#f1c21b]"></div>
               <div class="w-3 h-3 bg-[#42be65]"></div>
-              <span class="font-mono text-xs text-[#8d8d8d] ml-2">seekasset://vault/semantic-indexer</span>
+              <span class="font-mono text-xs text-[#8d8d8d] ml-2">billprime://vault/semantic-indexer</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-[#42be65] animate-ping"></span>
@@ -273,8 +264,8 @@
               <span class="carbon-tag carbon-tag-blue text-[10px] hidden sm:inline-flex">768-D EMBED</span>
             </div>
             <div class="flex items-center justify-between text-[11px] text-[#8d8d8d] font-mono mt-2 px-1">
-              <span>TRUY VẤN NGỮ NGHĨA TIẾNG VIỆT TỰ NHIÊN</span>
-              <span>KẾT QUẢ: 4 TÀI LIỆU TRÙNG KHỚP (0.012s)</span>
+              <span>{{ 'landing.mockupTitle' | t }}</span>
+              <span>{{ 'landing.mockupResults' | t }}</span>
             </div>
           </div>
 
@@ -307,7 +298,7 @@
 
               <!-- OCR Extract Highlight -->
               <div class="bg-[#161616] p-2.5 border-l-2 border-[#0f62fe] text-xs text-[#c6c6c6] font-mono leading-relaxed w-full">
-                <span class="text-[#8d8d8d]">[TRÍCH XUẤT OCR]:</span>
+                <span class="text-[#8d8d8d]">{{ 'landing.mockupOcrExtract' | t }}:</span>
                 TỔNG TIỀN: <span class="bg-[#0f62fe]/30 text-white px-1">245.000 VNĐ</span>. Chi tiết: 02 Cà phê phin sữa đá, 01 Trà sen vàng. MST: 0302821264.
               </div>
 
@@ -317,7 +308,7 @@
                   <span class="carbon-tag text-[9px] py-0.5">PRESIGNED 10M</span>
                 </div>
                 <span class="text-[#0f62fe] hover:underline flex items-center gap-0.5 font-medium">
-                  Chi tiết <mat-icon class="text-xs">chevron_right</mat-icon>
+                  {{ 'landing.mockupDetail' | t }} <mat-icon class="text-xs">chevron_right</mat-icon>
                 </span>
               </div>
             </button>
@@ -344,7 +335,7 @@
                 </div>
               </div>
               <div class="bg-[#161616] p-2.5 border-l-2 border-[#4589ff] text-xs text-[#c6c6c6] font-mono leading-relaxed w-full">
-                <span class="text-[#8d8d8d]">[TRÍCH XUẤT OCR]:</span>
+                <span class="text-[#8d8d8d]">{{ 'landing.mockupOcrExtract' | t }}:</span>
                 HỢP ĐỒNG THUÊ: <span class="bg-[#0f62fe]/30 text-white px-1">Landmark 81</span>. Giá: 28.000.000 VNĐ/tháng. Thời hạn 12 tháng.
               </div>
             </button>
@@ -398,12 +389,12 @@
         <div class="flex items-center gap-2 mb-3">
           <div class="w-2 h-2 bg-[#0f62fe]"></div>
           <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-            KIẾN TRÚC DỮ LIỆU ĐA TẦNG
+            {{ 'landing.howItWorksEyebrow' | t }}
           </span>
         </div>
-        <h2 class="heading-04 text-white">Cách BillPrime hoạt động</h2>
+        <h2 class="heading-04 text-white">{{ 'landing.howItWorksTitle' | t }}</h2>
         <p class="body-long-01 text-[#c6c6c6] mt-2">
-          Quy trình tự động chuyển hóa file thô hỗn tạp thành các điểm dữ liệu vector đa chiều có thể truy vấn bằng ngôn ngữ tự nhiên trong chớp mắt.
+          {{ 'landing.howItWorksSubtitle' | t }}
         </p>
       </div>
 
@@ -435,25 +426,25 @@
               <span class="carbon-tag text-[10px]">INGESTION & SHARDING</span>
             </div>
             
-            <h3 class="heading-02 text-white mb-3">Thu nạp trực tiếp lên Cloudflare R2</h3>
+            <h3 class="heading-02 text-white mb-3">{{ 'landing.step1Title' | t }}</h3>
             <p class="body-short-01 mb-6">
-              Khi bạn kéo thả tài liệu (PDF, hình ảnh, tài liệu, bảng tính...), tệp được tải thẳng lên Cloudflare R2 qua presigned multipart upload — không đi qua máy chủ trung gian, hỗ trợ tốt cả file lớn.
+              {{ 'landing.step1Desc' | t }}
             </p>
           </div>
 
           <!-- Step Feature Visual Pill -->
           <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
             <div class="flex justify-between text-[#c6c6c6]">
-              <span>Mã hóa:</span>
-              <span class="text-[#42be65]">Cloudflare R2 (tại nơi lưu trữ)</span>
+              <span>{{ 'landing.step1Meta1' | t }}</span>
+              <span class="text-[#42be65]">{{ 'landing.step1Meta1Val' | t }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Định dạng:</span>
-              <span>PDF, ảnh, Office, code và hầu hết loại file</span>
+              <span>{{ 'landing.step1Meta2' | t }}</span>
+              <span>{{ 'landing.step1Meta2Val' | t }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Tốc độ:</span>
-              <span class="text-[#78a9ff]">Presigned Multipart Upload</span>
+              <span>{{ 'landing.step1Meta3' | t }}</span>
+              <span class="text-[#78a9ff]">{{ 'landing.step1Meta3Val' | t }}</span>
             </div>
           </div>
         </div>
@@ -466,25 +457,25 @@
               <span class="carbon-tag carbon-tag-blue text-[10px]">AI OCR & VECTORIZATION</span>
             </div>
             
-            <h3 class="heading-02 text-white mb-3">Trích xuất OCR & Vector hóa</h3>
+            <h3 class="heading-02 text-white mb-3">{{ 'landing.step2Title' | t }}</h3>
             <p class="body-short-01 mb-6">
-              Mô hình thị giác máy quét toàn bộ văn bản in, chữ viết tay, bảng số liệu phức tạp và chuyển đổi toàn bộ ngữ cảnh thành vector nhúng 768 chiều với pgvector và Gemini.
+              {{ 'landing.step2Desc' | t }}
             </p>
           </div>
 
           <!-- Step Feature Visual Pill -->
           <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
             <div class="flex justify-between text-[#c6c6c6]">
-              <span>Không gian vector:</span>
-              <span class="text-[#78a9ff]">768-D Dense Embeddings</span>
+              <span>{{ 'landing.step2Meta1' | t }}</span>
+              <span class="text-[#78a9ff]">{{ 'landing.step2Meta1Val' | t }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Nhận diện OCR:</span>
-              <span class="text-[#42be65]">Chữ in, viết tay, bảng biểu (Gemini Vision)</span>
+              <span>{{ 'landing.step2Meta2' | t }}</span>
+              <span class="text-[#42be65]">{{ 'landing.step2Meta2Val' | t }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Từ khoá:</span>
-              <span>Song ngữ Việt + Anh</span>
+              <span>{{ 'landing.step2Meta3' | t }}</span>
+              <span>{{ 'landing.step2Meta3Val' | t }}</span>
             </div>
           </div>
         </div>
@@ -497,25 +488,25 @@
               <span class="carbon-tag carbon-tag-green text-[10px]">SEMANTIC RETRIEVAL</span>
             </div>
             
-            <h3 class="heading-02 text-white mb-3">Tìm kiếm ngữ nghĩa & Tải tức thì</h3>
+            <h3 class="heading-02 text-white mb-3">{{ 'landing.step3Title' | t }}</h3>
             <p class="body-short-01 mb-6">
-              Gõ câu hỏi hoặc ý nghĩ tự nhiên của bạn. Hệ thống hợp nhất 3 nhánh tìm kiếm bằng Reciprocal Rank Fusion và trả về đoạn trích khớp nhất cùng liên kết tải presigned an toàn.
+              {{ 'landing.step3Desc' | t }}
             </p>
           </div>
 
           <!-- Step Feature Visual Pill -->
           <div class="bg-[#161616] p-3 border border-[#262626] font-mono text-xs text-[#8d8d8d] flex flex-col gap-1.5">
             <div class="flex justify-between text-[#c6c6c6]">
-              <span>Xếp hạng:</span>
-              <span class="text-[#42be65]">Cosine Similarity + RRF</span>
+              <span>{{ 'landing.step3Meta1' | t }}</span>
+              <span class="text-[#42be65]">{{ 'landing.step3Meta1Val' | t }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Thời gian phản hồi:</span>
-              <span class="text-[#78a9ff]">Vài giây (AI embedding thời gian thực)</span>
+              <span>{{ 'landing.step3Meta2' | t }}</span>
+              <span class="text-[#78a9ff]">{{ 'landing.step3Meta2Val' | t }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Bảo mật tải về:</span>
-              <span>Presigned Expiring Token</span>
+              <span>{{ 'landing.step3Meta3' | t }}</span>
+              <span>{{ 'landing.step3Meta3Val' | t }}</span>
             </div>
           </div>
         </div>
@@ -537,10 +528,10 @@
         <div class="flex items-center gap-2 mb-3">
           <div class="w-2 h-2 bg-[#0f62fe]"></div>
           <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-            HỆ SINH THÁI TÍNH NĂNG TOÀN DIỆN
+            {{ 'landing.bentoEyebrow' | t }}
           </span>
         </div>
-        <h2 class="heading-04 text-white">Kiến trúc Bento Shutter Đột phá</h2>
+        <h2 class="heading-04 text-white">{{ 'landing.bentoTitle' | t }}</h2>
         <p class="body-long-01 text-[#c6c6c6]">
           Cuộn chuột để phân rã 8 khối module và khám phá triết lý bảo mật cốt lõi bên dưới.
         </p>
@@ -554,14 +545,13 @@
           <div class="text-[10px] sm:text-xs font-mono text-[#78a9ff] tracking-[0.25em] mb-4 uppercase">
             SECURITY &amp; PRIVACY AT CORE LEVEL
           </div>
-          <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6">
-            BẢO MẬT &amp; TRÍ TUỆ<br class="hidden sm:inline" /> TRONG TỪNG DÒNG CODE
+          <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6" [innerHTML]="'landing.glowingText' | t">
           </h2>
           <div class="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
             <span class="carbon-tag carbon-tag-blue">AES-256-GCM ENCRYPTION</span>
             <span class="carbon-tag carbon-tag-blue">POSTGRESQL + PGVECTOR</span>
             <span class="carbon-tag carbon-tag-blue">HYBRID RRF SEARCH</span>
-            <span class="carbon-tag carbon-tag-green">CÔ LẬP THEO TÀI KHOẢN</span>
+            <span class="carbon-tag carbon-tag-green">{{ 'landing.heroAccountIsolation' | t | uppercase }}</span>
           </div>
         </div>
 
@@ -583,19 +573,18 @@
                 </div>
 
                 <!-- Title & Subtitle -->
-                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title }}</h3>
-                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle }}</div>
+                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title | t }}</h3>
+                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle | t }}</div>
                 
                 <!-- Description -->
                 <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed mb-4">
-                  {{ feature.description }}
+                  {{ feature.description | t }}
                 </p>
               </div>
 
               <!-- Tech Spec Footer -->
-              <div class="pt-3 border-t border-[#262626] flex items-center justify-between text-[11px] font-mono text-[#8d8d8d]">
-                <span>{{ feature.techSpec }}</span>
-                <mat-icon class="text-xs text-[#0f62fe]">arrow_forward</mat-icon>
+              <div class="pt-3 border-t border-[#262626] text-[11px] font-mono text-[#8d8d8d]">
+                <span class="break-words whitespace-normal block w-full">{{ feature.techSpec }}</span>
               </div>
             </div>
           }
@@ -619,12 +608,12 @@
           <div class="flex items-center gap-2 mb-3">
             <div class="w-2 h-2 bg-[#0f62fe]"></div>
             <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-              LIVE INTERACTIVE PLAYGROUND
+              {{ 'landing.sandboxEyebrow' | t }}
             </span>
           </div>
-          <h2 class="heading-04 text-white">Trải nghiệm Thử Tìm Kiếm Thực Tế</h2>
+          <h2 class="heading-04 text-white">{{ 'landing.sandboxTitle' | t }}</h2>
           <p class="body-long-01 text-[#c6c6c6] mt-2 max-w-xl">
-            Thử lọc các danh mục tài liệu thực tế và quan sát cách hệ thống phân giải độ khớp ngữ nghĩa và trích xuất nội dung chính.
+            {{ 'landing.sandboxSubtitle' | t }}
           </p>
         </div>
 
@@ -637,7 +626,7 @@
             [class.carbon-tag-blue]="selectedFilter() === 'all'"
             [class.border-[#0f62fe]]="selectedFilter() === 'all'"
           >
-            Tất cả ({{ allSearchResults.length }})
+            {{ 'landing.sandboxAll' | t }} ({{ allSearchResults.length }})
           </button>
           <button
             type="button"
@@ -645,7 +634,7 @@
             class="carbon-tag cursor-pointer transition-colors"
             [class.carbon-tag-blue]="selectedFilter() === 'invoice'"
           >
-            Hóa đơn & Biên nhận
+            {{ 'landing.sandboxInvoice' | t }}
           </button>
           <button
             type="button"
@@ -653,7 +642,7 @@
             class="carbon-tag cursor-pointer transition-colors"
             [class.carbon-tag-blue]="selectedFilter() === 'contract'"
           >
-            Hợp đồng & Pháp lý
+            {{ 'landing.sandboxContract' | t }}
           </button>
           <button
             type="button"
@@ -661,7 +650,7 @@
             class="carbon-tag cursor-pointer transition-colors"
             [class.carbon-tag-blue]="selectedFilter() === 'tech'"
           >
-            Sơ đồ & Kỹ thuật
+            {{ 'landing.sandboxTech' | t }}
           </button>
           <button
             type="button"
@@ -669,7 +658,7 @@
             class="carbon-tag cursor-pointer transition-colors"
             [class.carbon-tag-blue]="selectedFilter() === 'sheet'"
           >
-            Bảng kê chi phí
+            {{ 'landing.sandboxSheet' | t }}
           </button>
         </div>
       </div>
@@ -720,7 +709,7 @@
 
               <!-- OCR Snippet block -->
               <div class="bg-[#161616] p-3 border-l-2 border-[#0f62fe] text-xs text-[#c6c6c6] font-mono leading-relaxed mb-4">
-                <div class="text-[10px] text-[#8d8d8d] uppercase tracking-wider mb-1">Trích xuất ngữ cảnh AI:</div>
+                <div class="text-[10px] text-[#8d8d8d] uppercase tracking-wider mb-1">{{ 'landing.mockupOcrExtract' | t }}:</div>
                 <p>{{ item.ocrSnippet }}</p>
               </div>
 
@@ -743,29 +732,16 @@
                 class="text-xs text-[#78a9ff] hover:text-white font-mono flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
               >
                 <mat-icon class="text-sm">visibility</mat-icon>
-                <span>Xem chi tiết OCR</span>
+                <span>{{ 'landing.sandboxViewOcr' | t }}</span>
               </button>
 
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  (click)="copyToClipboard(item.id, 'Vector Hash ID')"
-                  class="carbon-tag text-[10px] cursor-pointer hover:border-[#525252]"
-                  title="Sao chép Vector Hash"
-                >
-                  <mat-icon class="text-xs">content_copy</mat-icon>
-                  <span>HASH</span>
-                </button>
-
-                <button
-                  type="button"
-                  (click)="openModal('signup')"
-                  class="btn-primary text-xs py-1.5 px-3 flex items-center gap-1"
+                <a
+                  routerLink="/login"
+                  class="btn-primary text-xs py-1.5 px-3 flex items-center gap-1 cursor-pointer"
                 >
                   <mat-icon class="text-xs">download</mat-icon>
-                  <span>Tải Presigned</span>
-                </button>
-              </div>
+                  <span>{{ 'landing.sandboxDownloadPresigned' | t }}</span>
+                </a>
             </div>
 
           </div>
@@ -788,14 +764,14 @@
         <div class="flex items-center gap-2">
           <div class="w-2 h-2 bg-[#0f62fe]"></div>
           <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-            BẢO MẬT ĐẲNG CẤP DOANH NGHIỆP
+            {{ 'landing.securityEyebrow' | t }}
           </span>
         </div>
 
-        <h2 class="heading-04 text-white">Cô Lập Dữ Liệu &amp; Truy Cập Có Thời Hạn</h2>
+        <h2 class="heading-04 text-white">{{ 'landing.securityTitle' | t }}</h2>
 
         <p class="body-long-01 text-[#c6c6c6]">
-          Dữ liệu của bạn thuộc về bạn. Mọi truy vấn tìm kiếm — kể cả AI Search — luôn giới hạn trong đúng tài khoản của bạn: không có cách nào một người dùng thấy được file hay nội dung trích xuất của người khác, dù trùng từ khoá.
+          {{ 'landing.securityDesc' | t }}
         </p>
 
         <!-- 3 Security Pillars -->
@@ -807,9 +783,9 @@
               <mat-icon>lock</mat-icon>
             </div>
             <div>
-              <h3 class="text-base font-medium text-white mb-1">Mã hóa tại nơi lưu trữ &amp; TLS khi truyền tải</h3>
+              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar1Title' | t }}</h3>
               <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
-                Tệp được lưu trên Cloudflare R2 với mã hoá mặc định ở trạng thái nghỉ; mọi kết nối giữa trình duyệt và máy chủ đều qua HTTPS/TLS.
+                {{ 'landing.securityPillar1Desc' | t }}
               </p>
             </div>
           </div>
@@ -820,9 +796,9 @@
               <mat-icon>vpn_key</mat-icon>
             </div>
             <div>
-              <h3 class="text-base font-medium text-white mb-1">Liên Kết Tải Về Có Thời Hạn</h3>
+              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar2Title' | t }}</h3>
               <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
-                Khi cần tải tệp, máy chủ cấp một liên kết presigned có chữ ký, tự hết hạn sau 10 phút. Không có URL công khai tĩnh nào tồn tại trong hệ thống.
+                {{ 'landing.securityPillar2Desc' | t }}
               </p>
             </div>
           </div>
@@ -833,9 +809,9 @@
               <mat-icon>shield</mat-icon>
             </div>
             <div>
-              <h3 class="text-base font-medium text-white mb-1">Riêng Tư Theo Từng Tài Khoản</h3>
+              <h3 class="text-base font-medium text-white mb-1">{{ 'landing.securityPillar3Title' | t }}</h3>
               <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed">
-                Vector nhúng và nội dung trích xuất (OCR, caption ảnh) được lọc theo userId ở tầng truy vấn — tách biệt tuyệt đối giữa các tài khoản, không có tìm kiếm chéo.
+                {{ 'landing.securityPillar3Desc' | t }}
               </p>
             </div>
           </div>
@@ -851,7 +827,7 @@
         <div class="relative w-full max-w-[380px] bg-[#1c1c1c] border border-[#393939] p-6 flex flex-col items-center">
           
           <div class="w-full flex items-center justify-between border-b border-[#262626] pb-3 mb-6 font-mono text-xs text-[#8d8d8d]">
-            <span>SEEKASSET_GUARD // ACCESS CONTROL</span>
+            <span>BILLPRIME_GUARD // ACCESS CONTROL</span>
             <span class="text-[#42be65] flex items-center gap-1">
               <span class="w-2 h-2 rounded-full bg-[#42be65]"></span>
               LIVE_SHIELD
@@ -930,7 +906,7 @@
             </div>
             <div class="flex justify-between">
               <span>CROSS-USER LEAK:</span>
-              <span class="text-[#42be65]">0% (đã kiểm thử)</span>
+              <span class="text-[#42be65]">0% ({{ 'landing.securityTested' | t }})</span>
             </div>
           </div>
 
@@ -948,19 +924,14 @@
     
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="inline-flex items-center gap-2 mb-6">
-        <div class="w-2 h-2 bg-[#0f62fe]"></div>
-        <span class="font-mono text-xs text-[#78a9ff] tracking-wider uppercase">
-          BẮT ĐẦU NGAY HÔM NAY // 15GB MIỄN PHÍ TRỌN ĐỜI
-        </span>
-      </div>
+      
 
       <h2 class="display-01 text-white mb-6">
-        Sẵn sàng giải phóng kho dữ liệu cá nhân của bạn?
+        {{ 'landing.ctaTitle' | t }}
       </h2>
 
       <p class="body-long-01 text-[#c6c6c6] max-w-2xl mx-auto mb-10">
-        Trải nghiệm sự tiện lợi của việc không bao giờ cần phải nhớ tên file hay lục lọi thư mục cũ. Đăng ký tài khoản ngay chỉ trong 30 giây.
+        {{ 'landing.ctaDesc' | t }}
       </p>
 
       <!-- Instant Registration Form -->
@@ -968,9 +939,9 @@
         <input
           type="email"
           id="cta-email-input"
-          aria-label="Email công việc"
+          aria-label="Email"
           [(ngModel)]="registerEmail"
-          placeholder="Nhập email công việc của bạn..."
+          [placeholder]="'landing.emailPlaceholder' | t"
           class="flex-1 bg-[#262626] border border-[#393939] focus:border-[#0f62fe] px-4 py-3 text-sm text-white font-mono placeholder:text-[#8d8d8d] focus:outline-none rounded-none"
         />
         <button
@@ -978,7 +949,7 @@
           (click)="handleRegisterSubmit()"
           class="btn-primary justify-center px-6"
         >
-          <span>Khởi tạo Vault</span>
+          <span>{{ 'landing.ctaButton' | t }}</span>
           <mat-icon>arrow_forward</mat-icon>
         </button>
       </div>
@@ -987,15 +958,15 @@
       <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[#8d8d8d] font-mono">
         <span class="flex items-center gap-1.5">
           <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
-          Không yêu cầu thẻ tín dụng
+          {{ 'landing.trustNoCard' | t }}
         </span>
         <span class="flex items-center gap-1.5">
           <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
-          Không có đường dẫn tệp công khai
+          {{ 'landing.trustNoPublicUrl' | t }}
         </span>
         <span class="flex items-center gap-1.5">
           <mat-icon class="text-sm text-[#42be65]">check_circle</mat-icon>
-          Tải cả thư mục dạng .zip bất kỳ lúc nào
+          {{ 'landing.trustZipDownload' | t }}
         </span>
       </div>
 
@@ -1005,7 +976,7 @@
   <!-- ========================================== -->
   <!-- 9. FOOTER SECTION (IBM Carbon Dark)        -->
   <!-- ========================================== -->
-  <footer class="bg-[#111111] border-t border-[#262626] pt-16 pb-12 text-sm text-[#8d8d8d]">
+  <footer class="bg-[#111111] border-t border-[#262626] pt-16 pb-12 text-base text-[#8d8d8d]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <div class="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-[#262626]">
@@ -1013,56 +984,54 @@
         <!-- Brand Column -->
         <div class="md:col-span-2 flex flex-col gap-4">
           <div class="flex items-center gap-3">
-            <div class="w-7 h-7 bg-[#0f62fe] flex items-center justify-center text-white font-mono font-bold text-sm">
-              SA
-            </div>
+            <img class="w-7 h-7 object-contain" src="logo.png" alt="Logo" />
             <span class="font-sans font-semibold text-lg text-white">BillPrime</span>
           </div>
-          <p class="text-xs text-[#8d8d8d] leading-relaxed max-w-sm">
-            Nền tảng lưu trữ và tìm kiếm tệp bằng trí tuệ nhân tạo hybrid theo ngôn ngữ tự nhiên. Được thiết kế theo ngôn ngữ thiết kế IBM Carbon.
+          <p class="text-sm text-[#8d8d8d] leading-relaxed max-w-sm">
+            {{ 'landing.footerDesc' | t }}
           </p>
         </div>
 
         <!-- Col 1: Sản phẩm -->
         <div class="flex flex-col gap-3">
-          <div class="font-mono text-xs text-white uppercase tracking-wider">SẢN PHẨM</div>
-          <a href="#features" class="hover:text-white transition-colors">Semantic Search</a>
-          <a href="#features" class="hover:text-white transition-colors">OCR Trích xuất Bảng</a>
-          <a href="#security" class="hover:text-white transition-colors">Cô Lập Theo Tài Khoản</a>
-          <a href="#features" class="hover:text-white transition-colors">Presigned Edge Delivery</a>
-          <a href="#pricing" class="hover:text-white transition-colors">Bảng giá cá nhân</a>
+          <div class="font-mono text-sm text-white uppercase tracking-wider">{{ 'landing.footerProduct' | t }}</div>
+          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.prod1' | t }}</a>
+          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.prod2' | t }}</a>
+          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.footer.prod3' | t }}</a>
+          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.prod4' | t }}</a>
+          <a href="#pricing" class="hover:text-white transition-colors">{{ 'landing.footer.prod5' | t }}</a>
         </div>
 
         <!-- Col 2: Công nghệ -->
         <div class="flex flex-col gap-3">
-          <div class="font-mono text-xs text-white uppercase tracking-wider">CÔNG NGHỆ</div>
-          <a href="#how-it-works" class="hover:text-white transition-colors">pgvector Indexing</a>
-          <a href="#how-it-works" class="hover:text-white transition-colors">Gemini Multimodal API</a>
-          <a href="#security" class="hover:text-white transition-colors">Mã hóa AES-256-GCM</a>
-          <a href="#how-it-works" class="hover:text-white transition-colors">Data Pipeline SDK</a>
-          <a href="#features" class="hover:text-white transition-colors">Reranking (BGE-Reranker)</a>
+          <div class="font-mono text-sm text-white uppercase tracking-wider">{{ 'landing.footerTech' | t }}</div>
+          <a href="#how-it-works" class="hover:text-white transition-colors">{{ 'landing.footer.tech1' | t }}</a>
+          <a href="#how-it-works" class="hover:text-white transition-colors">{{ 'landing.footer.tech2' | t }}</a>
+          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.footer.tech3' | t }}</a>
+          <a href="#how-it-works" class="hover:text-white transition-colors">{{ 'landing.footer.tech4' | t }}</a>
+          <a href="#features" class="hover:text-white transition-colors">{{ 'landing.footer.tech5' | t }}</a>
         </div>
 
         <!-- Col 3: Pháp lý & Bảo mật -->
         <div class="flex flex-col gap-3">
-          <div class="font-mono text-xs text-white uppercase tracking-wider">PHÁP LÝ</div>
-          <a href="#security" class="hover:text-white transition-colors">Cam kết Quyền riêng tư</a>
-          <a href="#security" class="hover:text-white transition-colors">Chính sách Bảo mật Dữ liệu</a>
-          <a href="#security" class="hover:text-white transition-colors">Cách Chúng Tôi Bảo Vệ Dữ Liệu</a>
-          <a href="#pricing" class="hover:text-white transition-colors">Điều Khoản Sử Dụng</a>
-          <a href="#pricing" class="hover:text-white transition-colors">Liên Hệ Hỗ Trợ</a>
+          <div class="font-mono text-sm text-white uppercase tracking-wider">{{ 'landing.footerLegal' | t }}</div>
+          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.privacyCommitment' | t }}</a>
+          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.dataPrivacyPolicy' | t }}</a>
+          <a href="#security" class="hover:text-white transition-colors">{{ 'landing.howWeProtectData' | t }}</a>
+          <a href="#pricing" class="hover:text-white transition-colors">{{ 'landing.termsOfUse' | t }}</a>
+          <a href="#pricing" class="hover:text-white transition-colors">{{ 'landing.contactSupport' | t }}</a>
         </div>
 
       </div>
 
       <!-- Bottom Bar -->
-      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs">
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-sm">
         <div>
-          © 2026 BillPrime Technologies. All rights reserved. Inspired by IBM Carbon Design System.
+          © 2026 BillPrime Technologies. All rights reserved.
         </div>
         <div class="flex items-center gap-6">
-          <span class="hover:text-white cursor-pointer">VIETNAMESE (VI)</span>
-          <span class="hover:text-white cursor-pointer">ENGLISH (EN)</span>
+          <span (click)="langService.setLang('vi')" class="hover:text-white cursor-pointer transition-colors" [class.text-[#0f62fe]]="langService.lang() === 'vi'">VIETNAMESE (VI)</span>
+          <span (click)="langService.setLang('en')" class="hover:text-white cursor-pointer transition-colors" [class.text-[#0f62fe]]="langService.lang() === 'en'">ENGLISH (EN)</span>
           <span class="hover:text-white cursor-pointer">STATUS</span>
         </div>
       </div>
@@ -1151,23 +1120,23 @@
           <div class="flex flex-col gap-4 font-mono text-xs">
             
             <div class="bg-[#161616] p-4 border border-[#262626] flex flex-col gap-2">
-              <div class="text-[#8d8d8d] uppercase tracking-wider text-[10px]">ĐOẠN TRÍCH OCR &amp; NGỮ NGHĨA:</div>
+              <div class="text-[#8d8d8d] uppercase tracking-wider text-[10px]">{{ 'landing.previewOcr' | t }}:</div>
               <div class="text-white text-sm leading-relaxed font-sans">{{ res.ocrSnippet }}</div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
               <div class="bg-[#262626] p-2.5 border border-[#393939]">
-                <div class="text-[#8d8d8d] text-[10px]">ĐỘ KHỚP VECTOR:</div>
+                <div class="text-[#8d8d8d] text-[10px]">{{ 'landing.previewMatch' | t }}:</div>
                 <div class="text-[#42be65] text-sm font-bold">{{ res.matchScore }}% (d = {{ res.vectorDistance }})</div>
               </div>
               <div class="bg-[#262626] p-2.5 border border-[#393939]">
-                <div class="text-[#8d8d8d] text-[10px]">ĐỊNH DẠNG TỆP:</div>
+                <div class="text-[#8d8d8d] text-[10px]">{{ 'landing.previewFormat' | t }}:</div>
                 <div class="text-[#78a9ff] text-sm font-bold">{{ res.fileType }} ({{ res.fileSize }})</div>
               </div>
             </div>
 
             <div class="bg-[#262626] p-3 border border-[#393939] flex flex-col gap-1.5">
-              <div class="text-[#8d8d8d] text-[10px]">THÔNG TIN NỔI BẬT TRONG TÀI LIỆU:</div>
+              <div class="text-[#8d8d8d] text-[10px]">{{ 'landing.previewEntities' | t }}:</div>
               @for (entity of res.extractedEntities; track entity.label) {
                 <div class="flex justify-between text-[#c6c6c6]">
                   <span>{{ entity.label }}:</span>
@@ -1176,22 +1145,13 @@
               }
             </div>
 
-            <div class="flex items-center justify-between pt-2">
-              <button
-                type="button"
-                (click)="copyToClipboard(res.id, 'Token ID')"
-                class="carbon-tag cursor-pointer hover:border-[#525252]"
-              >
-                <mat-icon class="text-xs">content_copy</mat-icon>
-                <span>Sao chép ID</span>
-              </button>
-
+            <div class="flex items-center justify-end pt-2">
               <a
-                routerLink="/register"
+                routerLink="/login"
                 class="btn-primary text-xs py-2 px-4 cursor-pointer"
               >
                 <mat-icon class="text-xs">download</mat-icon>
-                <span>Tải Presigned Link</span>
+                <span>{{ 'landing.sandboxDownloadPresigned' | t }}</span>
               </a>
             </div>
 

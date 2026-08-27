@@ -33,4 +33,12 @@ export class TagsApiService {
   unassign(tagId: string, fileId: string): Observable<{ success: boolean }> {
     return this.http.delete<{ success: boolean }>(`${this.base}/${tagId}/files/${fileId}`);
   }
+
+  assignFolder(tagId: string, folderId: string): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(`${this.base}/${tagId}/folders/${folderId}`, {});
+  }
+
+  unassignFolder(tagId: string, folderId: string): Observable<{ success: boolean }> {
+    return this.http.delete<{ success: boolean }>(`${this.base}/${tagId}/folders/${folderId}`);
+  }
 }

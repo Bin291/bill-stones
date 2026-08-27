@@ -54,4 +54,26 @@ export class TagsController {
     await this.tags.unassign(userId, id, fileId);
     return { success: true };
   }
+
+  /** Gán thẻ :id cho thư mục :folderId. */
+  @Post(':id/folders/:folderId')
+  async assignFolder(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Param('folderId') folderId: string,
+  ) {
+    await this.tags.assignFolder(userId, id, folderId);
+    return { success: true };
+  }
+
+  /** Bỏ gán thẻ :id khỏi thư mục :folderId. */
+  @Delete(':id/folders/:folderId')
+  async unassignFolder(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Param('folderId') folderId: string,
+  ) {
+    await this.tags.unassignFolder(userId, id, folderId);
+    return { success: true };
+  }
 }

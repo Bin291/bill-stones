@@ -63,6 +63,12 @@ export function iconOf(extension: string): string {
   return cat?.icon ?? 'insert_drive_file';
 }
 
+/** Đuôi file từ tên đầy đủ (VD "báo cáo.docx" -> "docx"; không có đuôi -> ""). */
+export function extensionOf(filename: string): string {
+  const i = filename.lastIndexOf('.');
+  return i > 0 ? filename.slice(i + 1) : '';
+}
+
 export function categoryByKey(key: CategoryKey): Category | undefined {
   return CATEGORIES.find((c) => c.key === key);
 }

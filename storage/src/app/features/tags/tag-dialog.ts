@@ -11,8 +11,9 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import { RefreshService } from '../../core/services/refresh.service';
-import { TagWithCount } from '../../core/models/file.model';
+import { Tag, TagWithCount } from '../../core/models/file.model';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { ConfirmDialog } from '../ui/confirm-dialog';
 
 /** Bảng màu gợi ý (kiểu Finder) — người dùng vẫn có thể chọn màu tuỳ ý. */
 const PRESET_COLORS = [
@@ -34,7 +35,7 @@ const PRESET_COLORS = [
  */
 @Component({
   selector: 'app-tag-dialog',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ConfirmDialog],
   templateUrl: './tag-dialog.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -44,12 +45,18 @@ export class TagDialog implements OnInit {
 
   /** Nếu có: chế độ gán thẻ cho file này. Nếu null: chỉ quản lý thẻ. */
   readonly fileId = input<string | null>(null);
-  /** Danh sách id thẻ đang gắn cho file (khởi tạo trạng thái tích). */
+  /** Nếu có: chế độ gán thẻ cho thư mục này (thay cho fileId). */
+  readonly folderId = input<string | null>(null);
+  /** Danh sách id thẻ đang gắn cho file/thư mục (khởi tạo trạng thái tích). */
   readonly assignedIds = input<string[]>([]);
 
   readonly closed = output<void>();
-  /** Bắn khi có thay đổi ảnh hưởng tới file hiện tại (để explorer nạp lại). */
-  readonly changed = output<void>();
+  /**
+   * Bắn NGAY mỗi lần tích/bỏ tích — kèm tagIds mới nhất để explorer cập nhật
+   * badge tại chỗ, không cần reload. `undefined` = thay đổi chung (sửa/xoá thẻ,
+   * ảnh hưởng nhiều mục) — explorer nên nạp lại danh sách trong trường hợp này.
+   */
+  readonly changed = output<{ fileId?: string; folderId?: string; tags: Tag[] } | undefined>();
 
   readonly presets = PRESET_COLORS;
   readonly tags = signal<TagWithCount[]>([]);
@@ -67,7 +74,8 @@ export class TagDialog implements OnInit {
   readonly editName = signal('');
   readonly editColor = signal('');
 
-  readonly assignMode = computed(() => !!this.fileId());
+  readonly assignMode = computed(() => !!this.fileId() || !!this.folderId());
+  readonly pendingDelete = signal<TagWithCount | null>(null);
 
   ngOnInit(): void {
     // Input signals đã có giá trị binding ở ngOnInit (không phải trong constructor).
@@ -85,7 +93,7 @@ export class TagDialog implements OnInit {
 
   private notify(): void {
     this.refresh.bumpTags();
-    this.changed.emit();
+    this.changed.emit(undefined);
   }
 
   async create(): Promise<void> {
@@ -148,7 +156,23 @@ export class TagDialog implements OnInit {
     }
   }
 
-  async remove(tag: TagWithCount): Promise<void> {
+  /** Bấm nút xoá → chỉ mở hộp thoại xác nhận (chưa xoá thật). */
+  requestDelete(tag: TagWithCount): void {
+    this.pendingDelete.set(tag);
+  }
+
+  cancelDelete(): void {
+    this.pendingDelete.set(null);
+  }
+
+  /** Xác nhận trong hộp thoại → xoá thật. */
+  async confirmDelete(): Promise<void> {
+    const tag = this.pendingDelete();
+    this.pendingDelete.set(null);
+    if (tag) await this.remove(tag);
+  }
+
+  private async remove(tag: TagWithCount): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     try {
@@ -167,19 +191,16 @@ export class TagDialog implements OnInit {
     }
   }
 
-  /** Có thay đổi gán/bỏ gán chưa đồng bộ về explorer/sidebar (đồng bộ khi đóng). */
-  private dirty = false;
-
   /**
-   * Gán/bỏ gán NGAY LẬP TỨC (cập nhật lạc quan): đổi ô tích + số đếm tại chỗ, gọi
-   * API nền, lỗi thì hoàn tác. KHÔNG reload cả danh sách và KHÔNG bắn `changed`
-   * mỗi lần bấm (tránh giật/lag) — dồn lại tới khi đóng dialog.
+   * Gán/bỏ gán NGAY LẬP TỨC (cập nhật lạc quan): đổi ô tích + số đếm tại chỗ,
+   * BẮN `changed` ngay (không đợi đóng dialog) để card ngoài danh sách cập nhật
+   * màu thẻ tức thì, rồi mới gọi API nền — lỗi thì hoàn tác cả 2.
    */
   toggleAssign(tag: TagWithCount): void {
     const fid = this.fileId();
-    if (!fid) return;
+    const folId = this.folderId();
+    if (!fid && !folId) return;
     const isOn = this.assigned().has(tag.id);
-    // Cập nhật giao diện ngay.
     this.assigned.update((s) => {
       const next = new Set(s);
       if (isOn) next.delete(tag.id);
@@ -187,19 +208,39 @@ export class TagDialog implements OnInit {
       return next;
     });
     this.bumpCount(tag.id, isOn ? -1 : 1);
-    this.dirty = true;
+    this.emitTargetChanged();
 
-    const req = isOn ? this.tagsApi.unassign(tag.id, fid) : this.tagsApi.assign(tag.id, fid);
-    firstValueFrom(req).catch(() => {
-      // Hoàn tác nếu lỗi.
-      this.assigned.update((s) => {
-        const next = new Set(s);
-        if (isOn) next.add(tag.id);
-        else next.delete(tag.id);
-        return next;
+    const req = fid
+      ? isOn
+        ? this.tagsApi.unassign(tag.id, fid)
+        : this.tagsApi.assign(tag.id, fid)
+      : isOn
+        ? this.tagsApi.unassignFolder(tag.id, folId!)
+        : this.tagsApi.assignFolder(tag.id, folId!);
+    firstValueFrom(req)
+      .then(() => this.refresh.bumpTags())
+      .catch(() => {
+        // Hoàn tác nếu lỗi.
+        this.assigned.update((s) => {
+          const next = new Set(s);
+          if (isOn) next.add(tag.id);
+          else next.delete(tag.id);
+          return next;
+        });
+        this.bumpCount(tag.id, isOn ? 1 : -1);
+        this.error.set('Không cập nhật được thẻ cho tệp.');
+        this.emitTargetChanged();
       });
-      this.bumpCount(tag.id, isOn ? 1 : -1);
-      this.error.set('Không cập nhật được thẻ cho tệp.');
+  }
+
+  /** Bắn `changed` kèm danh sách thẻ (đủ tên+màu) đang gắn hiện tại cho mục đang mở. */
+  private emitTargetChanged(): void {
+    const ids = this.assigned();
+    const tags = this.tags().filter((t) => ids.has(t.id));
+    this.changed.emit({
+      fileId: this.fileId() ?? undefined,
+      folderId: this.folderId() ?? undefined,
+      tags,
     });
   }
 
@@ -222,11 +263,6 @@ export class TagDialog implements OnInit {
   }
 
   close(): void {
-    // Đồng bộ 1 lần khi đóng: cập nhật thẻ trên card + số đếm sidebar.
-    if (this.dirty) {
-      this.dirty = false;
-      this.notify();
-    }
     this.closed.emit();
   }
 }
