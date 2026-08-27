@@ -12,7 +12,7 @@
     <div class="modal-body">
       <!-- Danh sách thẻ -->
       @if (tags().length) {
-        <div class="tag-list">
+        <div class="tag-list" #tagList>
           @for (tag of tags(); track tag.id) {
             @if (editingId() === tag.id) {
               <!-- Chế độ sửa inline -->
@@ -122,3 +122,15 @@
     </div>
   </div>
 </div>
+
+<!-- Cảnh báo xác nhận xoá thẻ -->
+@if (pendingDelete(); as t) {
+  <app-confirm-dialog
+    [title]="'tags.deleteTitle' | t"
+    [message]="'tags.deleteMsg' | t: { name: t.name }"
+    [confirmLabel]="'action.delete' | t"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}

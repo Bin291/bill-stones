@@ -1,18 +1,21 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnInit,
   computed,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import { RefreshService } from '../../core/services/refresh.service';
 import { TagWithCount } from '../../core/models/file.model';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { ConfirmDialog } from '../ui/confirm-dialog';
 
 /** Bảng màu gợi ý (kiểu Finder) — người dùng vẫn có thể chọn màu tuỳ ý. */
 const PRESET_COLORS = [
@@ -34,12 +37,16 @@ const PRESET_COLORS = [
  */
 @Component({
   selector: 'app-tag-dialog',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ConfirmDialog],
   templateUrl: './tag-dialog.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TagDialog implements OnInit {
   private readonly tagsApi = inject(TagsApiService);
+  /** Ô danh sách thẻ (để cuộn xuống thẻ mới nhất). */
+  private readonly listEl = viewChild<ElementRef<HTMLElement>>('tagList');
+  /** Thẻ đang chờ xác nhận xoá. */
+  readonly pendingDelete = signal<TagWithCount | null>(null);
   private readonly refresh = inject(RefreshService);
 
   /** Nếu có: chế độ gán thẻ cho file này. Nếu null: chỉ quản lý thẻ. */
@@ -101,11 +108,20 @@ export class TagDialog implements OnInit {
       this.newColor.set(null);
       await this.load();
       this.refresh.bumpTags();
+      this.scrollToNewest(); // cuộn xuống thẻ mới nhất (ở cuối)
     } catch (e) {
       this.error.set(this.tagError(e, 'Không tạo được thẻ.'));
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** Cuộn danh sách thẻ xuống cuối để thấy thẻ vừa thêm. */
+  private scrollToNewest(): void {
+    setTimeout(() => {
+      const el = this.listEl()?.nativeElement;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   }
 
   /** Thông báo lỗi chính xác: 409 = trùng tên; còn lại = lỗi kết nối/máy chủ. */
@@ -148,8 +164,20 @@ export class TagDialog implements OnInit {
     }
   }
 
-  async remove(tag: TagWithCount): Promise<void> {
-    if (this.busy()) return;
+  /** Bấm nút xoá → mở cảnh báo xác nhận (không xoá ngay). */
+  remove(tag: TagWithCount): void {
+    this.pendingDelete.set(tag);
+  }
+
+  cancelDelete(): void {
+    this.pendingDelete.set(null);
+  }
+
+  /** Xác nhận xoá thẻ. */
+  async confirmDelete(): Promise<void> {
+    const tag = this.pendingDelete();
+    this.pendingDelete.set(null);
+    if (!tag || this.busy()) return;
     this.busy.set(true);
     try {
       await firstValueFrom(this.tagsApi.remove(tag.id));

@@ -1624,21 +1624,24 @@ body {
 .tag-swatch.on {
   border-color: var(--ink);
 }
-/* Swatch màu tuỳ chỉnh: vòng 7 màu (rainbow) để dễ nhận ra là chọn màu tự do */
+/* Swatch màu tuỳ chỉnh: BÁNH XE MÀU tròn (rainbow viền + tâm trắng) như color wheel */
 .tag-swatch--custom {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: conic-gradient(
-    #f44336,
-    #ff9800,
-    #ffeb3b,
-    #4caf50,
-    #00bcd4,
-    #3f51b5,
-    #9c27b0,
-    #f44336
-  );
+  border-radius: 50%; /* đảm bảo hình TRÒN, không phải vuông */
+  background:
+    radial-gradient(circle at 50% 50%, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
+    conic-gradient(
+      from 90deg,
+      #ff0000,
+      #ffff00,
+      #00ff00,
+      #00ffff,
+      #0000ff,
+      #ff00ff,
+      #ff0000
+    );
 }
 /* Chấm nhỏ ở giữa hiện màu đang chọn (đè lên vòng rainbow) */
 .tag-swatch-dot {
