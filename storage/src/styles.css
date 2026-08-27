@@ -452,9 +452,8 @@ body {
   align-items: center;
   gap: 8px;
   height: 38px;
-  flex: 1 1 auto;
+  flex: 1 1 auto; /* lấp ĐẦY khoảng giữa tiêu đề và các nút, không chừa khoảng trống */
   min-width: 200px;
-  max-width: 760px; /* nới rộng để lấp khoảng trống ở giữa thanh công cụ */
   margin: 0 12px;
   padding: 0 10px;
   border: 1px solid var(--hairline);
