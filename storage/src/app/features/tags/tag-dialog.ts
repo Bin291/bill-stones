@@ -1,12 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnInit,
   computed,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TagsApiService } from '../../core/services/tags-api.service';
@@ -41,6 +43,12 @@ const PRESET_COLORS = [
 })
 export class TagDialog implements OnInit {
   private readonly tagsApi = inject(TagsApiService);
+  /** Ô danh sách thẻ (để cuộn xuống thẻ mới nhất). */
+  private readonly listEl = viewChild<ElementRef<HTMLElement>>('tagList');
+  /** Thẻ đang chờ xác nhận xoá. */
+  readonly pendingDelete = signal<TagWithCount | null>(null);
+  /** Thẻ vừa tạo — sáng lên 2 giây rồi tắt. */
+  readonly highlightId = signal<string | null>(null);
   private readonly refresh = inject(RefreshService);
 
   /** Nếu có: chế độ gán thẻ cho file này. Nếu null: chỉ quản lý thẻ. */
@@ -75,7 +83,6 @@ export class TagDialog implements OnInit {
   readonly editColor = signal('');
 
   readonly assignMode = computed(() => !!this.fileId() || !!this.folderId());
-  readonly pendingDelete = signal<TagWithCount | null>(null);
 
   ngOnInit(): void {
     // Input signals đã có giá trị binding ở ngOnInit (không phải trong constructor).
@@ -104,16 +111,34 @@ export class TagDialog implements OnInit {
     try {
       // Chưa chọn màu → lấy màu ngẫu nhiên trong 9 màu có sẵn.
       const color = this.newColor() ?? this.randomPreset();
-      await firstValueFrom(this.tagsApi.create(name, color));
+      const created = await firstValueFrom(this.tagsApi.create(name, color));
       this.newName.set('');
       this.newColor.set(null);
       await this.load();
       this.refresh.bumpTags();
+      this.scrollToNewest(); // cuộn xuống thẻ mới nhất (ở cuối)
+      this.flashNew(created.id); // sáng lên 2 giây
     } catch (e) {
       this.error.set(this.tagError(e, 'Không tạo được thẻ.'));
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** Làm thẻ vừa tạo sáng lên trong 2 giây rồi tắt. */
+  private flashNew(id: string): void {
+    this.highlightId.set(id);
+    setTimeout(() => {
+      if (this.highlightId() === id) this.highlightId.set(null);
+    }, 2000);
+  }
+
+  /** Cuộn danh sách thẻ xuống cuối để thấy thẻ vừa thêm. */
+  private scrollToNewest(): void {
+    setTimeout(() => {
+      const el = this.listEl()?.nativeElement;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   }
 
   /** Thông báo lỗi chính xác: 409 = trùng tên; còn lại = lỗi kết nối/máy chủ. */

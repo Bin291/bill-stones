@@ -12,7 +12,7 @@
     <div class="modal-body">
       <!-- Danh sách thẻ -->
       @if (tags().length) {
-        <div class="tag-list">
+        <div class="tag-list" #tagList>
           @for (tag of tags(); track tag.id) {
             @if (editingId() === tag.id) {
               <!-- Chế độ sửa inline -->
@@ -37,12 +37,6 @@
                       [attr.aria-label]="c"
                     ></button>
                   }
-                  <label class="tag-swatch tag-swatch--custom" [title]="'tags.customColor' | t">
-                    @if (editColor()) {
-                      <span class="tag-swatch-dot" [style.background]="editColor()"></span>
-                    }
-                    <input type="color" [value]="editColor() || '#8d8d8d'" (input)="editColor.set($any($event.target).value)" />
-                  </label>
                 </div>
                 <button class="btn btn-icon" type="button" (click)="saveEdit()" [disabled]="busy()" title="Lưu">
                   <span class="mi">check</span>
@@ -52,7 +46,11 @@
                 </button>
               </div>
             } @else {
-              <div class="tag-row" [class.assigned]="assignMode() && isAssigned(tag.id)">
+              <div
+                class="tag-row"
+                [class.assigned]="assignMode() && isAssigned(tag.id)"
+                [class.tag-row--new]="highlightId() === tag.id"
+              >
                 @if (assignMode()) {
                   <button
                     type="button"
@@ -108,12 +106,6 @@
               [attr.aria-label]="c"
             ></button>
           }
-          <label class="tag-swatch tag-swatch--custom" [title]="'tags.customColor' | t">
-            @if (newColor()) {
-              <span class="tag-swatch-dot" [style.background]="newColor()"></span>
-            }
-            <input type="color" [value]="newColor() || '#8d8d8d'" (input)="newColor.set($any($event.target).value)" />
-          </label>
         </div>
         <button class="btn btn-primary" type="button" [disabled]="busy() || !newName().trim()" (click)="create()">
           {{ 'tags.add' | t }}
@@ -123,6 +115,7 @@
   </div>
 </div>
 
+<!-- Cảnh báo xác nhận xoá thẻ -->
 @if (pendingDelete(); as pd) {
   <app-confirm-dialog
     [title]="'tags.deleteTitle' | t"

@@ -1,5 +1,5 @@
 import { ListFilesQuery } from '../models/file.model';
-import { CATEGORIES, categoryByKey } from './file-types';
+import { CATEGORIES, NAMED_EXTENSIONS, categoryByKey } from './file-types';
 
 /** Các "lăng kính" hiển thị file (mục 11). */
 export type Lens = 'folder' | 'type' | 'starred' | 'recent' | 'tag';
@@ -24,6 +24,10 @@ export function buildListQuery(mode: Lens, p: ViewParams): ListFilesQuery {
     case 'folder':
       return { ...base, folderId: p.folderId };
     case 'type': {
+      // Lăng kính "Khác": lấy file có đuôi KHÔNG thuộc nhóm nào đã biết.
+      if (p.category === 'other') {
+        return { ...base, excludeExtensions: NAMED_EXTENSIONS.join(','), withPath: true };
+      }
       const cat = categoryByKey((p.category ?? 'other') as never);
       return { ...base, extensions: (cat?.extensions ?? []).join(','), withPath: true };
     }

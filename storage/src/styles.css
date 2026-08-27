@@ -453,6 +453,47 @@ body {
   flex: 1;
 }
 /* Nút tertiary: nền trắng, viền hairline, chữ ink */
+/* Ô tìm theo tên ở giữa thanh công cụ (mọi lăng kính) */
+.toolbar-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  flex: 1 1 auto; /* lấp ĐẦY khoảng giữa tiêu đề và các nút, không chừa khoảng trống */
+  min-width: 200px;
+  margin: 0 12px;
+  padding: 0 10px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-1);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+.toolbar-search .mi {
+  color: var(--ink-subtle);
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+.toolbar-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.16px;
+}
+.toolbar-search-clear {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-subtle);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1580,6 +1621,24 @@ body {
 .tag-row:last-child {
   border-bottom: none;
 }
+/* Thẻ vừa tạo: sáng lên rồi tắt dần trong 2 giây */
+.tag-row--new {
+  animation: tag-flash 2s ease-out;
+}
+@keyframes tag-flash {
+  0% {
+    background: color-mix(in srgb, var(--primary) 45%, transparent);
+    box-shadow: inset 0 0 0 2px var(--primary);
+  }
+  70% {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 60%, transparent);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
+}
 .tag-row--edit {
   flex-wrap: nowrap; /* input + màu + nút Lưu/Huỷ nằm cùng hàng, không xuống dòng */
 }
@@ -1632,45 +1691,6 @@ body {
 .tag-swatch.on {
   border-color: var(--ink);
 }
-/* Swatch màu tuỳ chỉnh: vòng 7 màu (rainbow) để dễ nhận ra là chọn màu tự do */
-.tag-swatch--custom {
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background: conic-gradient(
-    #f44336,
-    #ff9800,
-    #ffeb3b,
-    #4caf50,
-    #00bcd4,
-    #3f51b5,
-    #9c27b0,
-    #f44336
-  );
-}
-/* Chấm nhỏ ở giữa hiện màu đang chọn (đè lên vòng rainbow) */
-.tag-swatch-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--canvas);
-}
-.tag-swatch--custom input[type='color'] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  border: none;
-  padding: 0;
-}
-/* Nút màu ngẫu nhiên (xúc xắc) */
-.tag-swatch--random {
-  display: grid;
-  place-items: center;
-  background: var(--surface-1);
-  color: var(--ink);
-}
-
 /* Form thêm thẻ */
 .tag-add {
   display: flex;

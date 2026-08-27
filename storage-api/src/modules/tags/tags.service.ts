@@ -21,7 +21,7 @@ export class TagsService {
   async list(userId: string): Promise<TagWithCount[]> {
     const tags = await this.prisma.tag.findMany({
       where: { userId },
-      orderBy: { name: 'asc' },
+      orderBy: { createdAt: 'asc' }, // thẻ mới nhất ở CUỐI danh sách
       include: { _count: { select: { files: true, folders: true } } },
     });
     return tags.map(({ _count, ...t }) => ({ ...t, fileCount: _count.files + _count.folders }));
