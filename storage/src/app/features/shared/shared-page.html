@@ -47,3 +47,7 @@
     </tbody>
   </table>
 }
+
+@if (previewTarget(); as pf) {
+  <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
+}

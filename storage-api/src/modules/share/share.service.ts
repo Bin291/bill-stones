@@ -20,7 +20,7 @@ import {
   verifySharePassword,
 } from './share.crypto';
 
-interface AuthUserRow {
+export interface AuthUserRow {
   id: string;
   email: string;
 }
@@ -213,6 +213,27 @@ export class ShareService {
       // Nếu không đọc được schema auth (VD local Postgres không phải Supabase),
       // coi như không tìm thấy — dialog báo lỗi rõ ràng.
       return null;
+    }
+  }
+
+  /**
+   * Gợi ý email khi mời chia sẻ — tìm user đã có tài khoản trên app theo tiền
+   * tố email, để người dùng không phải gõ chính xác 100% (mục Invite users).
+   * Loại chính mình, giới hạn kết quả để tránh dò quét toàn bộ danh sách user.
+   */
+  async searchUsersByEmail(userId: string, query: string): Promise<AuthUserRow[]> {
+    const q = query.trim();
+    if (q.length < 2) return [];
+    try {
+      const rows = await this.prisma.$queryRaw<AuthUserRow[]>`
+        select id::text, email from auth.users
+        where email ilike ${q + '%'} and id != ${userId}::uuid
+        order by email asc
+        limit 8
+      `;
+      return rows;
+    } catch {
+      return [];
     }
   }
 
