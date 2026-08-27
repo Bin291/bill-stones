@@ -198,27 +198,24 @@
       }
       <div class="col" style="gap: 8px; max-width: 320px">
         @if (account()?.hasPassword) {
-          <input
-            class="auth-input"
-            type="password"
+          <app-password-input
+            autocomplete="current-password"
             [placeholder]="'settings.currentPassword' | t"
             [value]="currentPassword()"
-            (input)="currentPassword.set($any($event.target).value)"
+            (valueChange)="currentPassword.set($event)"
           />
         }
-        <input
-          class="auth-input"
-          type="password"
+        <app-password-input
+          autocomplete="new-password"
           [placeholder]="'settings.newPassword' | t"
           [value]="newPassword()"
-          (input)="newPassword.set($any($event.target).value)"
+          (valueChange)="newPassword.set($event)"
         />
-        <input
-          class="auth-input"
-          type="password"
+        <app-password-input
+          autocomplete="new-password"
           [placeholder]="'settings.confirmPassword' | t"
           [value]="confirmPassword()"
-          (input)="confirmPassword.set($any($event.target).value)"
+          (valueChange)="confirmPassword.set($event)"
         />
         <button
           class="btn btn-primary"

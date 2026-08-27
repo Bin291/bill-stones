@@ -4,7 +4,10 @@
   (dragover)="onDragOver($event)"
   (dragleave)="onDragLeave()"
   (drop)="onDrop($event)"
-  (click)="closeMenu(); sortMenuOpen.set(false); uploadMenuOpen.set(false)"
+  (click)="onRootClick()"
+  (contextmenu)="onRootContextMenu($event)"
+  (mousedown)="onRootMouseDown($event)"
+  [class.marquee-selecting]="marqueeRect()"
 >
   <div class="toolbar">
     @if (isFolderLens()) {
@@ -170,7 +173,7 @@
     @if (displayFolders().length > 0) {
       <h2
         class="explorer-section-title"
-        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: inline-flex; width: fit-content; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
         (click)="foldersExpanded.set(!foldersExpanded())"
       >
         <span class="mi" style="transition: transform 0.2s;" [style.transform]="foldersExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
@@ -185,6 +188,8 @@
               [class.selected]="isSelected('folder', folder.id)"
               (click)="openFolder(folder)"
               (contextmenu)="openMenu($event, 'folder', folder)"
+              [attr.data-id]="folder.id"
+              data-kind="folder"
             >
               @if (selectionMode()) {
                 <span class="card-check" [class.on]="isSelected('folder', folder.id)">
@@ -249,7 +254,7 @@
     @if (displayFiles().length > 0) {
       <h2
         class="explorer-section-title"
-        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: inline-flex; width: fit-content; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
         (click)="filesExpanded.set(!filesExpanded())"
       >
         <span class="mi" style="transition: transform 0.2s;" [style.transform]="filesExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
@@ -264,6 +269,8 @@
               [class.selected]="isSelected('file', file.id)"
               (click)="openFile(file)"
               (contextmenu)="openMenu($event, 'file', file)"
+              [attr.data-id]="file.id"
+              data-kind="file"
             >
               @if (selectionMode()) {
                 <span class="card-check" [class.on]="isSelected('file', file.id)">
@@ -339,7 +346,7 @@
     @if (displayFolders().length > 0) {
       <h2
         class="explorer-section-title"
-        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: inline-flex; width: fit-content; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
         (click)="foldersExpanded.set(!foldersExpanded())"
       >
         <span class="mi" style="transition: transform 0.2s;" [style.transform]="foldersExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
@@ -361,6 +368,8 @@
                 [class.selected]="isSelected('folder', folder.id)"
                 (click)="openFolder(folder)"
                 (contextmenu)="openMenu($event, 'folder', folder)"
+              [attr.data-id]="folder.id"
+              data-kind="folder"
               >
                 <td>
                   <div class="name-cell-inner">
@@ -403,7 +412,7 @@
     @if (displayFiles().length > 0) {
       <h2
         class="explorer-section-title"
-        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
+        style="font-size: 15px; font-weight: 500; color: var(--ink); margin: 24px 0 12px; display: inline-flex; width: fit-content; align-items: center; gap: 8px; cursor: pointer; user-select: none;"
         (click)="filesExpanded.set(!filesExpanded())"
       >
         <span class="mi" style="transition: transform 0.2s;" [style.transform]="filesExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
@@ -425,6 +434,8 @@
                 [class.selected]="isSelected('file', file.id)"
                 (click)="openFile(file)"
                 (contextmenu)="openMenu($event, 'file', file)"
+              [attr.data-id]="file.id"
+              data-kind="file"
               >
                 <td>
                   <div class="name-cell-inner">
@@ -474,6 +485,17 @@
         </div>
       </div>
     </div>
+  }
+
+  <!-- Khung kéo chọn vùng (marquee) kiểu Google Drive -->
+  @if (marqueeRect(); as r) {
+    <div
+      class="marquee-box"
+      [style.left.px]="r.left"
+      [style.top.px]="r.top"
+      [style.width.px]="r.width"
+      [style.height.px]="r.height"
+    ></div>
   }
 </div>
 

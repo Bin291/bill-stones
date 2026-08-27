@@ -564,6 +564,18 @@ body {
   outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
+
+/* Kéo chuột chọn vùng (marquee) kiểu Google Drive */
+.marquee-selecting {
+  user-select: none;
+}
+.marquee-box {
+  position: fixed;
+  z-index: 45;
+  pointer-events: none;
+  border: 1px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
 .card-preview {
   aspect-ratio: 16 / 10; /* mọi thumbnail cùng tỉ lệ → đồng đều */
   width: 100%;
