@@ -89,6 +89,16 @@
 
       <!-- Action Buttons -->
       <div class="hidden sm:flex items-center gap-3">
+        <!-- Theme Toggle (Light/Dark) -->
+        <button
+          type="button"
+          (click)="toggleTheme()"
+          class="p-2 text-[#c6c6c6] hover:text-white transition-colors cursor-pointer focus:outline-none"
+          [attr.aria-label]="themeIsDark() ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'"
+          title="Sáng / Tối"
+        >
+          <mat-icon>{{ themeIsDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
         @if (isAuthenticated()) {
           <a
             routerLink="/files"
@@ -108,15 +118,25 @@
         }
       </div>
 
-      <!-- Mobile Menu Toggle Button -->
-      <button
-        type="button"
-        (click)="toggleMobileMenu()"
-        class="md:hidden p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
-        aria-label="Toggle Navigation Menu"
-      >
-        <mat-icon>{{ mobileMenuOpen() ? 'close' : 'menu' }}</mat-icon>
-      </button>
+      <!-- Mobile Theme Toggle + Menu Button -->
+      <div class="md:hidden flex items-center gap-1">
+        <button
+          type="button"
+          (click)="toggleTheme()"
+          class="p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
+          [attr.aria-label]="themeIsDark() ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'"
+        >
+          <mat-icon>{{ themeIsDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+        <button
+          type="button"
+          (click)="toggleMobileMenu()"
+          class="p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
+          aria-label="Toggle Navigation Menu"
+        >
+          <mat-icon>{{ mobileMenuOpen() ? 'close' : 'menu' }}</mat-icon>
+        </button>
+      </div>
     </div>
 
     <!-- Mobile Dropdown Menu -->
@@ -408,12 +428,12 @@
           viewBox="0 0 1000 50"
         >
           <!-- Background Track 1 -->
-          <line x1="280" y1="25" x2="380" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <line x1="280" y1="25" x2="380" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" class="pipeline-track" />
           <!-- Animated Draw Path 1 -->
           <path id="pipeline-path-1" d="M 280 25 L 380 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
 
           <!-- Background Track 2 -->
-          <line x1="620" y1="25" x2="720" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <line x1="620" y1="25" x2="720" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" class="pipeline-track" />
           <!-- Animated Draw Path 2 -->
           <path id="pipeline-path-2" d="M 620 25 L 720 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
         </svg>
@@ -878,7 +898,7 @@
               <rect x="145" y="135" width="10" height="28" fill="#0f62fe" />
 
               <!-- Active Status Indicators -->
-              <circle cx="150" cy="135" r="5" fill="#ffffff" />
+              <circle cx="150" cy="135" r="5" fill="#ffffff" class="shield-core-dot" />
             </svg>
 
             <!-- Scanning Laser Line Overlay -->

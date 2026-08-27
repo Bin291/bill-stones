@@ -18,6 +18,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { LangService } from '../../core/i18n/lang.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
+import { SettingsService } from '../../core/services/settings.service';
 
 export interface SearchResultItem {
   id: string;
@@ -63,9 +64,11 @@ export class Landing {
   private readonly router = inject(Router);
   readonly langService = inject(LangService);
   private readonly auth = inject(AuthService);
+  private readonly settings = inject(SettingsService);
   readonly isAuthenticated = this.auth.isAuthenticated;
 
   // UI State Signals
+  readonly themeIsDark = signal<boolean>(true);
   readonly mobileMenuOpen = signal<boolean>(false);
   readonly isScrolled = signal<boolean>(false);
   readonly activeNavSection = signal<string>('hero');
@@ -294,6 +297,11 @@ export class Landing {
   constructor() {
     afterNextRender(() => {
       if (isPlatformBrowser(this.platformId)) {
+        // Đồng bộ icon với theme thực tế đang áp trên <html> (SettingsService
+        // đã set data-theme khi được inject; mặc định 'system' -> theo OS).
+        this.themeIsDark.set(
+          document.documentElement.getAttribute('data-theme') !== 'light'
+        );
         // afterNextRender ở đây chạy TRƯỚC khi DOM thật sự "chốt" — nếu bind
         // ScrollTrigger ngay, GSAP giữ tham chiếu tới node sẽ bị thay thế ngay
         // sau đó (animation chạy nhưng vô hình vì áp lên node đã rời DOM).
@@ -305,6 +313,13 @@ export class Landing {
         }, 100);
       }
     });
+  }
+
+  // Bật/tắt giao diện sáng-tối cho landing (dùng chung SettingsService của app).
+  toggleTheme(): void {
+    const nextDark = !this.themeIsDark();
+    this.settings.setTheme(nextDark ? 'dark' : 'light');
+    this.themeIsDark.set(nextDark);
   }
 
   // Truy vấn mẫu -> điều hướng thật sang /search (yêu cầu đăng nhập qua authGuard).
