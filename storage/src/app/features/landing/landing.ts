@@ -594,7 +594,7 @@ export class Landing {
       const scrollY = window.scrollY;
       this.isScrolled.set(scrollY > 40);
 
-      const sections = ['hero', 'how-it-works', 'features', 'sandbox', 'security', 'pricing'];
+      const sections = ['hero', 'features', 'how-it-works', 'security', 'sandbox', 'pricing'];
       for (const sectionId of sections) {
         const el = document.getElementById(sectionId);
         if (el) {

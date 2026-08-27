@@ -1,5 +1,5 @@
 <!-- BillPrime - IBM Carbon Dark Theme Landing Page -->
-<div class="relative min-h-screen bg-[var(--canvas)] text-[var(--ink)] overflow-x-hidden font-sans selection:bg-[#0f62fe] selection:text-white transition-colors duration-300">
+<div class="relative min-h-screen bg-[var(--canvas)] text-[var(--ink)] overflow-x-hidden font-sans selection:bg-[var(--primary)] selection:text-[var(--ink)] transition-colors duration-300">
 
   <!-- ========================================== -->
   <!-- 1. STICKY HEADER NAVIGATION                -->
@@ -7,12 +7,7 @@
   <header
     id="main-nav"
     class="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
-    [class.bg-[var(--canvas)]/90]="isScrolled()"
-    [class.backdrop-blur-md]="isScrolled()"
-    [class.border-b]="isScrolled()"
-    [class.border-[var(--hairline)]]="isScrolled()"
-    [class.py-3]="isScrolled()"
-    [class.py-5]="!isScrolled()"
+    [class.nav-scrolled]="isScrolled()"
   >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
       
@@ -36,13 +31,18 @@
       <nav class="hidden md:flex items-center gap-1">
         <button
           type="button"
+          (click)="scrollToSection('hero')"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'hero'"
+        >
+          {{ 'nav.intro' | t }}
+        </button>
+
+        <button
+          type="button"
           (click)="scrollToSection('features')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-[var(--ink)]]="activeNavSection() === 'features'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'features'"
-          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'features'"
-          [class.border-transparent]="activeNavSection() !== 'features'"
-          [class.hover:text-[var(--ink)]]="true"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'features'"
         >
           {{ 'nav.features' | t }}
         </button>
@@ -50,40 +50,28 @@
         <button
           type="button"
           (click)="scrollToSection('how-it-works')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-[var(--ink)]]="activeNavSection() === 'how-it-works'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'how-it-works'"
-          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'how-it-works'"
-          [class.border-transparent]="activeNavSection() !== 'how-it-works'"
-          [class.hover:text-[var(--ink)]]="true"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'how-it-works'"
         >
           {{ 'nav.howItWorks' | t }}
         </button>
 
         <button
           type="button"
-          (click)="scrollToSection('sandbox')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-[var(--ink)]]="activeNavSection() === 'sandbox'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'sandbox'"
-          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'sandbox'"
-          [class.border-transparent]="activeNavSection() !== 'sandbox'"
-          [class.hover:text-[var(--ink)]]="true"
+          (click)="scrollToSection('security')"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'security'"
         >
-          {{ 'nav.sandbox' | t }}
+          {{ 'nav.securityPrivacy' | t }}
         </button>
 
         <button
           type="button"
-          (click)="scrollToSection('security')"
-          class="px-4 py-2 text-sm font-normal transition-colors cursor-pointer border-b-2"
-          [class.text-[var(--ink)]]="activeNavSection() === 'security'"
-          [class.border-[#0f62fe]]="activeNavSection() === 'security'"
-          [class.text-[var(--ink-muted)]]="activeNavSection() !== 'security'"
-          [class.border-transparent]="activeNavSection() !== 'security'"
-          [class.hover:text-[var(--ink)]]="true"
+          (click)="scrollToSection('sandbox')"
+          class="nav-link px-4 py-2 text-sm font-normal cursor-pointer"
+          [class.nav-link-active]="activeNavSection() === 'sandbox'"
         >
-          {{ 'nav.securityPrivacy' | t }}
+          {{ 'nav.sandbox' | t }}
         </button>
       </nav>
 
@@ -134,6 +122,13 @@
       <div class="md:hidden bg-[var(--surface-1)] border-b border-[var(--hairline)] px-4 pt-3 pb-6 flex flex-col gap-3">
         <button
           type="button"
+          (click)="scrollToSection('hero')"
+          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
+        >
+          {{ 'nav.intro' | t }}
+        </button>
+        <button
+          type="button"
           (click)="scrollToSection('features')"
           class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
         >
@@ -148,19 +143,19 @@
         </button>
         <button
           type="button"
-          (click)="scrollToSection('sandbox')"
-          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
-        >
-          {{ 'nav.sandbox' | t }}
-        </button>
-        <button
-          type="button"
           (click)="scrollToSection('security')"
           class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
         >
           {{ 'nav.securityPrivacy' | t }}
         </button>
-        
+        <button
+          type="button"
+          (click)="scrollToSection('sandbox')"
+          class="text-left py-2 text-base font-normal text-[var(--ink-muted)] hover:text-[var(--ink)] border-b border-[var(--hairline)]"
+        >
+          {{ 'nav.sandbox' | t }}
+        </button>
+
         <!-- Mobile Theme Toggle -->
         <button
           type="button"
@@ -187,7 +182,7 @@
   <!-- ========================================== -->
   <section id="hero" class="relative min-h-screen flex items-center justify-center pt-24 pb-16 carbon-grid-lines">
     <!-- Subtle top glow -->
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 max-w-4xl h-80 bg-[#0f62fe]/10 blur-[120px] pointer-events-none rounded-full"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 max-w-4xl h-80 bg-[var(--primary)]/10 blur-[120px] pointer-events-none rounded-full"></div>
 
     <div class="hero-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
       
@@ -211,9 +206,9 @@
               <button
                 type="button"
                 (click)="setQuery(prompt)"
-                class="carbon-tag hover:border-[#0f62fe] hover:text-[var(--ink)] transition-colors cursor-pointer text-left"
+                class="carbon-tag hover:border-[var(--primary)] hover:text-[var(--ink)] transition-colors cursor-pointer text-left"
               >
-                <mat-icon class="text-xs text-[#0f62fe]">search</mat-icon>
+                <mat-icon class="text-xs text-[var(--primary)]">search</mat-icon>
                 <span>{{ prompt | t }}</span>
               </button>
             }
@@ -265,19 +260,19 @@
             <div class="flex items-center gap-2">
               <div class="w-3 h-3 bg-[#fa4d56]"></div>
               <div class="w-3 h-3 bg-[#f1c21b]"></div>
-              <div class="w-3 h-3 bg-[#42be65]"></div>
+              <div class="w-3 h-3 bg-[var(--success)]"></div>
               <span class="font-mono text-xs text-[var(--ink-subtle)] ml-2">billprime://vault/semantic-indexer</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#42be65] animate-ping"></span>
-              <span class="text-[11px] font-mono text-[#42be65]">VECTOR_ENGINE: ACTIVE</span>
+              <span class="w-2 h-2 rounded-full bg-[var(--success)] animate-ping"></span>
+              <span class="text-[11px] font-mono text-[var(--success)]">VECTOR_ENGINE: ACTIVE</span>
             </div>
           </div>
 
           <!-- Mockup Search Input Simulation -->
           <div class="p-5 border-b border-[var(--hairline)] bg-[var(--canvas)]/60">
-            <div class="flex items-center bg-[var(--surface-1)] border border-[#0f62fe] px-3.5 py-2.5 gap-3">
-              <mat-icon class="text-[#0f62fe]">search</mat-icon>
+            <div class="flex items-center bg-[var(--surface-2)] border border-[var(--primary)] px-3.5 py-2.5 gap-3">
+              <mat-icon class="text-[var(--primary)]">search</mat-icon>
               <div class="flex-1 font-mono text-sm text-[var(--ink)] flex items-center">
                 <span id="hero-typed-input" class="text-[var(--ink)]"></span>
                 <span class="typewriter-cursor ml-0.5"></span>
@@ -296,7 +291,7 @@
             <!-- Result Item 1 -->
             <button
               type="button"
-              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[#0f62fe] transition-colors cursor-pointer text-left w-full"
+              class="carbon-card p-3.5 flex flex-col gap-2 hover:border-[var(--primary)] transition-colors cursor-pointer text-left w-full"
               (click)="openModal('preview', allSearchResults[0])"
             >
               <div class="flex items-start justify-between w-full">
@@ -311,16 +306,16 @@
                     <div class="text-xs text-[var(--ink-subtle)] font-mono">1.2 MB // Cập nhật: 18/08/2024</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 bg-[#42be65]/10 border border-[#42be65]/30 px-2 py-0.5 text-[#42be65] text-xs font-mono font-medium">
+                <div class="flex items-center gap-1.5 bg-[var(--success)]/10 border border-[var(--success)]/30 px-2 py-0.5 text-[var(--success)] text-xs font-mono font-medium">
                   <mat-icon class="text-xs scale-75">verified</mat-icon>
                   <span>99.4% MATCH</span>
                 </div>
               </div>
 
               <!-- OCR Extract Highlight -->
-              <div class="bg-[var(--canvas)] p-2.5 border-l-2 border-[#0f62fe] text-xs text-[var(--ink-muted)] font-mono leading-relaxed w-full">
+              <div class="bg-[var(--canvas)] p-2.5 border-l-2 border-[var(--primary)] text-xs text-[var(--ink-muted)] font-mono leading-relaxed w-full">
                 <span class="text-[var(--ink-subtle)]">{{ 'landing.mockupOcrExtract' | t }}:</span>
-                TỔNG TIỀN: <span class="bg-[#0f62fe]/30 text-white px-1">245.000 VNĐ</span>. Chi tiết: 02 Cà phê phin sữa đá, 01 Trà sen vàng. MST: 0302821264.
+                TỔNG TIỀN: <span class="bg-[var(--primary)]/30 text-[var(--ink)] px-1">245.000 VNĐ</span>. Chi tiết: 02 Cà phê phin sữa đá, 01 Trà sen vàng. MST: 0302821264.
               </div>
 
               <div class="flex items-center justify-between text-[11px] text-[var(--ink-subtle)] pt-1 w-full">
@@ -342,7 +337,7 @@
             >
               <div class="flex items-start justify-between w-full">
                 <div class="flex items-center gap-2.5">
-                  <div class="w-7 h-7 bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-mono text-xs">
+                  <div class="w-7 h-7 bg-[var(--primary)]/20 text-[var(--primary)] flex items-center justify-center font-mono text-xs">
                     DOC
                   </div>
                   <div>
@@ -350,14 +345,14 @@
                     <div class="text-xs text-[var(--ink-subtle)] font-mono">4.8 MB // Cập nhật: 12/05/2024</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 bg-[var(--success)]/10 border border-[var(--success)]/20 px-2 py-0.5 text-[var(--success)] text-xs font-mono font-medium">
+                <div class="flex items-center gap-1.5 bg-[var(--success)]/10 border border-[var(--success)]/30 px-2 py-0.5 text-[var(--success)] text-xs font-mono font-medium">
                   <mat-icon class="text-xs scale-75">verified</mat-icon>
                   <span>97.8% MATCH</span>
                 </div>
               </div>
               <div class="bg-[var(--canvas)] p-2.5 border-l-2 border-[var(--primary)] text-xs text-[var(--ink-muted)] font-mono leading-relaxed w-full">
                 <span class="text-[var(--ink-subtle)]">{{ 'landing.mockupOcrExtract' | t }}:</span>
-                HỢP ĐỒNG THUÊ: <span class="bg-[var(--primary)]/20 text-[var(--ink)] px-1">Landmark 81</span>. Giá: 28.000.000 VNĐ/tháng. Thời hạn 12 tháng.
+                HỢP ĐỒNG THUÊ: <span class="bg-[var(--primary)]/30 text-[var(--ink)] px-1">Landmark 81</span>. Giá: 28.000.000 VNĐ/tháng. Thời hạn 12 tháng.
               </div>
             </button>
 
@@ -369,7 +364,7 @@
             >
               <div class="flex items-start justify-between w-full">
                 <div class="flex items-center gap-2.5">
-                  <div class="w-7 h-7 bg-[#8a3ffc]/10 text-[#8a3ffc] flex items-center justify-center font-mono text-xs">
+                  <div class="w-7 h-7 bg-[#8a3ffc]/20 text-[#be95ff] flex items-center justify-center font-mono text-xs">
                     IMG
                   </div>
                   <div>
@@ -377,7 +372,7 @@
                     <div class="text-xs text-[var(--ink-subtle)] font-mono">3.1 MB // Vision OCR</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 bg-[var(--primary)]/10 border border-[var(--primary)]/20 px-2 py-0.5 text-[var(--primary)] text-xs font-mono font-medium">
+                <div class="flex items-center gap-1.5 bg-[var(--primary)]/10 border border-[var(--primary)]/30 px-2 py-0.5 text-[var(--primary)] text-xs font-mono font-medium">
                   <span>95.6% MATCH</span>
                 </div>
               </div>
@@ -391,145 +386,6 @@
             <span class="text-[var(--primary)]">CÔ LẬP THEO TÀI KHOẢN</span>
           </div>
 
-        </div>
-
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================== -->
-  <!-- 3. HOW BILLPRIME WORKS (Pinned Sequence)   -->
-  <!-- ========================================== -->
-  <section id="how-it-works" class="relative min-h-screen py-24 bg-[var(--canvas)] border-t border-[var(--hairline)] flex flex-col justify-center">
-    
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-      
-      <!-- Section Header -->
-      <div class="mb-16 max-w-2xl">
-        <div class="flex items-center gap-2 mb-3">
-          <div class="w-2 h-2 bg-[var(--brand)]"></div>
-          <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
-            {{ 'landing.howItWorksEyebrow' | t }}
-          </span>
-        </div>
-        <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.howItWorksTitle' | t }}</h2>
-        <p class="body-long-01 text-[var(--ink-muted)] mt-2">
-          {{ 'landing.howItWorksSubtitle' | t }}
-        </p>
-      </div>
-
-      <!-- Interactive 3-Step Sequence Pipeline -->
-      <div class="relative grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-        
-        <!-- SVG Pipeline Overlay Connector Lines (Visible on Desktop) -->
-        <svg
-          class="hidden md:block absolute top-1/2 left-0 w-full h-12 -translate-y-1/2 pointer-events-none z-0"
-          preserveAspectRatio="none"
-          viewBox="0 0 1000 50"
-        >
-          <!-- Background Track 1 -->
-          <line x1="280" y1="25" x2="380" y2="25" stroke="var(--hairline)" stroke-width="2" stroke-dasharray="4 4" />
-          <!-- Animated Draw Path 1 -->
-          <path id="pipeline-path-1" d="M 280 25 L 380 25" stroke="var(--brand)" stroke-width="2" class="pipeline-draw" />
-
-          <!-- Background Track 2 -->
-          <line x1="620" y1="25" x2="720" y2="25" stroke="var(--hairline)" stroke-width="2" stroke-dasharray="4 4" />
-          <!-- Animated Draw Path 2 -->
-          <path id="pipeline-path-2" d="M 620 25 L 720 25" stroke="var(--brand)" stroke-width="2" class="pipeline-draw" />
-        </svg>
-
-        <!-- STEP 1 CARD -->
-        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10">
-          <div>
-            <div class="flex items-center justify-between mb-6">
-              <span class="font-mono text-3xl font-light text-[var(--brand)]">01</span>
-              <span class="carbon-tag text-[10px]">INGESTION & SHARDING</span>
-            </div>
-            
-            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step1Title' | t }}</h3>
-            <p class="body-short-01 mb-6">
-              {{ 'landing.step1Desc' | t }}
-            </p>
-          </div>
-
-          <!-- Step Feature Visual Pill -->
-          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
-            <div class="flex justify-between text-[var(--ink-muted)]">
-              <span>{{ 'landing.step1Meta1' | t }}</span>
-              <span class="text-[var(--success)]">{{ 'landing.step1Meta1Val' | t }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>{{ 'landing.step1Meta2' | t }}</span>
-              <span>{{ 'landing.step1Meta2Val' | t }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>{{ 'landing.step1Meta3' | t }}</span>
-              <span class="text-[var(--brand-light)]">{{ 'landing.step1Meta3Val' | t }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 2 CARD -->
-        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10">
-          <div>
-            <div class="flex items-center justify-between mb-6">
-              <span class="font-mono text-3xl font-light text-[var(--brand)]">02</span>
-              <span class="carbon-tag carbon-tag-blue text-[10px]">AI OCR & VECTORIZATION</span>
-            </div>
-            
-            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step2Title' | t }}</h3>
-            <p class="body-short-01 mb-6">
-              {{ 'landing.step2Desc' | t }}
-            </p>
-          </div>
-
-          <!-- Step Feature Visual Pill -->
-          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
-            <div class="flex justify-between text-[var(--ink-muted)]">
-              <span>{{ 'landing.step2Meta1' | t }}</span>
-              <span class="text-[var(--brand-light)]">{{ 'landing.step2Meta1Val' | t }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>{{ 'landing.step2Meta2' | t }}</span>
-              <span class="text-[var(--success)]">{{ 'landing.step2Meta2Val' | t }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>{{ 'landing.step2Meta3' | t }}</span>
-              <span>{{ 'landing.step2Meta3Val' | t }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 3 CARD -->
-        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10">
-          <div>
-            <div class="flex items-center justify-between mb-6">
-              <span class="font-mono text-3xl font-light text-[var(--brand)]">03</span>
-              <span class="carbon-tag carbon-tag-green text-[10px]">SEMANTIC RETRIEVAL</span>
-            </div>
-            
-            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step3Title' | t }}</h3>
-            <p class="body-short-01 mb-6">
-              {{ 'landing.step3Desc' | t }}
-            </p>
-          </div>
-
-          <!-- Step Feature Visual Pill -->
-          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
-            <div class="flex justify-between text-[var(--ink-muted)]">
-              <span>{{ 'landing.step3Meta1' | t }}</span>
-              <span class="text-[var(--success)]">{{ 'landing.step3Meta1Val' | t }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>{{ 'landing.step3Meta2' | t }}</span>
-              <span class="text-[#78a9ff]">{{ 'landing.step3Meta2Val' | t }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>{{ 'landing.step3Meta3' | t }}</span>
-              <span>{{ 'landing.step3Meta3Val' | t }}</span>
-            </div>
-          </div>
         </div>
 
       </div>
@@ -618,147 +474,139 @@
   </section>
 
   <!-- ========================================== -->
-  <!-- 5. INTERACTIVE SEARCH SANDBOX EXPLORER    -->
+  <!-- 3. HOW BILLPRIME WORKS (Pinned Sequence)   -->
   <!-- ========================================== -->
-  <section id="sandbox" class="relative py-24 bg-[var(--surface-1)] border-t border-[var(--hairline)]">
+  <section id="how-it-works" class="relative min-h-screen py-24 bg-[var(--canvas)] border-t border-[var(--hairline)] flex flex-col justify-center">
+    
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
       
       <!-- Section Header -->
-      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-        <div>
-          <div class="flex items-center gap-2 mb-3">
-            <div class="w-2 h-2 bg-[var(--primary)]"></div>
-            <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
-              {{ 'landing.sandboxEyebrow' | t }}
-            </span>
-          </div>
-          <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.sandboxTitle' | t }}</h2>
-          <p class="body-long-01 text-[var(--ink-muted)] mt-2 max-w-xl">
-            {{ 'landing.sandboxSubtitle' | t }}
-          </p>
+      <div class="mb-16 max-w-2xl">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-2 h-2 bg-[var(--primary)]"></div>
+          <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
+            {{ 'landing.howItWorksEyebrow' | t }}
+          </span>
         </div>
-
-        <!-- Filter Buttons -->
-        <div class="flex flex-wrap gap-2">
-          <button
-            type="button"
-            (click)="setFilter('all')"
-            class="carbon-tag cursor-pointer transition-colors"
-            [class.carbon-tag-blue]="selectedFilter() === 'all'"
-            [class.border-[var(--primary)]]="selectedFilter() === 'all'"
-          >
-            {{ 'landing.sandboxAll' | t }} ({{ allSearchResults.length }})
-          </button>
-          <button
-            type="button"
-            (click)="setFilter('invoice')"
-            class="carbon-tag cursor-pointer transition-colors"
-            [class.carbon-tag-blue]="selectedFilter() === 'invoice'"
-          >
-            {{ 'landing.sandboxInvoice' | t }}
-          </button>
-          <button
-            type="button"
-            (click)="setFilter('contract')"
-            class="carbon-tag cursor-pointer transition-colors"
-            [class.carbon-tag-blue]="selectedFilter() === 'contract'"
-          >
-            {{ 'landing.sandboxContract' | t }}
-          </button>
-          <button
-            type="button"
-            (click)="setFilter('tech')"
-            class="carbon-tag cursor-pointer transition-colors"
-            [class.carbon-tag-blue]="selectedFilter() === 'tech'"
-          >
-            {{ 'landing.sandboxTech' | t }}
-          </button>
-          <button
-            type="button"
-            (click)="setFilter('sheet')"
-            class="carbon-tag cursor-pointer transition-colors"
-            [class.carbon-tag-blue]="selectedFilter() === 'sheet'"
-          >
-            {{ 'landing.sandboxSheet' | t }}
-          </button>
-        </div>
+        <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.howItWorksTitle' | t }}</h2>
+        <p class="body-long-01 text-[var(--ink-muted)] mt-2">
+          {{ 'landing.howItWorksSubtitle' | t }}
+        </p>
       </div>
 
-      <!-- Feedback toast -->
-      @if (copyFeedback()) {
-        <div class="fixed bottom-6 right-6 z-50 bg-[var(--primary)] text-white px-4 py-3 font-mono text-xs flex items-center gap-2 shadow-2xl">
-          <mat-icon class="text-sm">check_circle</mat-icon>
-          <span>{{ copyFeedback() }}</span>
-        </div>
-      }
+      <!-- Interactive 3-Step Sequence Pipeline -->
+      <div class="relative grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        
+        <!-- SVG Pipeline Overlay Connector Lines (Visible on Desktop) -->
+        <svg
+          class="hidden md:block absolute top-1/2 left-0 w-full h-12 -translate-y-1/2 pointer-events-none z-0"
+          preserveAspectRatio="none"
+          viewBox="0 0 1000 50"
+        >
+          <!-- Background Track 1 -->
+          <line x1="280" y1="25" x2="380" y2="25" stroke="var(--hairline)" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Animated Draw Path 1 -->
+          <path id="pipeline-path-1" d="M 280 25 L 380 25" stroke="var(--primary)" stroke-width="2" class="pipeline-draw" />
 
-      <!-- Sandbox Grid List -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        @for (item of filteredResults(); track item.id) {
-          <div class="carbon-card p-5 flex flex-col justify-between gap-4 hover:border-[var(--primary)] transition-all">
+          <!-- Background Track 2 -->
+          <line x1="620" y1="25" x2="720" y2="25" stroke="var(--hairline)" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Animated Draw Path 2 -->
+          <path id="pipeline-path-2" d="M 620 25 L 720 25" stroke="var(--primary)" stroke-width="2" class="pipeline-draw" />
+        </svg>
+
+        <!-- STEP 1 CARD -->
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[var(--surface-1)]">
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <span class="font-mono text-3xl font-light text-[var(--primary)]">01</span>
+              <span class="carbon-tag text-[10px]">INGESTION & SHARDING</span>
+            </div>
             
-            <div>
-              <!-- Header info -->
-              <div class="flex items-start justify-between gap-3 mb-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-[var(--surface-2)] border border-[var(--hairline)] flex items-center justify-center font-mono text-xs text-[var(--primary)]">
-                    {{ item.fileType.split(' ')[0] }}
-                  </div>
-                  <div>
-                    <button
-                      type="button"
-                      class="font-medium text-base text-[var(--ink)] hover:text-[var(--primary)] transition-colors cursor-pointer text-left bg-transparent border-0 p-0 focus:outline-none"
-                      (click)="openModal('preview', item)"
-                    >
-                      {{ item.title }}
-                    </button>
-                    <div class="flex items-center gap-3 text-xs text-[var(--ink-subtle)] font-mono mt-0.5">
-                      <span>{{ item.categoryLabel }}</span>
-                      <span>•</span>
-                      <span>{{ item.fileSize }}</span>
-                      <span>•</span>
-                      <span>{{ item.updatedDate }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex flex-col items-end">
-                  <span class="carbon-tag carbon-tag-green text-[10px]">{{ item.matchScore }}% MATCH</span>
-                  <span class="text-[10px] font-mono text-[var(--ink-subtle)] mt-1">Dist: {{ item.vectorDistance }}</span>
-                </div>
-              </div>
-
-              <!-- OCR Snippet block -->
-              <div class="bg-[var(--canvas)] p-3 border-l-2 border-[var(--primary)] text-xs text-[var(--ink-muted)] font-mono leading-relaxed mb-4">
-                <div class="text-[10px] text-[var(--ink-subtle)] uppercase tracking-wider mb-1">{{ 'landing.mockupOcrExtract' | t }}:</div>
-                <p>{{ item.ocrSnippet }}</p>
-              </div>
-
-              <!-- Extracted Entities Tags -->
-              <div class="flex flex-wrap gap-2 mb-2">
-                @for (entity of item.extractedEntities; track entity.label) {
-                  <div class="bg-[var(--surface-2)] border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-mono flex items-center gap-1.5">
-                    <span class="text-[var(--ink-subtle)]">{{ entity.label }}:</span>
-                    <span class="text-[var(--ink)] font-medium">{{ entity.value }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Actions row -->
-            <div class="pt-3 border-t border-[var(--hairline)] flex items-center">
-              <button
-                type="button"
-                (click)="openModal('preview', item)"
-                class="text-xs text-[var(--primary)] hover:text-[var(--ink)] font-mono flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
-              >
-                <mat-icon class="text-sm">visibility</mat-icon>
-                <span>{{ 'landing.sandboxViewOcr' | t }}</span>
-              </button>
-            </div>
-
+            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step1Title' | t }}</h3>
+            <p class="body-short-01 mb-6">
+              {{ 'landing.step1Desc' | t }}
+            </p>
           </div>
-        }
+
+          <!-- Step Feature Visual Pill -->
+          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[var(--ink-muted)]">
+              <span>{{ 'landing.step1Meta1' | t }}</span>
+              <span class="text-[var(--success)]">{{ 'landing.step1Meta1Val' | t }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ 'landing.step1Meta2' | t }}</span>
+              <span>{{ 'landing.step1Meta2Val' | t }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ 'landing.step1Meta3' | t }}</span>
+              <span class="text-[var(--primary)]">{{ 'landing.step1Meta3Val' | t }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 CARD -->
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[var(--surface-1)]">
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <span class="font-mono text-3xl font-light text-[var(--primary)]">02</span>
+              <span class="carbon-tag carbon-tag-blue text-[10px]">AI OCR & VECTORIZATION</span>
+            </div>
+            
+            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step2Title' | t }}</h3>
+            <p class="body-short-01 mb-6">
+              {{ 'landing.step2Desc' | t }}
+            </p>
+          </div>
+
+          <!-- Step Feature Visual Pill -->
+          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[var(--ink-muted)]">
+              <span>{{ 'landing.step2Meta1' | t }}</span>
+              <span class="text-[var(--primary)]">{{ 'landing.step2Meta1Val' | t }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ 'landing.step2Meta2' | t }}</span>
+              <span class="text-[var(--success)]">{{ 'landing.step2Meta2Val' | t }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ 'landing.step2Meta3' | t }}</span>
+              <span>{{ 'landing.step2Meta3Val' | t }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 CARD -->
+        <div class="how-step-card carbon-card p-6 flex flex-col justify-between relative z-10 bg-[var(--surface-1)]">
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <span class="font-mono text-3xl font-light text-[var(--primary)]">03</span>
+              <span class="carbon-tag carbon-tag-green text-[10px]">SEMANTIC RETRIEVAL</span>
+            </div>
+            
+            <h3 class="heading-02 text-[var(--ink)] mb-3">{{ 'landing.step3Title' | t }}</h3>
+            <p class="body-short-01 mb-6">
+              {{ 'landing.step3Desc' | t }}
+            </p>
+          </div>
+
+          <!-- Step Feature Visual Pill -->
+          <div class="bg-[var(--canvas)] p-3 border border-[var(--hairline)] font-mono text-xs text-[var(--ink-subtle)] flex flex-col gap-1.5">
+            <div class="flex justify-between text-[var(--ink-muted)]">
+              <span>{{ 'landing.step3Meta1' | t }}</span>
+              <span class="text-[var(--success)]">{{ 'landing.step3Meta1Val' | t }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ 'landing.step3Meta2' | t }}</span>
+              <span class="text-[var(--primary)]">{{ 'landing.step3Meta2Val' | t }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ 'landing.step3Meta3' | t }}</span>
+              <span>{{ 'landing.step3Meta3Val' | t }}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -851,55 +699,50 @@
           <div class="relative w-64 h-64 flex items-center justify-center">
             
             <svg class="w-full h-full" viewBox="0 0 300 300">
-              <!-- Outer Hexagonal Cypher Ring 1 -->
-              <circle
-                cx="150"
-                cy="150"
-                r="135"
-                fill="none"
-                stroke="var(--hairline)"
-                stroke-width="1.5"
-                stroke-dasharray="6 8"
-                class="shield-ring-rotate"
-              />
+              <defs>
+                <linearGradient id="lockSweepGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#42be65" stop-opacity="0.9" />
+                  <stop offset="100%" stop-color="#42be65" stop-opacity="0" />
+                </linearGradient>
+              </defs>
 
-              <!-- Inner Concentric Ring 2 -->
-              <circle
-                cx="150"
-                cy="150"
-                r="115"
-                fill="none"
-                stroke="var(--hairline)"
-                stroke-width="1"
-                stroke-dasharray="12 12"
-                class="shield-ring-reverse"
-              />
+              <!-- Vòng nền tĩnh -->
+              <circle cx="150" cy="150" r="120" fill="none" stroke="var(--hairline)" stroke-width="1.5" stroke-dasharray="4 10" />
 
-              <!-- Outer Shield Path with Scroll-Triggered Draw -->
+              <!-- Vòng "sóng radar" quét ra ngoài (thay 2 vòng xoay cũ) -->
+              <circle cx="150" cy="150" r="72" fill="none" stroke="var(--primary)" stroke-width="1.5" class="lock-pulse-ring" />
+              <circle cx="150" cy="150" r="72" fill="none" stroke="#42be65" stroke-width="1.5" class="lock-pulse-ring lock-pulse-ring--delay" />
+
+              <!-- Tia quét radar xoay -->
+              <line x1="150" y1="150" x2="150" y2="30" stroke="url(#lockSweepGrad)" stroke-width="2.5" class="lock-sweep" />
+
+              <!-- Ổ khoá: quai khoá (vẽ dần khi cuộn) -->
               <path
-                d="M 150 40 L 230 75 L 230 160 C 230 215 150 255 150 255 C 150 255 70 215 70 160 L 70 75 Z"
-                fill="rgba(15, 98, 254, 0.05)"
+                d="M 116 158 L 116 122 A 34 34 0 0 1 184 122 L 184 158"
+                fill="none"
+                stroke="var(--primary)"
+                stroke-width="7"
+                stroke-linecap="round"
+                class="shield-draw-path"
+              />
+
+              <!-- Thân khoá (vẽ dần khi cuộn) -->
+              <rect
+                x="94"
+                y="150"
+                width="112"
+                height="104"
+                rx="14"
+                fill="rgba(15, 98, 254, 0.06)"
                 stroke="var(--primary)"
                 stroke-width="2.5"
                 class="shield-draw-path"
               />
 
-              <!-- Inner Shield Accent -->
-              <path
-                d="M 150 65 L 210 92 L 210 155 C 210 198 150 230 150 230 C 150 230 90 198 90 155 L 90 92 Z"
-                fill="none"
-                stroke="var(--primary)"
-                stroke-width="1.5"
-                stroke-dasharray="4 4"
-                class="shield-draw-path"
-              />
-
-              <!-- Central Keylock Core -->
-              <circle cx="150" cy="135" r="16" fill="var(--primary)" />
-              <rect x="145" y="135" width="10" height="28" fill="var(--primary)" />
-
-              <!-- Active Status Indicators -->
-              <circle cx="150" cy="135" r="5" fill="#ffffff" />
+              <!-- Lỗ khoá -->
+              <circle cx="150" cy="192" r="13" fill="var(--primary)" />
+              <rect x="144" y="192" width="12" height="30" fill="var(--primary)" />
+              <circle cx="150" cy="192" r="5" fill="#ffffff" />
             </svg>
 
             <!-- Scanning Laser Line Overlay -->
@@ -931,12 +774,161 @@
   </section>
 
   <!-- ========================================== -->
+  <!-- 5. INTERACTIVE SEARCH SANDBOX EXPLORER    -->
+  <!-- ========================================== -->
+  <section id="sandbox" class="relative py-24 bg-[var(--surface-1)] border-t border-[var(--hairline)]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-2 h-2 bg-[var(--primary)]"></div>
+            <span class="font-mono text-xs text-[var(--ink-subtle)] tracking-wider uppercase">
+              {{ 'landing.sandboxEyebrow' | t }}
+            </span>
+          </div>
+          <h2 class="heading-04 text-[var(--ink)]">{{ 'landing.sandboxTitle' | t }}</h2>
+          <p class="body-long-01 text-[var(--ink-muted)] mt-2 max-w-xl">
+            {{ 'landing.sandboxSubtitle' | t }}
+          </p>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            (click)="setFilter('all')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'all'"
+            [class.border-[var(--primary)]]="selectedFilter() === 'all'"
+          >
+            {{ 'landing.sandboxAll' | t }} ({{ allSearchResults.length }})
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('invoice')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'invoice'"
+          >
+            {{ 'landing.sandboxInvoice' | t }}
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('contract')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'contract'"
+          >
+            {{ 'landing.sandboxContract' | t }}
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('tech')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'tech'"
+          >
+            {{ 'landing.sandboxTech' | t }}
+          </button>
+          <button
+            type="button"
+            (click)="setFilter('sheet')"
+            class="carbon-tag cursor-pointer transition-colors"
+            [class.carbon-tag-blue]="selectedFilter() === 'sheet'"
+          >
+            {{ 'landing.sandboxSheet' | t }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Feedback toast -->
+      @if (copyFeedback()) {
+        <div class="fixed bottom-6 right-6 z-50 bg-[var(--primary)] text-[var(--ink)] px-4 py-3 font-mono text-xs flex items-center gap-2 shadow-2xl">
+          <mat-icon class="text-sm">check_circle</mat-icon>
+          <span>{{ copyFeedback() }}</span>
+        </div>
+      }
+
+      <!-- Sandbox Grid List -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        @for (item of filteredResults(); track item.id) {
+          <div class="carbon-card p-5 flex flex-col justify-between gap-4 hover:border-[var(--primary)] transition-all">
+            
+            <div>
+              <!-- Header info -->
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-[var(--surface-2)] border border-[var(--hairline)] flex items-center justify-center font-mono text-xs text-[var(--primary)]">
+                    {{ item.fileType.split(' ')[0] }}
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      class="font-medium text-base text-[var(--ink)] hover:text-[var(--primary)] transition-colors cursor-pointer text-left bg-transparent border-0 p-0 focus:outline-none"
+                      (click)="openModal('preview', item)"
+                    >
+                      {{ item.title }}
+                    </button>
+                    <div class="flex items-center gap-3 text-xs text-[var(--ink-subtle)] font-mono mt-0.5">
+                      <span>{{ item.categoryLabel }}</span>
+                      <span>•</span>
+                      <span>{{ item.fileSize }}</span>
+                      <span>•</span>
+                      <span>{{ item.updatedDate }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end">
+                  <span class="carbon-tag carbon-tag-green text-[10px]">{{ item.matchScore }}% MATCH</span>
+                  <span class="text-[10px] font-mono text-[var(--ink-subtle)] mt-1">Dist: {{ item.vectorDistance }}</span>
+                </div>
+              </div>
+
+              <!-- OCR Snippet block -->
+              <div class="bg-[var(--canvas)] p-3 border-l-2 border-[var(--primary)] text-xs text-[var(--ink-muted)] font-mono leading-relaxed mb-4">
+                <div class="text-[10px] text-[var(--ink-subtle)] uppercase tracking-wider mb-1">{{ 'landing.mockupOcrExtract' | t }}:</div>
+                <p>{{ item.ocrSnippet }}</p>
+              </div>
+
+              <!-- Extracted Entities Tags -->
+              <div class="flex flex-wrap gap-2 mb-2">
+                @for (entity of item.extractedEntities; track entity.label) {
+                  <div class="bg-[var(--surface-2)] border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-mono flex items-center gap-1.5">
+                    <span class="text-[var(--ink-subtle)]">{{ entity.label }}:</span>
+                    <span class="text-[var(--ink)] font-medium">{{ entity.value }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Actions row -->
+            <div class="pt-3 border-t border-[var(--hairline)] flex items-center">
+              <button
+                type="button"
+                (click)="openModal('preview', item)"
+                class="text-xs text-[var(--primary)] hover:text-[var(--ink)] font-mono flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+              >
+                <mat-icon class="text-sm">visibility</mat-icon>
+                <span>{{ 'landing.sandboxViewOcr' | t }}</span>
+              </button>
+            </div>
+
+          </div>
+        }
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
   <!-- 8. BOTTOM CTA SECTION                      -->
   <!-- ========================================== -->
   <section id="pricing" class="relative py-28 bg-[var(--canvas)] border-t border-[var(--hairline)] text-center carbon-grid-lines">
     
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       
+      
+
       <h2 class="display-01 text-[var(--ink)] mb-6">
         {{ 'landing.ctaTitle' | t }}
       </h2>
@@ -953,7 +945,7 @@
           aria-label="Email"
           [(ngModel)]="registerEmail"
           [placeholder]="'landing.emailPlaceholder' | t"
-          class="flex-1 bg-[var(--surface-1)] border border-[var(--hairline)] focus:border-[var(--primary)] px-4 py-3 text-sm text-[var(--ink)] font-mono placeholder:text-[var(--ink-subtle)] focus:outline-none rounded-none"
+          class="flex-1 bg-[var(--surface-2)] border border-[var(--hairline)] focus:border-[var(--primary)] px-4 py-3 text-sm text-[var(--ink)] font-mono placeholder:text-[var(--ink-subtle)] focus:outline-none rounded-none"
         />
         <button
           type="button"
@@ -987,7 +979,7 @@
   <!-- ========================================== -->
   <!-- 9. FOOTER SECTION (IBM Carbon Dark)        -->
   <!-- ========================================== -->
-  <footer class="bg-[var(--surface-1)] border-t border-[var(--hairline)] pt-16 pb-12 text-base text-[var(--ink-muted)]">
+  <footer class="bg-[var(--surface-1)] border-t border-[var(--hairline)] pt-16 pb-12 text-base text-[var(--ink-subtle)]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <div class="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-[var(--hairline)]">
@@ -1073,7 +1065,7 @@
           <button
             type="button"
             (click)="closeModal()"
-            class="text-[var(--ink-subtle)] hover:text-[var(--ink)] p-1 cursor-pointer"
+            class="text-[var(--ink-subtle)] hover:text-[var(--ink)] p-1"
             aria-label="Close dialog"
           >
             <mat-icon>close</mat-icon>
@@ -1087,7 +1079,7 @@
               <mat-icon class="text-4xl text-[var(--success)]">check_circle</mat-icon>
               <div class="text-lg font-medium text-[var(--ink)]">Chào mừng bạn đến với BillPrime!</div>
               <p class="text-xs text-[var(--ink-muted)] font-mono">
-                Liên kết kích hoạt Vault an sau khi gửi tới email của bạn. Hãy kiểm tra hòm thư.
+                Liên kết kích hoạt Vault an toàn đã được gửi tới email của bạn. Hãy kiểm tra hòm thư.
               </p>
             </div>
           } @else {
