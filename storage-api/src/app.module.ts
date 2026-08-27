@@ -11,6 +11,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { FoldersModule } from './modules/folders/folders.module';
 import { FilesModule } from './modules/files/files.module';
+import { DocPreviewModule } from './modules/files/doc-preview.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { ThumbnailModule } from './modules/thumbnail/thumbnail.module';
 import { HlsModule } from './modules/hls/hls.module';
@@ -19,6 +20,7 @@ import { TrashModule } from './modules/trash/trash.module';
 import { ShareModule } from './modules/share/share.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { TagsModule } from './modules/tags/tags.module';
+import { UsersModule } from './modules/users/users.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -39,11 +41,13 @@ import { AppService } from './app.service';
     AuthModule,
     FoldersModule,
     FilesModule,
+    DocPreviewModule,
     UploadsModule,
     TrashModule,
     NotificationModule,
     ShareModule,
     TagsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [

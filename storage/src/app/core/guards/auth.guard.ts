@@ -35,18 +35,8 @@ export const guestGuard: CanActivateFn = () => {
   );
 };
 
-/** Điều hướng trang chủ: đã đăng nhập -> /files; chưa thì hiển thị Landing ngay tại '/' (không redirect). */
+/** Điều hướng trang chủ: cho phép truy cập '/' mọi lúc. */
 export const rootGuard: CanActivateFn = () => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-  return toObservable(auth.ready).pipe(
-    filter((ready) => ready),
-    take(1),
-    map(() => {
-      if (auth.isAuthenticated() && auth.isEmailConfirmed()) {
-        return router.createUrlTree(['/files']);
-      }
-      return true;
-    }),
-  );
+  return true;
 };
+

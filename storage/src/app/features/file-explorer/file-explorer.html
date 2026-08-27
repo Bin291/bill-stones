@@ -181,7 +181,29 @@
               />
             } @else {
               <div class="card-name">{{ folderDisplayName(folder.name) }}</div>
-              <div class="card-sub">{{ 'common.folder' | t }}</div>
+              <div class="card-metarow">
+                <span class="card-sub">{{ 'common.folder' | t }}</span>
+                @if (folder.tags && folder.tags.length) {
+                  <span class="card-tags">
+                    @for (tg of visibleTags(folder.tags); track tg.id) {
+                      <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                    }
+                    @if (overflowTags(folder.tags).length) {
+                      <span class="card-tag-more" (click)="$event.stopPropagation()">
+                        +{{ overflowTags(folder.tags).length }}
+                        <span class="card-tag-pop">
+                          @for (tg of overflowTags(folder.tags); track tg.id) {
+                            <span class="card-tag-pop-item">
+                              <span class="card-tag-dot" [style.background]="tg.color"></span>
+                              <span class="card-tag-pop-name">{{ tg.name }}</span>
+                            </span>
+                          }
+                        </span>
+                      </span>
+                    }
+                  </span>
+                }
+              </div>
             }
           </div>
         </div>
@@ -278,24 +300,33 @@
             (contextmenu)="openMenu($event, 'folder', folder)"
           >
             <td>
-              @if (selectionMode()) {
-                <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
-              }
-              <span class="mi" style="color: var(--primary)">folder</span>
-              @if (renamingId() === folder.id) {
-                <input
-                  class="inline-name"
-                  appAutofocus
-                  [value]="renameName()"
-                  (click)="$event.stopPropagation()"
-                  (input)="renameName.set($any($event.target).value)"
-                  (keydown.enter)="confirmRename()"
-                  (keydown.escape)="cancelRename()"
-                  (blur)="confirmRename()"
-                />
-              } @else {
-                {{ folderDisplayName(folder.name) }}
-              }
+              <div class="name-cell-inner">
+                @if (selectionMode()) {
+                  <span class="mi row-check" [class.on]="isSelected('folder', folder.id)">{{ isSelected('folder', folder.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                }
+                <span class="mi" style="color: var(--primary)">folder</span>
+                @if (renamingId() === folder.id) {
+                  <input
+                    class="inline-name"
+                    appAutofocus
+                    [value]="renameName()"
+                    (click)="$event.stopPropagation()"
+                    (input)="renameName.set($any($event.target).value)"
+                    (keydown.enter)="confirmRename()"
+                    (keydown.escape)="cancelRename()"
+                    (blur)="confirmRename()"
+                  />
+                } @else {
+                  {{ folderDisplayName(folder.name) }}
+                  @if (folder.tags && folder.tags.length) {
+                    <span class="card-tags" style="margin-left: 6px">
+                      @for (tg of visibleTags(folder.tags); track tg.id) {
+                        <span class="card-tag-dot" [style.background]="tg.color" [title]="tg.name"></span>
+                      }
+                    </span>
+                  }
+                }
+              </div>
             </td>
             <td>—</td>
             <td>{{ folder.updatedAt | date: 'short' }}</td>
@@ -308,24 +339,30 @@
             (contextmenu)="openMenu($event, 'file', file)"
           >
             <td>
-              @if (selectionMode()) {
-                <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
-              }
-              <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
-              @if (renamingId() === file.id) {
-                <input
-                  class="inline-name"
-                  appAutofocus
-                  [value]="renameName()"
-                  (click)="$event.stopPropagation()"
-                  (input)="renameName.set($any($event.target).value)"
-                  (keydown.enter)="confirmRename()"
-                  (keydown.escape)="cancelRename()"
-                  (blur)="confirmRename()"
-                />
-              } @else {
-                {{ file.name }}
-              }
+              <div class="name-cell-inner">
+                @if (selectionMode()) {
+                  <span class="mi row-check" [class.on]="isSelected('file', file.id)">{{ isSelected('file', file.id) ? 'check_box' : 'check_box_outline_blank' }}</span>
+                }
+                @if (file.thumbnailUrl) {
+                  <img [src]="file.thumbnailUrl" [alt]="file.name" class="row-thumb" />
+                } @else {
+                  <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
+                }
+                @if (renamingId() === file.id) {
+                  <input
+                    class="inline-name"
+                    appAutofocus
+                    [value]="renameName()"
+                    (click)="$event.stopPropagation()"
+                    (input)="renameName.set($any($event.target).value)"
+                    (keydown.enter)="confirmRename()"
+                    (keydown.escape)="cancelRename()"
+                    (blur)="confirmRename()"
+                  />
+                } @else {
+                  {{ file.name }}
+                }
+              </div>
             </td>
             <td>{{ formatBytes(file.size) }}</td>
             <td>{{ file.updatedAt | date: 'short' }}</td>
@@ -372,11 +409,9 @@
       <span class="mi">{{ m.isStarred ? 'star' : 'star_border' }}</span>
       {{ m.isStarred ? ('action.unstar' | t) : ('action.star' | t) }}
     </button>
-    @if (m.kind === 'file') {
-      <button class="menu-item" type="button" (click)="openTag()">
-        <span class="mi">sell</span> {{ 'action.tag' | t }}
-      </button>
-    }
+    <button class="menu-item" type="button" (click)="openTag()">
+      <span class="mi">sell</span> {{ 'action.tag' | t }}
+    </button>
     <button class="menu-item" type="button" (click)="openShare()">
       <span class="mi">share</span> {{ 'share.title' | t }}
     </button>
@@ -411,12 +446,13 @@
   <app-move-dialog [items]="mt" (moved)="onMoved()" (cancelled)="moveTarget.set(null)" />
 }
 
-<!-- Dialog gắn thẻ cho 1 file (thẻ tuỳ chỉnh) -->
+<!-- Dialog gắn thẻ cho 1 file/thư mục (thẻ tuỳ chỉnh) -->
 @if (tagTarget(); as tt) {
   <app-tag-dialog
-    [fileId]="tt.fileId"
+    [fileId]="tt.fileId ?? null"
+    [folderId]="tt.folderId ?? null"
     [assignedIds]="tt.assignedIds"
-    (changed)="load()"
+    (changed)="onTagsChanged($event)"
     (closed)="tagTarget.set(null)"
   />
 }
@@ -447,6 +483,30 @@
   }
 }
 
+<!-- Hỏi lại khi trùng tên file (chính sách 'ask' trong Cài đặt) -->
+@if (conflictPrompt(); as cf) {
+  <div class="modal-backdrop">
+    <div class="modal confirm-modal" style="max-width: 420px">
+      <div class="confirm-body">
+        <span class="mi confirm-icon">warning</span>
+        <h2 class="confirm-title">{{ 'upload.conflictTitle' | t }}</h2>
+        <p class="confirm-message">{{ 'upload.conflictMsg' | t: { name: cf.name } }}</p>
+      </div>
+      <div class="confirm-actions" style="flex-wrap: wrap">
+        <button class="btn" type="button" (click)="resolveConflict('skip')">
+          {{ 'upload.conflictSkip' | t }}
+        </button>
+        <button class="btn" type="button" (click)="resolveConflict('rename')">
+          {{ 'upload.conflictRename' | t }}
+        </button>
+        <button class="btn btn-danger" type="button" (click)="resolveConflict('overwrite')">
+          {{ 'upload.conflictOverwrite' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 <!-- Upload panel (gộp theo mục, gọn, thu gọn được) -->
 @if (hasActiveUploads()) {
   <div class="upload-panel">
@@ -474,7 +534,7 @@
         @for (b of uploadBatches(); track b.id) {
           <div class="upload-item">
             <span class="mi" style="flex: 0 0 auto; color: var(--text-muted)">
-              {{ b.isFolder ? 'folder' : 'draft' }}
+              {{ b.isFolder ? 'folder' : uploadIconOf(b.label) }}
             </span>
             <div class="upload-item-body">
               <div class="upload-name" [title]="b.label">{{ b.label }}</div>

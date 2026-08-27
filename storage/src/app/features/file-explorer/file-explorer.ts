@@ -13,7 +13,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { FilesApiService } from '../../core/services/files-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
-import { UploadService, UploadTask } from '../../core/services/upload.service';
+import {
+  UploadService,
+  UploadTask,
+  UploadConflict,
+  ConflictResolution,
+} from '../../core/services/upload.service';
 import { RefreshService } from '../../core/services/refresh.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { SettingsService } from '../../core/services/settings.service';
@@ -34,16 +39,18 @@ import {
   Folder,
   ListFilesQuery,
   StoredFile,
+  Tag,
 } from '../../core/models/file.model';
-import { categoryByKey, categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
+import { categoryByKey, categoryOf, extensionOf, formatBytes, iconOf } from '../../core/util/file-types';
 import { PrefetchService, ViewBundle } from '../../core/services/prefetch.service';
 import { Lens, ViewParams, buildListQuery, viewKey } from '../../core/util/list-query';
 
 type Mode = 'folder' | 'type' | 'starred' | 'recent' | 'tag';
 
-/** Mục tiêu gắn thẻ cho 1 file (mở dialog tag từ context menu). */
+/** Mục tiêu gắn thẻ cho 1 file HOẶC 1 thư mục (mở dialog tag từ context menu). */
 interface TagTarget {
-  fileId: string;
+  fileId?: string;
+  folderId?: string;
   assignedIds: string[];
 }
 
@@ -175,6 +182,8 @@ export class FileExplorer {
   protected readonly tagTarget = signal<TagTarget | null>(null);
   protected readonly dialog = signal<ExplorerDialog | null>(null);
   protected readonly moveTarget = signal<MoveItem[] | null>(null);
+  protected readonly conflictPrompt = signal<UploadConflict | null>(null);
+  private conflictResolver: ((r: ConflictResolution) => void) | null = null;
 
   private creatingBusy = false;
 
@@ -202,6 +211,11 @@ export class FileExplorer {
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
+
+  /** Icon đúng loại file cho 1 mục upload (dựa trên tên file, ligature Material Icons hợp lệ). */
+  protected uploadIconOf(label: string): string {
+    return iconOf(extensionOf(label));
+  }
 
   /** File ảnh? → thumbnail hiển thị đúng tỉ lệ gốc (object-fit: contain). */
   protected isImage(extension: string): boolean {
@@ -628,16 +642,37 @@ export class FileExplorer {
     this.refresh.bump();
   }
 
-  /** Mở dialog gắn thẻ cho file đang chọn trong context menu. */
+  /** Mở dialog gắn thẻ cho file/thư mục đang chọn trong context menu. */
   openTag(): void {
     const m = this.menu();
-    if (!m || m.kind !== 'file') return;
-    const file = this.fileById(m.id);
-    this.tagTarget.set({
-      fileId: m.id,
-      assignedIds: (file?.tags ?? []).map((t) => t.id),
-    });
+    if (!m) return;
+    if (m.kind === 'file') {
+      const file = this.fileById(m.id);
+      this.tagTarget.set({ fileId: m.id, assignedIds: (file?.tags ?? []).map((t) => t.id) });
+    } else {
+      const folder = this.folderById(m.id);
+      this.tagTarget.set({ folderId: m.id, assignedIds: (folder?.tags ?? []).map((t) => t.id) });
+    }
     this.menu.set(null);
+  }
+
+  /**
+   * Cập nhật lại danh sách thẻ tại chỗ khi dialog gắn thẻ bắn `changed` — không
+   * reload cả danh sách (mục 1.3). `undefined` = thay đổi chung (sửa/xoá thẻ) →
+   * nạp lại nền để đồng bộ tên/màu thẻ đã đổi trên mọi mục đang hiện.
+   */
+  onTagsChanged(payload: { fileId?: string; folderId?: string; tags: Tag[] } | undefined): void {
+    if (!payload) {
+      void this.revalidate();
+      return;
+    }
+    if (payload.fileId) {
+      const fid = payload.fileId;
+      this.files.update((fs) => fs.map((f) => (f.id === fid ? { ...f, tags: payload.tags } : f)));
+    } else if (payload.folderId) {
+      const folId = payload.folderId;
+      this.folders.update((fs) => fs.map((f) => (f.id === folId ? { ...f, tags: payload.tags } : f)));
+    }
   }
 
   // --- Đổi tên INLINE (ngay trên card/hàng, không hộp thoại) ---
@@ -843,7 +878,9 @@ export class FileExplorer {
       const task = this.uploadService.createTask(file);
       batch.tasks.push(task);
       if (!batch.isFolder) batch.firstTask.set(task);
-      const result = await this.uploadService.run(task, file, targetFolderId);
+      const result = await this.uploadService.run(task, file, targetFolderId, (c) =>
+        this.askConflict(c),
+      );
       if (result) batch.done.update((v) => v + 1);
       else if (task.status() !== 'canceled') batch.failed.update((v) => v + 1);
     }
@@ -854,6 +891,20 @@ export class FileExplorer {
 
     void this.revalidate();
     this.refresh.bump();
+  }
+
+  /** Mở hộp thoại "Trùng tên file" và đợi người dùng chọn (mục Cài đặt — Hỏi lại). */
+  private askConflict(c: UploadConflict): Promise<ConflictResolution> {
+    return new Promise((resolve) => {
+      this.conflictResolver = resolve;
+      this.conflictPrompt.set(c);
+    });
+  }
+
+  resolveConflict(choice: ConflictResolution): void {
+    this.conflictPrompt.set(null);
+    this.conflictResolver?.(choice);
+    this.conflictResolver = null;
   }
 
   cancelBatch(batch: UploadBatch): void {
@@ -896,5 +947,10 @@ export class FileExplorer {
   /** Tra file trong danh sách hiện tại theo id (dùng cho menu download). */
   fileById(id: string): StoredFile {
     return this.files().find((f) => f.id === id) as StoredFile;
+  }
+
+  /** Tra thư mục trong danh sách hiện tại theo id (dùng cho gắn thẻ). */
+  private folderById(id: string): Folder | undefined {
+    return this.folders().find((f) => f.id === id);
   }
 }

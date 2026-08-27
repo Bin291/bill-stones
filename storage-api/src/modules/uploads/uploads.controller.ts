@@ -29,6 +29,7 @@ export class UploadsController {
       dto.size,
       dto.mimeType,
       dto.folderId ?? null,
+      dto.duplicateAction,
     );
   }
 

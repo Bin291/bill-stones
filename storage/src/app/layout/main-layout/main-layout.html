@@ -55,11 +55,15 @@
     </div>
 
     <div class="sidebar-foot">
-      <a class="nav-item" routerLink="/profile" routerLinkActive="active">
-        <span class="mi">account_circle</span>
+      <a class="nav-item" [routerLink]="['/settings']" [queryParams]="{ tab: 'profile' }">
+        @if (avatarUrl()) {
+          <img [src]="avatarUrl()" class="sidebar-avatar" alt="Avatar" />
+        } @else {
+          <span class="mi">account_circle</span>
+        }
         {{ profile()?.displayName || ('nav.profile' | t) }}
       </a>
-      <a class="nav-item" routerLink="/settings" routerLinkActive="active">
+      <a class="nav-item" [routerLink]="['/settings']" [queryParams]="{ tab: 'general' }" routerLinkActive="active">
         <span class="mi">settings</span>
         {{ 'nav.settings' | t }}
       </a>

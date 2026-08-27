@@ -74,7 +74,7 @@
                 <button class="btn btn-icon" type="button" (click)="startEdit(tag)" title="Sửa">
                   <span class="mi">edit</span>
                 </button>
-                <button class="btn btn-icon" type="button" (click)="remove(tag)" [disabled]="busy()" title="Xoá">
+                <button class="btn btn-icon" type="button" (click)="requestDelete(tag)" [disabled]="busy()" title="Xoá">
                   <span class="mi" style="color: var(--danger)">delete_outline</span>
                 </button>
               </div>
@@ -122,3 +122,14 @@
     </div>
   </div>
 </div>
+
+@if (pendingDelete(); as pd) {
+  <app-confirm-dialog
+    [title]="'tags.deleteTitle' | t"
+    [message]="'tags.deleteMsg' | t: { name: pd.name, n: pd.fileCount }"
+    [confirmLabel]="'action.delete' | t"
+    [danger]="true"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}

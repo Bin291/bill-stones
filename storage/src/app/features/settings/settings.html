@@ -1,0 +1,277 @@
+<h1 class="page-title">{{ 'settings.title' | t }}</h1>
+
+<div class="settings-shell">
+  <nav class="settings-nav">
+    @for (t of tabs; track t.key) {
+      <button class="settings-nav-item" type="button" [class.active]="tab() === t.key" (click)="setTab(t.key)">
+        <span class="mi">{{ t.icon }}</span>
+        {{ t.labelKey | t }}
+      </button>
+    }
+  </nav>
+
+  <div class="settings-panel">
+    @switch (tab()) {
+      @case ('general') {
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.theme' | t }}</h2>
+          <div class="seg">
+            @for (opt of themeOptions; track opt.value) {
+              <button
+                class="seg-btn"
+                type="button"
+                [class.active]="settings.theme() === opt.value"
+                (click)="settings.setTheme(opt.value)"
+              >
+                {{ opt.labelKey | t }}
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.language' | t }}</h2>
+          <div class="seg">
+            @for (opt of langOptions; track opt.value) {
+              <button
+                class="seg-btn"
+                type="button"
+                [class.active]="lang.lang() === opt.value"
+                (click)="lang.setLang(opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.account' | t }}</h2>
+          <button class="signout-btn" type="button" (click)="signOut()">
+            {{ 'nav.logout' | t }}
+          </button>
+        </section>
+      }
+
+      @case ('profile') {
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.avatar' | t }}</h2>
+          <div class="settings-avatar-row">
+            <div class="settings-avatar">
+              @if (account()?.avatarUrl || auth.profile()?.avatarUrl) {
+                <img [src]="account()?.avatarUrl || auth.profile()?.avatarUrl" alt="" />
+              } @else {
+                <span class="mi" style="font-size: 40px">account_circle</span>
+              }
+            </div>
+            <div class="col" style="gap: 8px">
+              <label class="btn" style="cursor: pointer; width: fit-content">
+                <span class="mi">upload</span> {{ 'settings.avatarUpload' | t }}
+                <input type="file" accept="image/*" hidden [disabled]="avatarBusy()" (change)="onAvatarPick($event)" />
+              </label>
+              @if (account()?.hasCustomAvatar) {
+                <button class="btn" type="button" [disabled]="avatarBusy()" (click)="removeAvatar()">
+                  <span class="mi">delete_outline</span> {{ 'settings.avatarRemove' | t }}
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.displayName' | t }}</h2>
+          <div class="row">
+            <input
+              class="auth-input"
+              type="text"
+              maxlength="80"
+              [value]="displayNameInput()"
+              (input)="displayNameInput.set($any($event.target).value)"
+            />
+            <button class="btn btn-primary" type="button" [disabled]="profileBusy()" (click)="saveDisplayName()">
+              {{ 'settings.save' | t }}
+            </button>
+          </div>
+          @if (profileMsg()) {
+            <p class="card-sub">{{ profileMsg() }}</p>
+          }
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.email' | t }}</h2>
+          <p class="card-sub">{{ account()?.email }}</p>
+          <div class="row" style="margin-top: 8px">
+            <input
+              class="auth-input"
+              type="email"
+              [placeholder]="'settings.changeEmailPh' | t"
+              [value]="newEmail()"
+              (input)="newEmail.set($any($event.target).value)"
+            />
+            <button class="btn" type="button" [disabled]="emailBusy() || !newEmail().trim()" (click)="submitEmailChange()">
+              {{ 'settings.changeEmail' | t }}
+            </button>
+          </div>
+          @if (emailMsg()) {
+            <p class="card-sub">{{ emailMsg() }}</p>
+          }
+        </section>
+      }
+
+      @case ('upload') {
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.uploadWarnSize' | t }}</h2>
+          <input
+            class="auth-input"
+            style="max-width: 160px"
+            type="number"
+            min="1"
+            [value]="uploadWarnInput()"
+            (input)="uploadWarnInput.set($any($event.target).value ? +$any($event.target).value : null)"
+          />
+          @if (account(); as a) {
+            <p class="card-sub">{{ 'settings.uploadWarnSizeHint' | t: { n: a.maxFileSizeMb } }}</p>
+          }
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.duplicatePolicy' | t }}</h2>
+          <div class="seg">
+            @for (opt of duplicateOptions; track opt.value) {
+              <button
+                class="seg-btn"
+                type="button"
+                [class.active]="duplicatePolicyInput() === opt.value"
+                (click)="duplicatePolicyInput.set(opt.value)"
+              >
+                {{ opt.labelKey | t }}
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.defaultFolder' | t }}</h2>
+          <div class="row">
+            <span class="card-sub">
+              <span class="mi" style="font-size: 16px; vertical-align: middle">folder</span>
+              {{ defaultFolderName() || ('settings.defaultFolderRoot' | t) }}
+            </span>
+            <button class="btn" type="button" (click)="folderPickerOpen.set(true)">
+              {{ 'settings.chooseFolder' | t }}
+            </button>
+            @if (defaultFolderName()) {
+              <button class="btn btn-icon" type="button" [title]="'action.cancel' | t" (click)="clearDefaultFolder()">
+                <span class="mi">close</span>
+              </button>
+            }
+          </div>
+        </section>
+
+        <div class="row" style="margin-top: 8px">
+          <button class="btn btn-primary" type="button" [disabled]="uploadPrefsBusy()" (click)="saveUploadPrefs()">
+            {{ 'settings.save' | t }}
+          </button>
+          @if (uploadPrefsMsg()) {
+            <span class="card-sub">{{ uploadPrefsMsg() }}</span>
+          }
+        </div>
+      }
+
+      @case ('plan') {
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.plan' | t }}</h2>
+          <span class="plan-badge">{{ 'settings.planFree' | t }}</span>
+        </section>
+
+        @if (account(); as a) {
+          <section class="settings-block">
+            <h2 class="settings-label">{{ 'settings.usage' | t }}</h2>
+            <div class="usage-bar">
+              <div
+                class="usage-bar-fill"
+                [class.warn]="usageRatio(a) > 0.8"
+                [class.danger]="usageRatio(a) >= 1"
+                [style.width.%]="usageBarWidth(a)"
+              ></div>
+            </div>
+            <p class="card-sub">{{ formatBytes(a.usedBytes) }} / {{ formatBytes(a.storageQuotaBytes) }}</p>
+          </section>
+        }
+      }
+
+      @case ('security') {
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.changePassword' | t }}</h2>
+          <div class="col" style="gap: 8px; max-width: 320px">
+            <input
+              class="auth-input"
+              type="password"
+              [placeholder]="'settings.newPassword' | t"
+              [value]="newPassword()"
+              (input)="newPassword.set($any($event.target).value)"
+            />
+            <input
+              class="auth-input"
+              type="password"
+              [placeholder]="'settings.confirmPassword' | t"
+              [value]="confirmPassword()"
+              (input)="confirmPassword.set($any($event.target).value)"
+            />
+            <button
+              class="btn btn-primary"
+              type="button"
+              style="width: fit-content"
+              [disabled]="passwordBusy() || !newPassword()"
+              (click)="submitPasswordChange()"
+            >
+              {{ 'settings.changePassword' | t }}
+            </button>
+            @if (passwordMsg()) {
+              <p class="card-sub">{{ passwordMsg() }}</p>
+            }
+          </div>
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.signOutOthers' | t }}</h2>
+          <p class="card-sub">{{ 'settings.signOutOthersHint' | t }}</p>
+          <button class="btn" type="button" style="margin-top: 8px" [disabled]="signOutOthersBusy()" (click)="doSignOutOthers()">
+            <span class="mi">logout</span> {{ 'settings.signOutOthers' | t }}
+          </button>
+          @if (signOutOthersMsg()) {
+            <p class="card-sub">{{ signOutOthersMsg() }}</p>
+          }
+        </section>
+
+        <section class="settings-block">
+          <h2 class="settings-label">{{ 'settings.defaultSharePrivacy' | t }}</h2>
+          <div class="seg">
+            @for (opt of privacyOptions; track opt.value) {
+              <button
+                class="seg-btn"
+                type="button"
+                [class.active]="sharePrivacyInput() === opt.value"
+                (click)="sharePrivacyInput.set(opt.value)"
+              >
+                {{ opt.labelKey | t }}
+              </button>
+            }
+          </div>
+          <div class="row" style="margin-top: 8px">
+            <button class="btn btn-primary" type="button" [disabled]="securityBusy()" (click)="saveSharePrivacy()">
+              {{ 'settings.save' | t }}
+            </button>
+            @if (securityMsg()) {
+              <span class="card-sub">{{ securityMsg() }}</span>
+            }
+          </div>
+        </section>
+      }
+    }
+  </div>
+</div>
+
+@if (folderPickerOpen()) {
+  <app-folder-picker-dialog (chosen)="onFolderChosen($event)" (cancelled)="folderPickerOpen.set(false)" />
+}

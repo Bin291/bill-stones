@@ -15,6 +15,9 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { LangService } from '../../core/i18n/lang.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { AuthService } from '../../core/services/auth.service';
 
 export interface SearchResultItem {
   id: string;
@@ -48,7 +51,7 @@ export interface BentoFeature {
 
 @Component({
   selector: 'app-landing',
-  imports: [CommonModule, MatIconModule, FormsModule, RouterLink],
+  imports: [CommonModule, MatIconModule, FormsModule, RouterLink, TranslatePipe],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +61,9 @@ export class Landing {
   private readonly destroyRef = inject(DestroyRef);
   private readonly hostEl = inject(ElementRef);
   private readonly router = inject(Router);
+  readonly langService = inject(LangService);
+  private readonly auth = inject(AuthService);
+  readonly isAuthenticated = this.auth.isAuthenticated;
 
   // UI State Signals
   readonly mobileMenuOpen = signal<boolean>(false);
@@ -74,13 +80,12 @@ export class Landing {
   readonly registerSuccess = signal<boolean>(false);
   readonly copyFeedback = signal<string | null>(null);
 
-  // Sample queries for hero typing simulator
   readonly typingPrompts: string[] = [
-    'hóa đơn ăn tối Highlands',
-    'hợp đồng thuê nhà Landmark 81',
-    'sơ đồ luồng thanh toán Microservices',
-    'bảng kê chi phí công tác quý 2',
-    'giấy phép kinh doanh BillPrime'
+    'landing.prompt1',
+    'landing.prompt2',
+    'landing.prompt3',
+    'landing.prompt4',
+    'landing.prompt5'
   ];
 
   // Comprehensive Search Data
@@ -170,16 +175,15 @@ export class Landing {
     return this.allSearchResults.filter(item => item.category === filter);
   });
 
-  // Bento Shutter Grid 8 Tiles Configuration with 3D Scatter Parameters
   readonly bentoFeatures: BentoFeature[] = [
     {
       id: 'bento-1',
-      title: 'Semantic Neural Search',
-      subtitle: 'Tìm theo ý nghĩa, không cần đúng từ',
+      title: 'bento.feature1.title',
+      subtitle: 'bento.feature1.subtitle',
       tag: 'AI CORE',
       icon: 'manage_search',
-      description: 'Lập chỉ mục không gian vector với Gemini Embeddings & pgvector (HNSW). Tìm ra tài liệu đúng ý dù câu hỏi không trùng từ khoá gốc.',
-      techSpec: '768-D Dense Embedding // 35+ định dạng file',
+      description: 'bento.feature1.desc',
+      techSpec: '768-D Dense Embedding',
       colSpan: 'md:col-span-2 lg:col-span-2',
       scatterX: -180,
       scatterY: -160,
@@ -188,12 +192,12 @@ export class Landing {
     },
     {
       id: 'bento-2',
-      title: 'Đọc Chữ & Bảng Trong Ảnh, PDF',
-      subtitle: 'Kể cả bảng dán dưới dạng ảnh chụp',
+      title: 'bento.feature2.title',
+      subtitle: 'bento.feature2.subtitle',
       tag: 'VISION OCR',
       icon: 'document_scanner',
-      description: 'Gemini Vision đọc chữ và mô tả nội dung ảnh; với PDF có bảng/biểu đồ dán dạng ảnh (không trích được bằng text layer thường), hệ thống tự đọc trực tiếp cả file để bổ sung.',
-      techSpec: 'Gemini Vision // Đọc cả bảng ẩn trong PDF dạng ảnh',
+      description: 'bento.feature2.desc',
+      techSpec: 'Gemini Vision OCR',
       colSpan: 'md:col-span-1 lg:col-span-1',
       scatterX: 180,
       scatterY: -140,
@@ -202,12 +206,12 @@ export class Landing {
     },
     {
       id: 'bento-3',
-      title: 'Không Có Đường Dẫn Công Khai',
-      subtitle: 'Mọi tệp chỉ đọc được qua link đã ký',
+      title: 'bento.feature3.title',
+      subtitle: 'bento.feature3.subtitle',
       tag: 'SECURITY',
       icon: 'vpn_key',
-      description: 'Không bật chế độ URL công khai — toàn bộ đường dẫn xem/tải tệp đều là presigned link có chữ ký, không có cách nào truy cập trực tiếp vào nơi lưu trữ.',
-      techSpec: 'Presigned-only // Không public bucket',
+      description: 'bento.feature3.desc',
+      techSpec: 'Presigned-only URL',
       colSpan: 'md:col-span-1 lg:col-span-1',
       scatterX: -220,
       scatterY: 20,
@@ -216,12 +220,12 @@ export class Landing {
     },
     {
       id: 'bento-4',
-      title: 'Presigned Edge Delivery',
-      subtitle: 'Tải xuống trực tiếp từ Cloudflare R2',
+      title: 'bento.feature4.title',
+      subtitle: 'bento.feature4.subtitle',
       tag: 'INFRASTRUCTURE',
       icon: 'bolt',
-      description: 'Cấp token truy cập tạm thời, tự hết hạn sau 10 phút. Luồng tải trực tiếp từ Cloudflare R2, không qua proxy trung gian.',
-      techSpec: 'TTL 600s // Cloudflare R2',
+      description: 'bento.feature4.desc',
+      techSpec: 'Cloudflare R2 // TTL 600s',
       colSpan: 'md:col-span-2 lg:col-span-2',
       scatterX: 200,
       scatterY: 40,
@@ -230,12 +234,12 @@ export class Landing {
     },
     {
       id: 'bento-5',
-      title: 'Xếp Hạng Lại Bằng Cross-Encoder',
-      subtitle: 'Chính xác hơn khi 2 kết quả na ná nhau',
+      title: 'bento.feature5.title',
+      subtitle: 'bento.feature5.subtitle',
       tag: 'RERANK',
       icon: 'auto_awesome',
-      description: 'Sau khi lọc ứng viên bằng vector, một mô hình cross-encoder chấm lại từng cặp (câu hỏi, tài liệu) để xếp hạng chính xác hơn — hữu ích khi 2 file rất giống nhau.',
-      techSpec: 'BAAI/bge-reranker-v2-m3 // Best-effort, không chặn kết quả khi lỗi',
+      description: 'bento.feature5.desc',
+      techSpec: 'bge-reranker-v2-m3',
       colSpan: 'md:col-span-1 lg:col-span-1',
       scatterX: -160,
       scatterY: 170,
@@ -244,12 +248,12 @@ export class Landing {
     },
     {
       id: 'bento-6',
-      title: 'Tìm Song Ngữ Việt - Anh',
-      subtitle: 'Gõ tiếng Anh vẫn ra kết quả tiếng Việt',
+      title: 'bento.feature6.title',
+      subtitle: 'bento.feature6.subtitle',
       tag: 'NLP ENGINE',
       icon: 'translate',
-      description: 'Ảnh và tài liệu được gắn thêm từ khoá tiếng Anh song song với tiếng Việt, nên tìm bằng tiếng Anh vẫn ra đúng nội dung gốc viết bằng tiếng Việt.',
-      techSpec: 'Bilingual keyword tagging // Việt <-> Anh',
+      description: 'bento.feature6.desc',
+      techSpec: 'Vietnamese & English',
       colSpan: 'md:col-span-1 lg:col-span-1',
       scatterX: 0,
       scatterY: 210,
@@ -258,12 +262,12 @@ export class Landing {
     },
     {
       id: 'bento-7',
-      title: 'Hợp Nhất 3 Nhánh Tìm Kiếm',
-      subtitle: 'Ngữ nghĩa + đa ngôn ngữ + từ khoá chính xác',
+      title: 'bento.feature7.title',
+      subtitle: 'bento.feature7.subtitle',
       tag: 'HYBRID FUSION',
       icon: 'layers',
-      description: 'Kết quả từ 3 nhánh độc lập (dense embedding, BGE-M3, full-text) được hợp nhất bằng Reciprocal Rank Fusion — nhánh nào yếu ở câu hỏi này vẫn được nhánh khác bù lại.',
-      techSpec: 'Reciprocal Rank Fusion // dense + bge + fts',
+      description: 'bento.feature7.desc',
+      techSpec: 'RRF dense + bge + fts',
       colSpan: 'md:col-span-1 lg:col-span-1',
       scatterX: 190,
       scatterY: 180,
@@ -272,12 +276,12 @@ export class Landing {
     },
     {
       id: 'bento-8',
-      title: 'Tìm Đúng Dù Gõ Sai, Không Dấu',
-      subtitle: 'Ví dụ: "s0 7" vẫn ra "số 7"',
+      title: 'bento.feature8.title',
+      subtitle: 'bento.feature8.subtitle',
       tag: 'ROBUSTNESS',
       icon: 'spellcheck',
-      description: 'Tự động chuẩn hoá kiểu gõ lẫn số-chữ (leet-speak) và bỏ dấu tiếng Việt trước khi so khớp, nên gõ nhanh, gõ tắt vẫn tìm ra đúng file.',
-      techSpec: 'Leet-speak + unaccent FTS // Giữ nguyên số thật (mã, năm, số áo)',
+      description: 'bento.feature8.desc',
+      techSpec: 'Leet-speak & unaccent FTS',
       colSpan: 'md:col-span-1 lg:col-span-1',
       scatterX: -140,
       scatterY: -200,
@@ -285,6 +289,7 @@ export class Landing {
       scatterRotate: -9
     }
   ];
+
 
   constructor() {
     afterNextRender(() => {
@@ -304,7 +309,8 @@ export class Landing {
 
   // Truy vấn mẫu -> điều hướng thật sang /search (yêu cầu đăng nhập qua authGuard).
   setQuery(query: string): void {
-    void this.router.navigate(['/search'], { queryParams: { q: query } });
+    const translated = this.langService.translate(query);
+    void this.router.navigate(['/search'], { queryParams: { q: translated } });
   }
 
   setFilter(filter: 'all' | 'invoice' | 'contract' | 'tech' | 'sheet'): void {
@@ -329,12 +335,12 @@ export class Landing {
   }
 
   handleRegisterSubmit(): void {
-    if (!this.registerEmail()) return;
-    this.registerSuccess.set(true);
-    setTimeout(() => {
-      this.closeModal();
-      this.registerEmail.set('');
-    }, 2500);
+    const email = this.registerEmail().trim();
+    if (!email) {
+      void this.router.navigate(['/login']);
+      return;
+    }
+    void this.router.navigate(['/login'], { queryParams: { email } });
   }
 
   copyToClipboard(text: string, label: string): void {

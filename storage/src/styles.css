@@ -412,6 +412,13 @@ body {
   padding-top: 8px;
   border-top: 1px solid var(--hairline);
 }
+.sidebar-avatar {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 
 /* ===== Toolbar ===== */
 .toolbar {
@@ -608,6 +615,18 @@ body {
 }
 .file-list tbody tr:hover {
   background: var(--surface-1);
+}
+.row-thumb {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.name-cell-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* ===== Upload panel ===== */
