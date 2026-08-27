@@ -24,10 +24,22 @@ datasource db {
 // phân biệt hoa/thường; `usernameDisplay` giữ nguyên chữ người dùng nhập.
 model UserProfile {
   userId          String   @id // = auth.users.id (Supabase)
-  username        String   @unique // đã lowercased
-  usernameDisplay String
+  // Nullable: chỉ có giá trị nếu user đã đăng ký username (mục Auth). User
+  // đăng nhập Google-only vẫn có 1 dòng ở đây để lưu Cài đặt (mục dưới), nhưng
+  // không có username.
+  username        String?  @unique // đã lowercased
+  usernameDisplay String?
   email           String
   createdAt       DateTime @default(now())
+
+  // --- Cài đặt tài khoản (mục Settings/Account Management) ---
+  displayName        String? // override tên hiển thị; null = lấy từ Supabase user_metadata
+  avatarKey           String? // R2 object key avatar tự upload; null = dùng avatar Google/Supabase
+  storageQuotaBytes   BigInt  @default(10737418240) // 10 GB free
+  uploadWarnSizeMb    Int? // ngưỡng cảnh báo (khác trần cứng MAX_FILE_SIZE_MB toàn cục)
+  duplicateFilePolicy String  @default("rename") // rename | overwrite | ask
+  defaultUploadFolderId String?
+  defaultSharePrivacy   String @default("private") // private | email | public
 
   @@index([email])
 }
@@ -46,6 +58,7 @@ model Folder {
   children Folder[] @relation("FolderTree")
   files    File[]
   shares   Share[] // link chia sẻ công khai — mục 12.C
+  tags     FolderTag[]
 
   @@index([userId, parentId, deletedAt])
   @@index([parentId])
@@ -89,7 +102,8 @@ model Tag {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  files FileTag[]
+  files   FileTag[]
+  folders FolderTag[]
 
   @@unique([userId, name]) // mỗi user không trùng tên thẻ
   @@index([userId])
@@ -104,6 +118,18 @@ model FileTag {
   tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([fileId, tagId])
+  @@index([tagId])
+}
+
+// Bảng nối N-N giữa Folder và Tag (mirror của FileTag).
+model FolderTag {
+  folderId String
+  tagId    String
+
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([folderId, tagId])
   @@index([tagId])
 }
 

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Folder } from '@prisma/client';
+import { Folder, Tag } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { resolveNameCollision } from '../../common/utils/name-collision';
@@ -12,6 +12,10 @@ import { resolveNameCollision } from '../../common/utils/name-collision';
 export interface BreadcrumbCrumb {
   id: string;
   name: string;
+}
+
+export interface FolderWithTags extends Folder {
+  tags: Tag[];
 }
 
 @Injectable()
@@ -37,12 +41,17 @@ export class FoldersService {
   async listChildren(
     userId: string,
     parentId: string | null,
-  ): Promise<Folder[]> {
+  ): Promise<FolderWithTags[]> {
     if (parentId) await this.assertOwned(parentId, userId);
-    return this.prisma.folder.findMany({
+    const folders = await this.prisma.folder.findMany({
       where: { userId, parentId: parentId ?? null, deletedAt: null },
       orderBy: { name: 'asc' },
+      include: { tags: { include: { tag: true } } },
     });
+    return folders.map(({ tags, ...bare }) => ({
+      ...bare,
+      tags: tags.map((ft) => ft.tag),
+    }));
   }
 
   async create(

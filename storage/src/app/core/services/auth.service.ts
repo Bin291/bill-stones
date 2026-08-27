@@ -47,6 +47,21 @@ export class AuthService {
 
   readonly accessToken = computed(() => this._session()?.access_token ?? null);
 
+  /**
+   * Avatar tuỳ chỉnh (tải lên qua Cài đặt, lưu ở backend/R2 — presigned URL, hết
+   * hạn sau 1 giờ). Ưu tiên hơn `profile().avatarUrl` (Google/Supabase metadata)
+   * khi có. Set ngay khi tải lên/xoá để UI (sidebar) phản ánh tức thì, KHÔNG ghi
+   * giá trị này vào Supabase user_metadata vì URL sẽ hết hạn.
+   */
+  readonly customAvatarUrl = signal<string | null>(null);
+
+  /** Avatar hiệu lực dùng cho toàn app (sidebar, v.v.) — ưu tiên avatar tuỳ chỉnh. */
+  readonly effectiveAvatarUrl = computed(() => this.customAvatarUrl() ?? this.profile()?.avatarUrl ?? null);
+
+  setCustomAvatarUrl(url: string | null): void {
+    this.customAvatarUrl.set(url);
+  }
+
   private readonly http = inject(HttpClient);
   private readonly apiBase = `${environment.apiUrl}/auth`;
 
@@ -167,6 +182,25 @@ export class AuthService {
   /** Đặt mật khẩu mới (trang /auth/reset sau khi bấm link trong email). */
   async updatePassword(password: string): Promise<void> {
     const { error } = await this.supabase.updatePassword(password);
+    if (error) throw error;
+  }
+
+  /** Đổi tên hiển thị — cập nhật session ngay để UI (sidebar, hồ sơ) phản ánh tức thì. */
+  async updateDisplayName(displayName: string): Promise<void> {
+    const { data, error } = await this.supabase.updateDisplayName(displayName);
+    if (error) throw error;
+    if (data.user) this._session.update((s) => (s ? { ...s, user: data.user } : s));
+  }
+
+  /** Đổi email — Supabase gửi email xác nhận tới địa chỉ mới, chưa áp dụng ngay. */
+  async updateEmail(email: string): Promise<void> {
+    const { error } = await this.supabase.updateEmail(email);
+    if (error) throw error;
+  }
+
+  /** Đăng xuất mọi thiết bị/phiên KHÁC phiên hiện tại (mục Bảo mật). */
+  async signOutOthers(): Promise<void> {
+    const { error } = await this.supabase.signOutOthers();
     if (error) throw error;
   }
 

@@ -19,6 +19,13 @@ interface CompletedPart {
 
 export type UploadStatus = 'pending' | 'uploading' | 'completing' | 'done' | 'error' | 'canceled';
 
+/** Trùng tên (chính sách 'ask') — đủ thông tin để hỏi lại người dùng. */
+export interface UploadConflict {
+  name: string;
+  existingFileId: string;
+}
+export type ConflictResolution = 'rename' | 'overwrite' | 'skip';
+
 export interface UploadTask {
   id: string; // client-side id
   fileName: string;
@@ -84,7 +91,12 @@ export class UploadService {
     return task;
   }
 
-  async run(task: UploadTask, file: File, folderId: string | null): Promise<StoredFile | null> {
+  async run(
+    task: UploadTask,
+    file: File,
+    folderId: string | null,
+    onConflict?: (c: UploadConflict) => Promise<ConflictResolution>,
+  ): Promise<StoredFile | null> {
     const controller = (task as UploadTask & { _controller: { canceled: boolean } })._controller;
     try {
       task.status.set('uploading');
@@ -100,11 +112,21 @@ export class UploadService {
           existing = await this.listParts(parsed.fileId, parsed.uploadId);
           init = parsed;
         } catch {
-          init = await this.init(file, folderId);
+          const result = await this.initOrAsk(file, folderId, onConflict);
+          if (!result) {
+            task.status.set('canceled');
+            return null;
+          }
+          init = result;
           localStorage.setItem(rk, JSON.stringify(init));
         }
       } else {
-        init = await this.init(file, folderId);
+        const result = await this.initOrAsk(file, folderId, onConflict);
+        if (!result) {
+          task.status.set('canceled');
+          return null;
+        }
+        init = result;
         localStorage.setItem(rk, JSON.stringify(init));
       }
 
@@ -162,7 +184,11 @@ export class UploadService {
     }
   }
 
-  private init(file: File, folderId: string | null): Promise<InitResult> {
+  private init(
+    file: File,
+    folderId: string | null,
+    duplicateAction?: 'rename' | 'overwrite',
+  ): Promise<InitResult> {
     return this.withRetry(() =>
       firstValueFrom(
         this.http.post<InitResult>(`${this.base}/init`, {
@@ -170,9 +196,33 @@ export class UploadService {
           size: String(file.size),
           mimeType: file.type || 'application/octet-stream',
           folderId,
+          duplicateAction,
         }),
       ),
     );
+  }
+
+  /**
+   * init() nhưng bắt lỗi 409 (trùng tên, chính sách 'ask') để hỏi lại người dùng
+   * qua `onConflict` — trả null nếu người dùng chọn bỏ qua file này.
+   */
+  private async initOrAsk(
+    file: File,
+    folderId: string | null,
+    onConflict?: (c: UploadConflict) => Promise<ConflictResolution>,
+  ): Promise<InitResult | null> {
+    try {
+      return await this.init(file, folderId);
+    } catch (err) {
+      const status = (err as { status?: number })?.status;
+      const body = (err as { error?: { code?: string; existingFileId?: string } })?.error;
+      if (status === 409 && body?.code === 'DUPLICATE_NAME' && onConflict) {
+        const resolution = await onConflict({ name: file.name, existingFileId: body.existingFileId ?? '' });
+        if (resolution === 'skip') return null;
+        return this.init(file, folderId, resolution);
+      }
+      throw err;
+    }
   }
 
   private async uploadPart(

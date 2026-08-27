@@ -12,23 +12,49 @@
     <div class="modal-body">
       <!-- Phần trên: mời theo email -->
       <h3 class="modal-section">{{ 'share.invite' | t }}</h3>
-      <div class="row">
+      <div class="row" style="position: relative">
         <input
           class="auth-input"
           type="email"
           placeholder="email@example.com"
+          autocomplete="off"
           [value]="email()"
-          (input)="email.set($any($event.target).value)"
+          (input)="onEmailInput($any($event.target).value)"
+          (focus)="suggestions().length && suggestOpen.set(true)"
+          (blur)="onEmailBlur()"
         />
         <button class="btn btn-primary" type="button" [disabled]="busy()" (click)="invite()">
           {{ 'share.inviteBtn' | t }}
         </button>
+
+        @if (suggestOpen() && suggestions().length) {
+          <ul class="share-suggest">
+            @for (s of suggestions(); track s.id) {
+              <li>
+                <button type="button" (mousedown)="selectSuggestion(s)" style="display: flex; align-items: center; gap: 8px;">
+                  @if (s.avatarUrl) {
+                    <img [src]="s.avatarUrl" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" alt="Avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" />
+                    <span class="mi" style="display: none;">person</span>
+                  } @else {
+                    <span class="mi">person</span>
+                  }
+                  {{ s.email }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
       </div>
 
       @for (s of invites(); track s.id) {
-        <div class="share-row">
-          <span class="mi">person</span>
-          <span class="share-email">{{ s.sharedWithEmail }}</span>
+        <div class="share-row" style="display: flex; align-items: center; gap: 8px;">
+          @if (s.sharedWithAvatarUrl) {
+            <img [src]="s.sharedWithAvatarUrl" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" alt="Avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" />
+            <span class="mi" style="display: none;">person</span>
+          } @else {
+            <span class="mi">person</span>
+          }
+          <span class="share-email" style="flex-grow: 1;">{{ s.sharedWithEmail }}</span>
           <span class="card-sub">{{ 'share.viewer' | t }}</span>
           <button class="btn" type="button" (click)="revoke(s)">{{ 'action.cancel' | t }}</button>
         </div>

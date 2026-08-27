@@ -17,14 +17,14 @@ const DEFAULT_COLOR = '#8d8d8d';
 export class TagsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Danh sách thẻ của user + số file đang gắn (dùng cho sidebar). */
+  /** Danh sách thẻ của user + tổng số file+thư mục đang gắn (dùng cho sidebar). */
   async list(userId: string): Promise<TagWithCount[]> {
     const tags = await this.prisma.tag.findMany({
       where: { userId },
       orderBy: { createdAt: 'asc' }, // thẻ mới nhất ở CUỐI danh sách
-      include: { _count: { select: { files: true } } },
+      include: { _count: { select: { files: true, folders: true } } },
     });
-    return tags.map(({ _count, ...t }) => ({ ...t, fileCount: _count.files }));
+    return tags.map(({ _count, ...t }) => ({ ...t, fileCount: _count.files + _count.folders }));
   }
 
   async create(userId: string, name: string, color?: string): Promise<Tag> {
@@ -86,6 +86,24 @@ export class TagsService {
     await this.prisma.fileTag.deleteMany({ where: { fileId, tagId } });
   }
 
+  /** Gán thẻ cho thư mục (idempotent). */
+  async assignFolder(userId: string, tagId: string, folderId: string): Promise<void> {
+    await this.assertOwned(userId, tagId);
+    await this.assertFolderOwned(userId, folderId);
+    await this.prisma.folderTag.upsert({
+      where: { folderId_tagId: { folderId, tagId } },
+      create: { folderId, tagId },
+      update: {},
+    });
+  }
+
+  /** Bỏ gán thẻ khỏi thư mục (idempotent). */
+  async unassignFolder(userId: string, tagId: string, folderId: string): Promise<void> {
+    await this.assertOwned(userId, tagId);
+    await this.assertFolderOwned(userId, folderId);
+    await this.prisma.folderTag.deleteMany({ where: { folderId, tagId } });
+  }
+
   private async assertOwned(userId: string, tagId: string): Promise<Tag> {
     const tag = await this.prisma.tag.findUnique({ where: { id: tagId } });
     if (!tag) throw new NotFoundException('Thẻ không tồn tại');
@@ -97,5 +115,11 @@ export class TagsService {
     const file = await this.prisma.file.findUnique({ where: { id: fileId } });
     if (!file || file.deletedAt) throw new NotFoundException('Tệp không tồn tại');
     if (file.userId !== userId) throw new ForbiddenException('Không có quyền với tệp này');
+  }
+
+  private async assertFolderOwned(userId: string, folderId: string): Promise<void> {
+    const folder = await this.prisma.folder.findUnique({ where: { id: folderId } });
+    if (!folder || folder.deletedAt) throw new NotFoundException('Thư mục không tồn tại');
+    if (folder.userId !== userId) throw new ForbiddenException('Không có quyền với thư mục này');
   }
 }

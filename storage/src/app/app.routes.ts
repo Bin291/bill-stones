@@ -93,13 +93,16 @@ export const routes: Routes = [
         path: 'trash',
         loadComponent: () => import('./features/trash/trash').then((m) => m.Trash),
       },
+      // Hồ sơ + Cài đặt đã gộp làm 1 trang (tab). '/profile' giữ lại để không hỏng
+      // link/bookmark cũ, chuyển thẳng vào tab Hồ sơ.
       {
         path: 'settings',
         loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
       },
       {
         path: 'profile',
-        loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
+        pathMatch: 'full',
+        redirectTo: 'settings',
       },
     ],
   },

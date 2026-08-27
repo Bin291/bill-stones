@@ -27,6 +27,12 @@ export class ShareController {
     return this.share.invite(userId, dto);
   }
 
+  /** Gợi ý email khi gõ ở ô "Mời qua email" — chỉ user đã có tài khoản. */
+  @Get('users/search')
+  searchUsers(@CurrentUser('id') userId: string, @Query('q') q?: string) {
+    return this.share.searchUsersByEmail(userId, q ?? '');
+  }
+
   @Get()
   list(
     @CurrentUser('id') userId: string,

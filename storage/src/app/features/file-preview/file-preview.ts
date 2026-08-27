@@ -10,6 +10,7 @@ import {
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { FilesApiService } from '../../core/services/files-api.service';
+import { SharedApiService } from '../../core/services/shared-api.service';
 import { Loader } from '../ui/loader';
 import { StoredFile } from '../../core/models/file.model';
 import { categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
@@ -32,9 +33,11 @@ const DOC_EXT = new Set([
 })
 export class FilePreview implements OnInit {
   private readonly filesApi = inject(FilesApiService);
+  private readonly sharedApi = inject(SharedApiService);
   private readonly sanitizer = inject(DomSanitizer);
 
   readonly file = input.required<StoredFile>();
+  readonly sharedMode = input<boolean>(false);
   readonly closed = output<void>();
 
   readonly kind = signal<Kind>('other');
@@ -51,14 +54,21 @@ export class FilePreview implements OnInit {
     const f = this.file();
     this.kind.set(this.detectKind(f.extension));
     try {
-      if (this.kind() === 'doc') {
-        // Backend render docx/excel/text -> HTML.
-        const { html } = await firstValueFrom(this.filesApi.previewHtml(f.id));
-        this.html.set(this.sanitizer.bypassSecurityTrustHtml(html));
-      } else if (this.kind() !== 'other') {
-        const { url } = await firstValueFrom(this.filesApi.previewUrl(f.id));
+      if (this.sharedMode()) {
+        // Shared file mode: fetch shared content URL.
+        const { url } = await firstValueFrom(this.sharedApi.contentUrl(f.id));
         this.url.set(url);
         this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+      } else {
+        if (this.kind() === 'doc') {
+          // Backend render docx/excel/text -> HTML.
+          const { html } = await firstValueFrom(this.filesApi.previewHtml(f.id));
+          this.html.set(this.sanitizer.bypassSecurityTrustHtml(html));
+        } else if (this.kind() !== 'other') {
+          const { url } = await firstValueFrom(this.filesApi.previewUrl(f.id));
+          this.url.set(url);
+          this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+        }
       }
     } catch {
       this.error.set('Không tải được nội dung xem trước.');
@@ -78,7 +88,14 @@ export class FilePreview implements OnInit {
   }
 
   async download(): Promise<void> {
-    const { url } = await firstValueFrom(this.filesApi.downloadUrl(this.file().id));
+    let url: string;
+    if (this.sharedMode()) {
+      const { url: dlUrl } = await firstValueFrom(this.sharedApi.downloadUrl(this.file().id));
+      url = dlUrl;
+    } else {
+      const { url: dlUrl } = await firstValueFrom(this.filesApi.downloadUrl(this.file().id));
+      url = dlUrl;
+    }
     const a = document.createElement('a');
     a.href = url;
     a.download = this.file().name;

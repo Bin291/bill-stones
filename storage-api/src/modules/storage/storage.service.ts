@@ -66,6 +66,11 @@ export class StorageService {
     return `${userId}/${fileId}.thumb.webp`;
   }
 
+  /** Key cache HTML preview đã render sẵn (docx/xlsx/csv/text/code — mục 1.5). */
+  previewHtmlKey(userId: string, fileId: string): string {
+    return `${userId}/${fileId}.preview.html`;
+  }
+
   artifactKey(userId: string, fileId: string): string {
     return `${userId}/${fileId}.txt`;
   }
@@ -193,6 +198,17 @@ export class StorageService {
       );
     }
     return Buffer.concat(chunks);
+  }
+
+  /** Như getObjectBuffer, nhưng trả null (thay vì ném lỗi) nếu object chưa tồn tại. */
+  async getObjectBufferIfExists(key: string): Promise<Buffer | null> {
+    try {
+      return await this.getObjectBuffer(key);
+    } catch (e) {
+      const name = (e as { name?: string })?.name;
+      if (name === 'NoSuchKey' || name === 'NotFound') return null;
+      throw e;
+    }
   }
 
   /** Liệt kê + xoá mọi object dưới 1 prefix (VD dọn cây HLS khi xoá video). */

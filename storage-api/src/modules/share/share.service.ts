@@ -20,9 +20,10 @@ import {
   verifySharePassword,
 } from './share.crypto';
 
-interface AuthUserRow {
+export interface AuthUserRow {
   id: string;
   email: string;
+  avatarUrl?: string | null;
 }
 
 @Injectable()
@@ -98,57 +99,38 @@ export class ShareService {
     const recipient = await this.lookupUserByEmail(dto.email);
     if (!recipient) {
       throw new BadRequestException(
-        'Email này chưa có tài khoản trên app. Hãy dùng Link công khai để gửi ra ngoài.',
+        `Người dùng với email ${dto.email} chưa đăng ký tài khoản.`,
       );
     }
     if (recipient.id === userId) {
-      throw new BadRequestException('Không thể tự chia sẻ cho chính mình');
+      throw new BadRequestException('Không thể chia sẻ cho chính mình.');
     }
+
+    const targetKey = dto.fileId ? 'fileId' : 'folderId';
+    const targetVal = dto.fileId ?? dto.folderId!;
 
     const existing = await this.prisma.share.findFirst({
       where: {
         userId,
+        [targetKey]: targetVal,
         sharedWithUserId: recipient.id,
-        fileId: dto.fileId ?? null,
-        folderId: dto.folderId ?? null,
       },
     });
-
     if (existing) {
-      // Mời lại người đã có quyền = cập nhật row cũ, không bắn thông báo trùng.
-      return this.prisma.share.update({
-        where: { id: existing.id },
-        data: {
-          allowDownload: dto.allowDownload ?? existing.allowDownload,
-          expiresAt: this.expiresAtFrom(dto.expiresInDays),
-          sharedWithEmail: recipient.email,
-        },
-      });
+      return existing;
     }
 
-    // Tạo Share + Notification trong cùng transaction (mục 12.J).
-    const [share] = await this.prisma.$transaction([
-      this.prisma.share.create({
-        data: {
-          userId,
-          fileId: dto.fileId ?? null,
-          folderId: dto.folderId ?? null,
-          sharedWithUserId: recipient.id,
-          sharedWithEmail: recipient.email,
-          allowDownload: dto.allowDownload ?? true,
-          expiresAt: this.expiresAtFrom(dto.expiresInDays),
-        },
-      }),
-      this.prisma.notification.create({
-        data: {
-          userId: recipient.id,
-          type: 'share_received',
-          title: 'Bạn được chia sẻ một mục',
-          body: dto.email,
-          linkPath: '/shared',
-        },
-      }),
-    ]);
+    const share = await this.prisma.share.create({
+      data: {
+        userId,
+        fileId: dto.fileId ?? null,
+        folderId: dto.folderId ?? null,
+        sharedWithUserId: recipient.id,
+        sharedWithEmail: recipient.email,
+        allowDownload: dto.allowDownload ?? true,
+        expiresAt: this.expiresAtFrom(dto.expiresInDays),
+      },
+    });
     return share;
   }
 
@@ -159,10 +141,32 @@ export class ShareService {
   ): Promise<Share[]> {
     this.assertExactlyOneTarget(fileId, folderId);
     await this.assertOwnedTarget(userId, fileId, folderId);
-    return this.prisma.share.findMany({
+    const shares = await this.prisma.share.findMany({
       where: { userId, fileId: fileId ?? null, folderId: folderId ?? null },
       orderBy: { createdAt: 'desc' },
     });
+
+    const userIds = shares
+      .map((s) => s.sharedWithUserId)
+      .filter((id): id is string => !!id);
+
+    if (userIds.length > 0) {
+      try {
+        const users = await this.prisma.$queryRaw<{ id: string; avatarUrl: string | null }[]>`
+          select id::text, raw_user_meta_data->>'avatar_url' as "avatarUrl"
+          from auth.users
+          where id = any(${userIds.map(id => id)}::uuid[])
+        `;
+        const avatarMap = new Map(users.map((u) => [u.id, u.avatarUrl]));
+        return shares.map((s) => ({
+          ...s,
+          sharedWithAvatarUrl: s.sharedWithUserId ? (avatarMap.get(s.sharedWithUserId) ?? null) : null,
+        } as any));
+      } catch {
+        return shares;
+      }
+    }
+    return shares;
   }
 
   async update(
@@ -181,12 +185,15 @@ export class ShareService {
         ? hashSharePassword(dto.password)
         : null;
     }
-    return this.prisma.share.update({ where: { id: share.id }, data });
+    return this.prisma.share.update({
+      where: { id: shareId },
+      data,
+    });
   }
 
-  async revoke(userId: string, shareId: string): Promise<void> {
+  async revoke(userId: string, shareId: string): Promise<Share> {
     await this.assertOwnShare(userId, shareId);
-    await this.prisma.share.delete({ where: { id: shareId } });
+    return this.prisma.share.delete({ where: { id: shareId } });
   }
 
   private async assertOwnShare(
@@ -196,23 +203,43 @@ export class ShareService {
     const share = await this.prisma.share.findUnique({
       where: { id: shareId },
     });
-    if (!share) throw new NotFoundException('Chia sẻ không tồn tại');
+    if (!share) throw new NotFoundException('Không tìm thấy bản ghi chia sẻ');
     if (share.userId !== userId)
-      throw new ForbiddenException('Không có quyền với chia sẻ này');
+      throw new ForbiddenException('Không có quyền thao tác trên bản ghi chia sẻ này');
     return share;
   }
 
-  /** Tra user theo email từ auth.users (mục 12.I). */
-  async lookupUserByEmail(email: string): Promise<AuthUserRow | null> {
+  private async lookupUserByEmail(email: string): Promise<AuthUserRow | null> {
     try {
       const rows = await this.prisma.$queryRaw<AuthUserRow[]>`
-        select id::text, email from auth.users where lower(email) = lower(${email}) limit 1
+        select id::text, email, raw_user_meta_data->>'avatar_url' as "avatarUrl"
+        from auth.users where email = ${email} limit 1
       `;
-      return rows[0] ?? null;
+      return rows[0] || null;
     } catch {
-      // Nếu không đọc được schema auth (VD local Postgres không phải Supabase),
-      // coi như không tìm thấy — dialog báo lỗi rõ ràng.
       return null;
+    }
+  }
+
+  /**
+   * Gợi ý email khi mời chia sẻ — tìm user đã có tài khoản trên app theo tiền
+   * tố email, để người dùng không phải gõ chính xác 100% (mục Invite users).
+   * Loại chính mình, giới hạn kết quả để tránh dò quét toàn bộ danh sách user.
+   */
+  async searchUsersByEmail(userId: string, query: string): Promise<AuthUserRow[]> {
+    const q = query.trim();
+    if (q.length < 2) return [];
+    try {
+      const rows = await this.prisma.$queryRaw<AuthUserRow[]>`
+        select id::text, email, raw_user_meta_data->>'avatar_url' as "avatarUrl"
+        from auth.users
+        where email ilike ${q + '%'} and id != ${userId}::uuid
+        order by email asc
+        limit 8
+      `;
+      return rows;
+    } catch {
+      return [];
     }
   }
 
