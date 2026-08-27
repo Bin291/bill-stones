@@ -52,7 +52,11 @@
                 </button>
               </div>
             } @else {
-              <div class="tag-row" [class.assigned]="assignMode() && isAssigned(tag.id)">
+              <div
+                class="tag-row"
+                [class.assigned]="assignMode() && isAssigned(tag.id)"
+                [class.tag-row--new]="highlightId() === tag.id"
+              >
                 @if (assignMode()) {
                   <button
                     type="button"

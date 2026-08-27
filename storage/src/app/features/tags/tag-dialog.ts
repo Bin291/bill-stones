@@ -47,6 +47,8 @@ export class TagDialog implements OnInit {
   private readonly listEl = viewChild<ElementRef<HTMLElement>>('tagList');
   /** Thẻ đang chờ xác nhận xoá. */
   readonly pendingDelete = signal<TagWithCount | null>(null);
+  /** Thẻ vừa tạo — sáng lên 2 giây rồi tắt. */
+  readonly highlightId = signal<string | null>(null);
   private readonly refresh = inject(RefreshService);
 
   /** Nếu có: chế độ gán thẻ cho file này. Nếu null: chỉ quản lý thẻ. */
@@ -103,17 +105,26 @@ export class TagDialog implements OnInit {
     try {
       // Chưa chọn màu → lấy màu ngẫu nhiên trong 9 màu có sẵn.
       const color = this.newColor() ?? this.randomPreset();
-      await firstValueFrom(this.tagsApi.create(name, color));
+      const created = await firstValueFrom(this.tagsApi.create(name, color));
       this.newName.set('');
       this.newColor.set(null);
       await this.load();
       this.refresh.bumpTags();
       this.scrollToNewest(); // cuộn xuống thẻ mới nhất (ở cuối)
+      this.flashNew(created.id); // sáng lên 2 giây
     } catch (e) {
       this.error.set(this.tagError(e, 'Không tạo được thẻ.'));
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** Làm thẻ vừa tạo sáng lên trong 2 giây rồi tắt. */
+  private flashNew(id: string): void {
+    this.highlightId.set(id);
+    setTimeout(() => {
+      if (this.highlightId() === id) this.highlightId.set(null);
+    }, 2000);
   }
 
   /** Cuộn danh sách thẻ xuống cuối để thấy thẻ vừa thêm. */
