@@ -39,7 +39,7 @@ export class ShareDialog {
   readonly busy = signal(false);
 
   // Gợi ý email khi gõ (chỉ user đã có tài khoản trên hệ thống)
-  readonly suggestions = signal<{ id: string; email: string }[]>([]);
+  readonly suggestions = signal<{ id: string; email: string; avatarUrl?: string | null }[]>([]);
   readonly suggestOpen = signal(false);
   private suggestTimer?: ReturnType<typeof setTimeout>;
   private suggestSeq = 0;

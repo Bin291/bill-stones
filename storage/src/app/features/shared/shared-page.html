@@ -31,16 +31,18 @@
           <td class="card-sub">{{ item.sharedByEmail || '—' }}</td>
           <td>{{ item.file ? formatBytes(item.file.size) : '—' }}</td>
           <td style="text-align: right; white-space: nowrap">
-            @if (item.kind === 'file') {
-              <button class="btn btn-icon" type="button" title="Xem" (click)="open(item)">
-                <span class="mi">visibility</span>
-              </button>
-              @if (item.allowDownload) {
-                <button class="btn btn-icon" type="button" title="Tải xuống" (click)="download(item)">
-                  <span class="mi">download</span>
+            <div style="display: inline-flex; justify-content: flex-end; gap: 8px;">
+              @if (item.kind === 'file') {
+                <button class="btn btn-icon" type="button" title="Xem" (click)="open(item)">
+                  <span class="mi">visibility</span>
                 </button>
+                @if (item.allowDownload) {
+                  <button class="btn btn-icon" type="button" title="Tải xuống" (click)="download(item)">
+                    <span class="mi">download</span>
+                  </button>
+                }
               }
-            }
+            </div>
           </td>
         </tr>
       }
@@ -49,5 +51,5 @@
 }
 
 @if (previewTarget(); as pf) {
-  <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
+  <app-file-preview [file]="pf" [sharedMode]="true" (closed)="previewTarget.set(null)" />
 }

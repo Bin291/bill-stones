@@ -16,6 +16,7 @@ export interface Share {
   viewCount: number;
   downloadCount: number;
   createdAt: string;
+  sharedWithAvatarUrl?: string | null;
 }
 
 export interface ShareLink extends Share {
@@ -51,8 +52,8 @@ export class ShareApiService {
     return this.http.post<Share>(`${this.base}/invite`, body);
   }
 
-  searchUsers(q: string): Observable<{ id: string; email: string }[]> {
-    return this.http.get<{ id: string; email: string }[]>(`${this.base}/users/search`, {
+  searchUsers(q: string): Observable<{ id: string; email: string; avatarUrl?: string | null }[]> {
+    return this.http.get<{ id: string; email: string; avatarUrl?: string | null }[]>(`${this.base}/users/search`, {
       params: new HttpParams().set('q', q),
     });
   }
