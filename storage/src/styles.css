@@ -1642,23 +1642,33 @@ body {
 .tag-swatch.on {
   border-color: var(--ink);
 }
-/* Swatch màu tuỳ chỉnh: BÁNH XE MÀU tròn (rainbow viền + tâm trắng) như color wheel */
+/* Swatch màu tuỳ chỉnh: BÁNH XE MÀU 12 nan (từng lát màu rời) + tâm xám như ảnh mẫu */
 .tag-swatch--custom {
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 50%; /* đảm bảo hình TRÒN, không phải vuông */
+  border-radius: 50%; /* đảm bảo hình TRÒN */
   background:
-    radial-gradient(circle at 50% 50%, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
+    radial-gradient(
+      circle at 50% 50%,
+      #8a8a8a 0%,
+      rgba(138, 138, 138, 0.55) 20%,
+      rgba(138, 138, 138, 0) 52%
+    ),
     conic-gradient(
-      from 90deg,
-      #ff0000,
-      #ffff00,
-      #00ff00,
-      #00ffff,
-      #0000ff,
-      #ff00ff,
-      #ff0000
+      from -90deg,
+      #e53935 0deg 30deg,
+      #f4511e 30deg 60deg,
+      #fb8c00 60deg 90deg,
+      #fdd835 90deg 120deg,
+      #c0ca33 120deg 150deg,
+      #7cb342 150deg 180deg,
+      #43a047 180deg 210deg,
+      #00897b 210deg 240deg,
+      #1e88e5 240deg 270deg,
+      #3949ab 270deg 300deg,
+      #8e24aa 300deg 330deg,
+      #d81b60 330deg 360deg
     );
 }
 /* Chấm nhỏ ở giữa hiện màu đang chọn (đè lên vòng rainbow) */
