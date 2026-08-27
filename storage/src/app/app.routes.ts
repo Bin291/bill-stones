@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, rootGuard } from './core/guards/auth.guard';
+import { unsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 export const routes: Routes = [
   // Trang chủ công khai: đã đăng nhập -> /files; chưa thì hiển thị Landing ngay tại '/'.
@@ -98,6 +99,7 @@ export const routes: Routes = [
       {
         path: 'settings',
         loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
+        canDeactivate: [unsavedChangesGuard],
       },
       {
         path: 'profile',
