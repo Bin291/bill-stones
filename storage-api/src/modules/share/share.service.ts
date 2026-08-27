@@ -341,6 +341,59 @@ export class ShareService {
     return result;
   }
 
+  /**
+   * Liệt kê con của một thư mục ĐƯỢC CHIA SẺ cho user (hoặc thư mục con nằm trong
+   * cây đó) — để mở/duyệt thư mục ở trang "Được chia sẻ với tôi". Quyền: chính chủ,
+   * hoặc có share (chưa hết hạn) trên chính thư mục hoặc một thư mục tổ tiên.
+   */
+  async listSharedFolderChildren(
+    userId: string,
+    folderId: string,
+  ): Promise<{
+    folder: { id: string; name: string };
+    folders: Folder[];
+    files: unknown[];
+    allowDownload: boolean;
+  }> {
+    const folder = await this.prisma.folder.findUnique({ where: { id: folderId } });
+    if (!folder || folder.deletedAt) {
+      throw new NotFoundException('Thư mục không tồn tại');
+    }
+
+    let allowDownload = true;
+    if (folder.userId !== userId) {
+      const now = new Date();
+      // ancestorFolderIds gồm cả chính folderId → khớp share trên folder này hoặc tổ tiên.
+      const ancestorIds = await this.ancestorFolderIds(folderId);
+      const share = await this.prisma.share.findFirst({
+        where: {
+          sharedWithUserId: userId,
+          folderId: { in: ancestorIds },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+      });
+      if (!share) throw new NotFoundException('Thư mục không tồn tại');
+      allowDownload = share.allowDownload;
+    }
+
+    const [folders, files] = await Promise.all([
+      this.prisma.folder.findMany({
+        where: { parentId: folderId, deletedAt: null },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.file.findMany({
+        where: { folderId, deletedAt: null, status: 'ready' },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+    return {
+      folder: { id: folder.id, name: folder.name },
+      folders,
+      files: files.map((f) => ({ ...f, size: f.size.toString() })),
+      allowDownload,
+    };
+  }
+
   private async ownerEmail(ownerId: string): Promise<string | null> {
     try {
       const rows = await this.prisma.$queryRaw<AuthUserRow[]>`

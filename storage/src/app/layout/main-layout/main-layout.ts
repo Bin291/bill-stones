@@ -81,8 +81,9 @@ export class MainLayout implements OnInit {
   private readonly stats = signal<ExtensionStat[]>([]);
   protected readonly sharedCount = signal(0);
 
+  // "Kho của tôi" (/files) render riêng ở TRÊN nút Thông báo (xem template);
+  // danh sách này là các mục còn lại bên dưới nút Thông báo.
   protected readonly browseItems: NavItem[] = [
-    { icon: 'cloud', labelKey: 'nav.myStorage', path: '/files' },
     { icon: 'star_border', labelKey: 'nav.starred', path: '/starred' },
     { icon: 'schedule', labelKey: 'nav.recent', path: '/recent' },
     { icon: 'search', labelKey: 'nav.search', path: '/search' },
@@ -135,12 +136,13 @@ export class MainLayout implements OnInit {
       });
     // App chưa có push/realtime cho thông báo — nạp lại định kỳ để badge "Thông
     // báo"/"Được chia sẻ với tôi" tự cập nhật khi có người chia sẻ, không cần
-    // F5. 20s là đủ nhanh với người dùng mà không dội API liên tục.
+    // F5. refresh(true) → HIỆN TOAST ngay cho thông báo MỚI (VD vừa được chia sẻ),
+    // không cần mở bảng thông báo. 20s là đủ nhanh mà không dội API liên tục.
     interval(20000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         if (!this.auth.isAuthenticated()) return;
-        void this.notifications.refresh();
+        void this.notifications.refresh(true);
         this.loadSharedCount();
       });
   }

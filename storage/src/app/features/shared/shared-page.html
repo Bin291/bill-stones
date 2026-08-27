@@ -1,13 +1,77 @@
 <h1 class="page-title">{{ 'nav.shared' | t }}</h1>
 
+<!-- Breadcrumb khi đang duyệt bên trong thư mục được chia sẻ -->
+@if (inFolder()) {
+  <div class="shared-crumbs">
+    <button class="crumb" type="button" (click)="goRoot()">{{ 'nav.shared' | t }}</button>
+    @for (crumb of path(); track crumb.id; let i = $index; let last = $last) {
+      <span class="crumb-sep">/</span>
+      <button class="crumb" type="button" [class.current]="last" (click)="goToCrumb(i)">
+        {{ crumb.name }}
+      </button>
+    }
+  </div>
+}
+
 @if (loading()) {
   <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
+} @else if (inFolder()) {
+  <!-- ĐANG DUYỆT trong 1 thư mục được chia sẻ -->
+  @if (folderView(); as fv) {
+    @if (fv.folders.length === 0 && fv.files.length === 0) {
+      <div class="empty">
+        <span class="mi" style="font-size: 40px">folder_open</span>
+        <p>{{ 'files.empty' | t }}</p>
+      </div>
+    } @else {
+      <table class="file-list">
+        <thead>
+          <tr>
+            <th>{{ 'files.name' | t }}</th>
+            <th>{{ 'files.size' | t }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (folder of fv.folders; track folder.id) {
+            <tr class="row-click" (click)="openSubfolder(folder)">
+              <td><span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}</td>
+              <td>—</td>
+              <td></td>
+            </tr>
+          }
+          @for (file of fv.files; track file.id) {
+            <tr class="row-click" (click)="openFile(file)">
+              <td>
+                <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension || '') }}</span>
+                {{ file.name }}
+              </td>
+              <td>{{ formatBytes(file.size) }}</td>
+              <td style="text-align: right; white-space: nowrap">
+                <div style="display: inline-flex; justify-content: flex-end; gap: 8px">
+                  <button class="btn btn-icon" type="button" title="Xem" (click)="openFile(file); $event.stopPropagation()">
+                    <span class="mi">visibility</span>
+                  </button>
+                  @if (fv.allowDownload) {
+                    <button class="btn btn-icon" type="button" title="Tải xuống" (click)="download(file); $event.stopPropagation()">
+                      <span class="mi">download</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
 } @else if (items().length === 0) {
   <div class="empty">
     <span class="mi" style="font-size: 40px">group</span>
     <p>{{ 'files.empty' | t }}</p>
   </div>
 } @else {
+  <!-- Danh sách các mục được chia sẻ với tôi -->
   <table class="file-list">
     <thead>
       <tr>
@@ -19,7 +83,7 @@
     </thead>
     <tbody>
       @for (item of items(); track item.shareId) {
-        <tr>
+        <tr class="row-click" (click)="openItem(item)">
           <td>
             @if (item.kind === 'folder') {
               <span class="mi" style="color: var(--primary)">folder</span> {{ item.folder?.name }}
@@ -31,13 +95,17 @@
           <td class="card-sub">{{ item.sharedByEmail || '—' }}</td>
           <td>{{ item.file ? formatBytes(item.file.size) : '—' }}</td>
           <td style="text-align: right; white-space: nowrap">
-            <div style="display: inline-flex; justify-content: flex-end; gap: 8px;">
-              @if (item.kind === 'file') {
-                <button class="btn btn-icon" type="button" title="Xem" (click)="open(item)">
+            <div style="display: inline-flex; justify-content: flex-end; gap: 8px">
+              @if (item.kind === 'folder') {
+                <button class="btn btn-icon" title="Mở" type="button" (click)="openItem(item); $event.stopPropagation()">
+                  <span class="mi">chevron_right</span>
+                </button>
+              } @else {
+                <button class="btn btn-icon" type="button" title="Xem" (click)="openItem(item); $event.stopPropagation()">
                   <span class="mi">visibility</span>
                 </button>
                 @if (item.allowDownload) {
-                  <button class="btn btn-icon" type="button" title="Tải xuống" (click)="download(item)">
+                  <button class="btn btn-icon" type="button" title="Tải xuống" (click)="downloadItem(item); $event.stopPropagation()">
                     <span class="mi">download</span>
                   </button>
                 }

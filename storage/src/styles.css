@@ -452,6 +452,29 @@ body {
 .spacer {
   flex: 1;
 }
+
+/* Breadcrumb + hàng bấm được ở trang "Được chia sẻ với tôi" */
+.shared-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+.shared-crumbs .crumb {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+.crumb-sep {
+  color: var(--ink-subtle);
+}
+.file-list tr.row-click {
+  cursor: pointer;
+}
+
 /* Nút tertiary: nền trắng, viền hairline, chữ ink */
 /* Ô tìm theo tên ở giữa thanh công cụ (mọi lăng kính) */
 .toolbar-search {

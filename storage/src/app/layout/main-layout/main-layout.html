@@ -12,6 +12,17 @@
       {{ 'app.title' | t }}
     </div>
 
+    <!-- "Kho của tôi" đặt TRÊN nút Thông báo (theo yêu cầu). -->
+    <a
+      class="nav-item"
+      routerLink="/files"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      <span class="mi">cloud</span>
+      {{ 'nav.myStorage' | t }}
+    </a>
+
     <button class="nav-item" type="button" (click)="toggleNotif(); $event.stopPropagation()">
       <span class="mi">notifications</span>
       {{ 'nav.notifications' | t }}
