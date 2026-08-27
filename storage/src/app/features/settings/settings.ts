@@ -13,12 +13,13 @@ import {
 } from '../../core/services/settings-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
 import { FolderPickerDialog } from '../ui/folder-picker-dialog';
+import { ConfirmDialog } from '../ui/confirm-dialog';
 import { formatBytes } from '../../core/util/file-types';
 import { CanComponentDeactivate } from '../../core/guards/unsaved-changes.guard';
 
 @Component({
   selector: 'app-settings',
-  imports: [TranslatePipe, FolderPickerDialog],
+  imports: [TranslatePipe, FolderPickerDialog, ConfirmDialog],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,9 +45,15 @@ export class Settings implements OnInit, CanComponentDeactivate {
   /** Tên hiển thị gốc (đã lưu) — mốc để so sánh dirty. */
   private readonly baseDisplayName = signal('');
 
+  // Hộp thoại "rời trang mà không lưu?" (thay window.confirm ở canDeactivate).
+  protected readonly leaveConfirmOpen = signal(false);
+  private leaveConfirmResolve: ((ok: boolean) => void) | null = null;
+
   // Hồ sơ
   protected readonly displayNameInput = signal('');
   protected readonly avatarBusy = signal(false);
+  /** Ảnh avatar lỗi tải (URL presigned hết hạn…) → ẩn ảnh, hiện icon dự phòng. */
+  protected readonly avatarLoadFailed = signal(false);
   protected readonly newEmail = signal('');
   protected readonly emailBusy = signal(false);
   protected readonly emailMsg = signal<string | null>(null);
@@ -115,6 +122,7 @@ export class Settings implements OnInit, CanComponentDeactivate {
 
   private applyAccount(a: AccountSettings): void {
     this.account.set(a);
+    this.avatarLoadFailed.set(false);
     const name = a.displayName ?? this.auth.profile()?.displayName ?? '';
     this.baseDisplayName.set(name);
     this.displayNameInput.set(name);
@@ -135,10 +143,30 @@ export class Settings implements OnInit, CanComponentDeactivate {
     }
   }
 
-  /** Có thay đổi chưa lưu → chặn rời trang, hỏi lại bằng hộp thoại trình duyệt. */
-  canDeactivate(): boolean {
+  /**
+   * Có thay đổi chưa lưu → chặn rời trang, hỏi lại bằng hộp thoại riêng của app
+   * (không dùng window.confirm() — xấu, không theo giao diện chung).
+   */
+  canDeactivate(): boolean | Promise<boolean> {
     if (!this.dirty()) return true;
-    return confirm(this.lang.translate('settings.leaveConfirm'));
+    this.leaveConfirmOpen.set(true);
+    return new Promise<boolean>((resolve) => {
+      this.leaveConfirmResolve = resolve;
+    });
+  }
+
+  /** Xác nhận rời trang, bỏ thay đổi chưa lưu. */
+  confirmLeave(): void {
+    this.leaveConfirmOpen.set(false);
+    this.leaveConfirmResolve?.(true);
+    this.leaveConfirmResolve = null;
+  }
+
+  /** Ở lại trang, giữ nguyên thay đổi chưa lưu. */
+  cancelLeave(): void {
+    this.leaveConfirmOpen.set(false);
+    this.leaveConfirmResolve?.(false);
+    this.leaveConfirmResolve = null;
   }
 
   /** Đóng/tải lại tab khi còn thay đổi → bật hộp thoại cảnh báo mặc định. */
@@ -176,6 +204,11 @@ export class Settings implements OnInit, CanComponentDeactivate {
   resetChanges(): void {
     const a = this.account();
     if (a) this.applyAccount(a);
+  }
+
+  /** Avatar tải lỗi → ẩn ảnh, hiện icon dự phòng thay vì icon-vỡ của trình duyệt. */
+  onAvatarError(): void {
+    this.avatarLoadFailed.set(true);
   }
 
   // --- Hồ sơ ---

@@ -68,6 +68,8 @@ export class MainLayout implements OnInit {
 
   protected readonly profile = this.auth.profile;
   protected readonly avatarUrl = this.auth.effectiveAvatarUrl;
+  /** Ảnh avatar lỗi tải (URL presigned hết hạn, R2 chập chờn…) → ẩn, fallback icon. */
+  protected readonly avatarLoadFailed = signal(false);
   // Hiện đủ các nhóm loại, gồm cả "Khác" (đã bỏ nhóm Code — file code rơi vào Khác).
   protected readonly categories = CATEGORIES;
   protected readonly notifOpen = signal(false);
@@ -102,6 +104,11 @@ export class MainLayout implements OnInit {
   });
 
   constructor() {
+    // Có URL avatar mới (đổi ảnh, tải lại trang…) → cho thử tải lại, xoá cờ lỗi cũ.
+    effect(() => {
+      this.avatarUrl();
+      this.avatarLoadFailed.set(false);
+    });
     // Nạp lại số đếm khi có tín hiệu dữ liệu đổi (upload/xoá). CHỜ có phiên đăng
     // nhập (đọc isAuthenticated) — tránh gọi API lúc reload khi token chưa sẵn sàng
     // → 401 → danh sách rỗng và không tự nạp lại.
@@ -175,6 +182,11 @@ export class MainLayout implements OnInit {
 
   openTagManager(): void {
     this.tagDialogOpen.set(true);
+  }
+
+  /** Avatar tải lỗi (URL presigned hết hạn, mạng chập chờn…) → ẩn ảnh, hiện icon dự phòng. */
+  onAvatarError(): void {
+    this.avatarLoadFailed.set(true);
   }
 
   toggleNotif(): void {

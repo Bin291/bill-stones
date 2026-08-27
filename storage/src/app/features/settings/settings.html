@@ -53,8 +53,8 @@
       <h2 class="settings-label">{{ 'settings.avatar' | t }}</h2>
       <div class="settings-avatar-row">
         <div class="settings-avatar">
-          @if (account()?.avatarUrl || auth.profile()?.avatarUrl) {
-            <img [src]="account()?.avatarUrl || auth.profile()?.avatarUrl" alt="" />
+          @if ((account()?.avatarUrl || auth.profile()?.avatarUrl) && !avatarLoadFailed()) {
+            <img [src]="account()?.avatarUrl || auth.profile()?.avatarUrl" alt="" (error)="onAvatarError()" />
           } @else {
             <span class="mi" style="font-size: 40px">account_circle</span>
           }
@@ -265,4 +265,15 @@
 
 @if (folderPickerOpen()) {
   <app-folder-picker-dialog (chosen)="onFolderChosen($event)" (cancelled)="folderPickerOpen.set(false)" />
+}
+
+@if (leaveConfirmOpen()) {
+  <app-confirm-dialog
+    [title]="'settings.leaveConfirmTitle' | t"
+    [message]="'settings.leaveConfirm' | t"
+    [confirmLabel]="'settings.leaveAnyway' | t"
+    [danger]="true"
+    (confirmed)="confirmLeave()"
+    (cancelled)="cancelLeave()"
+  />
 }

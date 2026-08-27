@@ -94,9 +94,17 @@ export class SupabaseService {
     return this.client.auth.updateUser({ data: { display_name: displayName } });
   }
 
-  /** Đổi email — Supabase tự gửi email xác nhận tới địa chỉ mới trước khi áp dụng. */
+  /**
+   * Đổi email — Supabase tự gửi email xác nhận tới địa chỉ mới trước khi áp
+   * dụng. PHẢI truyền emailRedirectTo, nếu không link trong email sẽ quay về
+   * Site URL mặc định cấu hình trên Supabase Dashboard (thường sai/không tồn
+   * tại ở môi trường dev) thay vì trang /auth/callback của app.
+   */
   updateEmail(email: string) {
-    return this.client.auth.updateUser({ email });
+    const emailRedirectTo = this.isBrowser
+      ? `${window.location.origin}/auth/callback`
+      : undefined;
+    return this.client.auth.updateUser({ email }, { emailRedirectTo });
   }
 
   /** Đăng xuất mọi phiên KHÁC phiên hiện tại (mục Bảo mật — không cần liệt kê thiết bị). */

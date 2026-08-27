@@ -2,7 +2,7 @@ import { CanDeactivateFn } from '@angular/router';
 
 /** Component nào chặn rời trang khi có thay đổi chưa lưu thì cài đặt hàm này. */
 export interface CanComponentDeactivate {
-  canDeactivate: () => boolean;
+  canDeactivate: () => boolean | Promise<boolean>;
 }
 
 /**

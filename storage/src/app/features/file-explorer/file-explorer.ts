@@ -25,6 +25,7 @@ import {
 import { RefreshService } from '../../core/services/refresh.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { SettingsApiService } from '../../core/services/settings-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ShareDialog, ShareTarget } from '../share/share-dialog';
 import { VideoPlayer } from '../video-player/video-player';
@@ -119,6 +120,7 @@ export class FileExplorer {
   private readonly prefetch = inject(PrefetchService);
   private readonly lang = inject(LangService);
   protected readonly settings = inject(SettingsService);
+  private readonly settingsApi = inject(SettingsApiService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly mode = signal<Mode>('folder');
@@ -867,7 +869,11 @@ export class FileExplorer {
    * Giữ cấu trúc thư mục qua webkitRelativePath (mục 2.1).
    */
   private uploadFileList(files: File[]): void {
-    const rootId = this.isFolderLens() ? this.folderId() : null;
+    // Đang xem đúng 1 thư mục cụ thể → tải vào đó. Ngược lại (gốc "Kho của
+    // tôi", hoặc các lăng kính không phải thư mục như Gắn sao/Thẻ/Tìm kiếm)
+    // → dùng "Thư mục tải lên mặc định" đã cấu hình ở Cài đặt, nếu có.
+    const explicitFolderId = this.isFolderLens() ? this.folderId() : null;
+    const rootId = explicitFolderId ?? this.settingsApi.defaultUploadFolderId();
 
     // Nhóm theo thư mục gốc; file lẻ đứng riêng.
     const folderGroups = new Map<string, File[]>();
