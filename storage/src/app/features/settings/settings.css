@@ -1,47 +1,31 @@
-.settings-shell {
-  display: flex;
-  gap: 32px;
-  align-items: flex-start;
+.settings-page {
+  max-width: 560px;
 }
 
-.settings-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 0 0 220px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+/* Nhóm cài đặt (thay cho tab): mỗi nhóm có tiêu đề, xếp dọc từ trên xuống. */
+.settings-group {
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
 }
 
-.settings-nav-item {
+.settings-group:first-child {
+  padding-top: 4px;
+  border-top: none;
+}
+
+.settings-group-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: transparent;
-  color: var(--text);
-  border: none;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  font-size: 14px;
+  gap: 8px;
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: 0.16px;
-  font-family: inherit;
-  text-align: left;
+  color: var(--text);
 }
 
-.settings-nav-item:last-child {
-  border-bottom: none;
-}
-
-.settings-nav-item.active {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-.settings-panel {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 560px;
+.settings-group-title .mi {
+  color: var(--text-secondary, var(--text));
 }
 
 .settings-block {
@@ -154,4 +138,28 @@
 
 .usage-bar-fill.danger {
   background: var(--danger, #d92626);
+}
+
+/* Thanh nhắc lưu nổi ở đáy màn hình khi có thay đổi chưa lưu. */
+.save-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 20px;
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  max-width: calc(100vw - 32px);
+}
+
+.save-bar-text {
+  font-size: 14px;
+  letter-spacing: 0.16px;
+  margin-right: 4px;
 }

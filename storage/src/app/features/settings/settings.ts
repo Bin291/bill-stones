@@ -1,17 +1,20 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { SettingsService, ThemeMode } from '../../core/services/settings.service';
 import { LangService } from '../../core/i18n/lang.service';
 import { Lang } from '../../core/i18n/dictionaries';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
-import { SettingsApiService, AccountSettings } from '../../core/services/settings-api.service';
+import {
+  SettingsApiService,
+  AccountSettings,
+  UpdateAccountSettings,
+} from '../../core/services/settings-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
 import { FolderPickerDialog } from '../ui/folder-picker-dialog';
 import { formatBytes } from '../../core/util/file-types';
-
-type Tab = 'general' | 'profile' | 'upload' | 'plan' | 'security';
+import { CanComponentDeactivate } from '../../core/guards/unsaved-changes.guard';
 
 @Component({
   selector: 'app-settings',
@@ -19,35 +22,30 @@ type Tab = 'general' | 'profile' | 'upload' | 'plan' | 'security';
   templateUrl: './settings.html',
   styleUrl: './settings.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Chặn đóng/tải lại tab khi còn thay đổi chưa lưu (hộp thoại mặc định của trình duyệt).
+  host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
-export class Settings implements OnInit {
+export class Settings implements OnInit, CanComponentDeactivate {
   protected readonly settings = inject(SettingsService);
   protected readonly lang = inject(LangService);
   protected readonly auth = inject(AuthService);
   private readonly settingsApi = inject(SettingsApiService);
   private readonly foldersApi = inject(FoldersApiService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
 
   protected readonly formatBytes = formatBytes;
-
-  protected readonly tab = signal<Tab>('general');
-  protected readonly tabs: { key: Tab; icon: string; labelKey: string }[] = [
-    { key: 'general', icon: 'tune', labelKey: 'settings.tabGeneral' },
-    { key: 'profile', icon: 'account_circle', labelKey: 'settings.tabProfile' },
-    { key: 'upload', icon: 'upload', labelKey: 'settings.tabUpload' },
-    { key: 'plan', icon: 'pie_chart', labelKey: 'settings.tabPlan' },
-    { key: 'security', icon: 'lock', labelKey: 'settings.tabSecurity' },
-  ];
 
   protected readonly account = signal<AccountSettings | null>(null);
   protected readonly loading = signal(true);
   protected readonly defaultFolderName = signal<string | null>(null);
 
+  // Lưu chung (thay cho các nút Lưu từng mục): chỉ hiện thanh khi có thay đổi.
+  protected readonly saveBusy = signal(false);
+  /** Tên hiển thị gốc (đã lưu) — mốc để so sánh dirty. */
+  private readonly baseDisplayName = signal('');
+
   // Hồ sơ
   protected readonly displayNameInput = signal('');
-  protected readonly profileBusy = signal(false);
-  protected readonly profileMsg = signal<string | null>(null);
   protected readonly avatarBusy = signal(false);
   protected readonly newEmail = signal('');
   protected readonly emailBusy = signal(false);
@@ -56,8 +54,7 @@ export class Settings implements OnInit {
   // Tải lên/Tải xuống
   protected readonly uploadWarnInput = signal<number | null>(null);
   protected readonly duplicatePolicyInput = signal<'rename' | 'overwrite' | 'ask'>('rename');
-  protected readonly uploadPrefsBusy = signal(false);
-  protected readonly uploadPrefsMsg = signal<string | null>(null);
+  protected readonly folderIdInput = signal<string | null>(null);
   protected readonly folderPickerOpen = signal(false);
 
   // Bảo mật
@@ -68,8 +65,19 @@ export class Settings implements OnInit {
   protected readonly signOutOthersBusy = signal(false);
   protected readonly signOutOthersMsg = signal<string | null>(null);
   protected readonly sharePrivacyInput = signal<'private' | 'email' | 'public'>('private');
-  protected readonly securityBusy = signal(false);
-  protected readonly securityMsg = signal<string | null>(null);
+
+  /** Có thay đổi chưa lưu? (so input hiện tại với giá trị đã tải về). */
+  protected readonly dirty = computed<boolean>(() => {
+    const a = this.account();
+    if (!a) return false;
+    return (
+      this.displayNameInput().trim() !== this.baseDisplayName().trim() ||
+      (this.uploadWarnInput() ?? null) !== (a.uploadWarnSizeMb ?? null) ||
+      this.duplicatePolicyInput() !== a.duplicateFilePolicy ||
+      this.sharePrivacyInput() !== a.defaultSharePrivacy ||
+      (this.folderIdInput() ?? null) !== (a.defaultUploadFolderId ?? null)
+    );
+  });
 
   protected readonly themeOptions: { value: ThemeMode; labelKey: string }[] = [
     { value: 'light', labelKey: 'theme.light' },
@@ -92,8 +100,6 @@ export class Settings implements OnInit {
   ];
 
   ngOnInit(): void {
-    const t = this.route.snapshot.queryParamMap.get('tab') as Tab | null;
-    if (t && this.tabs.some((x) => x.key === t)) this.tab.set(t);
     void this.load();
   }
 
@@ -109,10 +115,13 @@ export class Settings implements OnInit {
 
   private applyAccount(a: AccountSettings): void {
     this.account.set(a);
-    this.displayNameInput.set(a.displayName ?? this.auth.profile()?.displayName ?? '');
+    const name = a.displayName ?? this.auth.profile()?.displayName ?? '';
+    this.baseDisplayName.set(name);
+    this.displayNameInput.set(name);
     this.uploadWarnInput.set(a.uploadWarnSizeMb);
     this.duplicatePolicyInput.set(a.duplicateFilePolicy);
     this.sharePrivacyInput.set(a.defaultSharePrivacy);
+    this.folderIdInput.set(a.defaultUploadFolderId);
     if (a.defaultUploadFolderId) void this.loadFolderName(a.defaultUploadFolderId);
     else this.defaultFolderName.set(null);
   }
@@ -126,27 +135,50 @@ export class Settings implements OnInit {
     }
   }
 
-  setTab(t: Tab): void {
-    this.tab.set(t);
-    void this.router.navigate([], { queryParams: { tab: t }, replaceUrl: true });
+  /** Có thay đổi chưa lưu → chặn rời trang, hỏi lại bằng hộp thoại trình duyệt. */
+  canDeactivate(): boolean {
+    if (!this.dirty()) return true;
+    return confirm(this.lang.translate('settings.leaveConfirm'));
   }
 
-  // --- Hồ sơ ---
-  async saveDisplayName(): Promise<void> {
-    const name = this.displayNameInput().trim();
-    if (!name || this.profileBusy()) return;
-    this.profileBusy.set(true);
-    this.profileMsg.set(null);
-    try {
-      await this.auth.updateDisplayName(name);
-      const a = await firstValueFrom(this.settingsApi.update({ displayName: name }));
-      this.applyAccount(a);
-      this.profileMsg.set(this.lang.translate('settings.saved'));
-    } finally {
-      this.profileBusy.set(false);
+  /** Đóng/tải lại tab khi còn thay đổi → bật hộp thoại cảnh báo mặc định. */
+  onBeforeUnload(e: BeforeUnloadEvent): void {
+    if (this.dirty()) {
+      e.preventDefault();
+      e.returnValue = '';
     }
   }
 
+  /** Lưu TẤT CẢ thay đổi trong một lần (thay cho các nút Lưu từng mục). */
+  async saveAll(): Promise<void> {
+    if (this.saveBusy() || !this.dirty()) return;
+    this.saveBusy.set(true);
+    try {
+      const name = this.displayNameInput().trim();
+      if (name && name !== this.baseDisplayName().trim()) {
+        await this.auth.updateDisplayName(name);
+      }
+      const update: UpdateAccountSettings = {
+        duplicateFilePolicy: this.duplicatePolicyInput(),
+        defaultSharePrivacy: this.sharePrivacyInput(),
+        defaultUploadFolderId: this.folderIdInput(),
+      };
+      if (name) update.displayName = name;
+      if (this.uploadWarnInput() != null) update.uploadWarnSizeMb = this.uploadWarnInput()!;
+      const a = await firstValueFrom(this.settingsApi.update(update));
+      this.applyAccount(a);
+    } finally {
+      this.saveBusy.set(false);
+    }
+  }
+
+  /** Đặt lại mọi input về giá trị đã lưu (huỷ thay đổi chưa lưu). */
+  resetChanges(): void {
+    const a = this.account();
+    if (a) this.applyAccount(a);
+  }
+
+  // --- Hồ sơ ---
   async onAvatarPick(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -191,32 +223,17 @@ export class Settings implements OnInit {
   }
 
   // --- Tải lên/Tải xuống ---
-  async saveUploadPrefs(): Promise<void> {
-    if (this.uploadPrefsBusy()) return;
-    this.uploadPrefsBusy.set(true);
-    this.uploadPrefsMsg.set(null);
-    try {
-      const a = await firstValueFrom(
-        this.settingsApi.update({
-          uploadWarnSizeMb: this.uploadWarnInput() ?? undefined,
-          duplicateFilePolicy: this.duplicatePolicyInput(),
-        }),
-      );
-      this.applyAccount(a);
-      this.uploadPrefsMsg.set(this.lang.translate('settings.saved'));
-    } finally {
-      this.uploadPrefsBusy.set(false);
-    }
-  }
-
+  /** Chọn thư mục mặc định: chỉ đổi input + hiện tên; lưu khi bấm Lưu chung. */
   async onFolderChosen(folderId: string | null): Promise<void> {
     this.folderPickerOpen.set(false);
-    const a = await firstValueFrom(this.settingsApi.update({ defaultUploadFolderId: folderId }));
-    this.applyAccount(a);
+    this.folderIdInput.set(folderId);
+    if (folderId) await this.loadFolderName(folderId);
+    else this.defaultFolderName.set(null);
   }
 
-  async clearDefaultFolder(): Promise<void> {
-    await this.onFolderChosen(null);
+  clearDefaultFolder(): void {
+    this.folderIdInput.set(null);
+    this.defaultFolderName.set(null);
   }
 
   // --- Bảo mật ---
@@ -256,21 +273,6 @@ export class Settings implements OnInit {
       this.signOutOthersMsg.set(this.extractError(e));
     } finally {
       this.signOutOthersBusy.set(false);
-    }
-  }
-
-  async saveSharePrivacy(): Promise<void> {
-    if (this.securityBusy()) return;
-    this.securityBusy.set(true);
-    this.securityMsg.set(null);
-    try {
-      const a = await firstValueFrom(
-        this.settingsApi.update({ defaultSharePrivacy: this.sharePrivacyInput() }),
-      );
-      this.applyAccount(a);
-      this.securityMsg.set(this.lang.translate('settings.saved'));
-    } finally {
-      this.securityBusy.set(false);
     }
   }
 
