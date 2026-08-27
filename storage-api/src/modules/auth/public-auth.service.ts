@@ -121,6 +121,31 @@ export class PublicAuthService {
     };
   }
 
+  /**
+   * Tra mọi provider (email/google/...) đã đăng ký cho 1 địa chỉ email, kèm
+   * userId tương ứng — dùng để chặn tạo 2 tài khoản khác nhau (1 email/mật
+   * khẩu + 1 Google) trên cùng 1 email. Supabase không tự gộp identity khác
+   * provider trừ khi bật Automatic Linking trên Dashboard, nên phải tự kiểm
+   * tra ở tầng app.
+   */
+  async emailProviders(email: string): Promise<{ providers: string[]; userIds: string[] }> {
+    try {
+      const rows = await this.prisma.$queryRaw<{ user_id: string; provider: string }[]>`
+        select i.user_id::text, i.provider
+        from auth.identities i
+        join auth.users u on u.id = i.user_id
+        where lower(u.email) = lower(${email})
+      `;
+      return {
+        providers: [...new Set(rows.map((r) => r.provider))],
+        userIds: [...new Set(rows.map((r) => r.user_id))],
+      };
+    } catch (err) {
+      this.logger.debug(`emailProviders lỗi: ${(err as Error).message}`);
+      return { providers: [], userIds: [] };
+    }
+  }
+
   /** Lấy user Supabase bằng service-role (admin) để xác minh khi đăng ký hồ sơ. */
   private async adminGetUser(userId: string): Promise<{ email?: string } | null> {
     if (!this.supabaseUrl || !this.serviceRoleKey) return null;

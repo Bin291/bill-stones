@@ -23,8 +23,12 @@ export class ShareController {
   }
 
   @Post('invite')
-  invite(@CurrentUser('id') userId: string, @Body() dto: InviteDto) {
-    return this.share.invite(userId, dto);
+  invite(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('email') ownerEmail: string,
+    @Body() dto: InviteDto,
+  ) {
+    return this.share.invite(userId, ownerEmail ?? '', dto);
   }
 
   /** Gợi ý email khi gõ ở ô "Mời qua email" — chỉ user đã có tài khoản. */

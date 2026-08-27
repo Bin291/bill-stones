@@ -4,6 +4,8 @@ import { TrashApiService, TrashItem } from '../../core/services/trash-api.servic
 import { FilesApiService } from '../../core/services/files-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
 import { RefreshService } from '../../core/services/refresh.service';
+import { ToastService } from '../../core/services/toast.service';
+import { LangService } from '../../core/i18n/lang.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { Loader } from '../ui/loader';
 import { ConfirmDialog } from '../ui/confirm-dialog';
@@ -25,10 +27,13 @@ export class Trash implements OnInit {
   private readonly filesApi = inject(FilesApiService);
   private readonly foldersApi = inject(FoldersApiService);
   private readonly refresh = inject(RefreshService);
+  private readonly toast = inject(ToastService);
+  private readonly lang = inject(LangService);
 
   protected readonly items = signal<TrashItem[]>([]);
   protected readonly loading = signal(false);
   protected readonly confirm = signal<PendingConfirm | null>(null);
+  protected readonly confirmBusy = signal(false);
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
 
@@ -65,15 +70,24 @@ export class Trash implements OnInit {
 
   async runConfirm(): Promise<void> {
     const c = this.confirm();
-    this.confirm.set(null);
-    if (!c) return;
-    if (c.type === 'purge') {
-      if (c.item.kind === 'file') await firstValueFrom(this.filesApi.remove(c.item.id));
-      else await firstValueFrom(this.foldersApi.remove(c.item.id));
-    } else {
-      await firstValueFrom(this.trashApi.empty());
+    if (!c || this.confirmBusy()) return;
+    this.confirmBusy.set(true);
+    try {
+      if (c.type === 'purge') {
+        if (c.item.kind === 'file') await firstValueFrom(this.filesApi.remove(c.item.id));
+        else await firstValueFrom(this.foldersApi.remove(c.item.id));
+        this.toast.success(this.lang.translate('toast.deletedPermanently'));
+      } else {
+        await firstValueFrom(this.trashApi.empty());
+        this.toast.success(this.lang.translate('toast.trashEmptied'));
+      }
+      this.confirm.set(null);
+      await this.load();
+      this.refresh.bump();
+    } catch {
+      this.toast.error(this.lang.translate('toast.actionFailed'));
+    } finally {
+      this.confirmBusy.set(false);
     }
-    await this.load();
-    this.refresh.bump();
   }
 }

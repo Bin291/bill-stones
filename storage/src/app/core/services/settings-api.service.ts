@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AccountSettings {
@@ -32,12 +32,23 @@ export class SettingsApiService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/users/me`;
 
+  /**
+   * Thư mục tải lên mặc định đang cấu hình — cache dạng signal để nơi khác
+   * (luồng tải lên) đọc được ngay mà không cần gọi lại API mỗi lần upload.
+   * Cập nhật tự động mỗi khi get()/update() trả về (kể cả từ trang Cài đặt).
+   */
+  readonly defaultUploadFolderId = signal<string | null>(null);
+
   get(): Observable<AccountSettings> {
-    return this.http.get<AccountSettings>(`${this.base}/settings`);
+    return this.http
+      .get<AccountSettings>(`${this.base}/settings`)
+      .pipe(tap((a) => this.defaultUploadFolderId.set(a.defaultUploadFolderId)));
   }
 
   update(dto: UpdateAccountSettings): Observable<AccountSettings> {
-    return this.http.patch<AccountSettings>(`${this.base}/settings`, dto);
+    return this.http
+      .patch<AccountSettings>(`${this.base}/settings`, dto)
+      .pipe(tap((a) => this.defaultUploadFolderId.set(a.defaultUploadFolderId)));
   }
 
   setAvatar(file: File): Observable<AccountSettings> {

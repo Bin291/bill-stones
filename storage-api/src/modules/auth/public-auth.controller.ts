@@ -44,4 +44,15 @@ export class PublicAuthController {
   async login(@Body() dto: UsernameLoginDto) {
     return this.auth.loginWithUsername(dto.username, dto.password);
   }
+
+  /**
+   * Provider (email/google/...) đã đăng ký sẵn cho 1 email — dùng để chặn sớm
+   * việc tạo tài khoản trùng (VD đã có Google, không cho đăng ký thêm bằng
+   * mật khẩu trên cùng email đó). Không lộ gì nhạy cảm hơn "email đã tồn tại".
+   */
+  @Get('email-providers')
+  async emailProviders(@Query('email') email: string): Promise<{ providers: string[] }> {
+    const { providers } = await this.auth.emailProviders(email ?? '');
+    return { providers };
+  }
 }

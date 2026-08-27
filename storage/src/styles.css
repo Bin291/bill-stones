@@ -1027,6 +1027,22 @@ body {
   border-radius: 0;
   z-index: 150;
 }
+/* Neo dưới nút "Thông báo" ở đầu sidebar — fixed để thoát overflow:hidden của .sidebar. */
+.sidebar-notif {
+  position: fixed;
+  left: 264px;
+  right: auto;
+  top: 96px;
+  max-height: calc(100vh - 112px);
+}
+.nav-count.notif-count {
+  background: var(--danger);
+  color: #fff;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+  padding: 1px 6px;
+}
 .notif-item {
   padding: 14px 16px;
   border-bottom: 1px solid var(--hairline);
