@@ -51,6 +51,12 @@ export class ShareApiService {
     return this.http.post<Share>(`${this.base}/invite`, body);
   }
 
+  searchUsers(q: string): Observable<{ id: string; email: string }[]> {
+    return this.http.get<{ id: string; email: string }[]>(`${this.base}/users/search`, {
+      params: new HttpParams().set('q', q),
+    });
+  }
+
   list(target: { fileId?: string; folderId?: string }): Observable<Share[]> {
     let params = new HttpParams();
     if (target.fileId) params = params.set('fileId', target.fileId);

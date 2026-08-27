@@ -38,6 +38,12 @@ export class ShareDialog {
   readonly error = signal<string | null>(null);
   readonly busy = signal(false);
 
+  // Gợi ý email khi gõ (chỉ user đã có tài khoản trên hệ thống)
+  readonly suggestions = signal<{ id: string; email: string }[]>([]);
+  readonly suggestOpen = signal(false);
+  private suggestTimer?: ReturnType<typeof setTimeout>;
+  private suggestSeq = 0;
+
   // Tuỳ chọn tạo link
   readonly linkAllowDownload = signal(true);
   readonly linkExpiresDays = signal(0);
@@ -68,6 +74,7 @@ export class ShareDialog {
     if (!email) return;
     this.error.set(null);
     this.busy.set(true);
+    this.suggestOpen.set(false);
     try {
       await firstValueFrom(this.shareApi.invite({ ...this.body(), email }));
       this.email.set('');
@@ -77,6 +84,41 @@ export class ShareDialog {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** Gõ tới đâu gợi ý email tài khoản đã có trên hệ thống tới đó (debounce). */
+  onEmailInput(value: string): void {
+    this.email.set(value);
+    clearTimeout(this.suggestTimer);
+    const q = value.trim();
+    if (q.length < 2) {
+      this.suggestions.set([]);
+      this.suggestOpen.set(false);
+      return;
+    }
+    const seq = ++this.suggestSeq;
+    this.suggestTimer = setTimeout(async () => {
+      try {
+        const already = new Set(this.invites().map((s) => s.sharedWithEmail?.toLowerCase()));
+        const rows = await firstValueFrom(this.shareApi.searchUsers(q));
+        if (seq !== this.suggestSeq) return; // kết quả trả về trễ, đã có truy vấn mới hơn
+        this.suggestions.set(rows.filter((r) => !already.has(r.email.toLowerCase())));
+        this.suggestOpen.set(true);
+      } catch {
+        this.suggestions.set([]);
+      }
+    }, 250);
+  }
+
+  selectSuggestion(s: { email: string }): void {
+    this.email.set(s.email);
+    this.suggestions.set([]);
+    this.suggestOpen.set(false);
+  }
+
+  /** Đóng gợi ý khi rời ô nhập — trễ nhẹ để kịp nhận click vào 1 gợi ý. */
+  onEmailBlur(): void {
+    setTimeout(() => this.suggestOpen.set(false), 150);
   }
 
   async createLink(): Promise<void> {

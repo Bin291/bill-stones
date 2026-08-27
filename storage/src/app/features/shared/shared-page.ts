@@ -3,12 +3,14 @@ import { firstValueFrom } from 'rxjs';
 import { SharedApiService, SharedItem } from '../../core/services/shared-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { Loader } from '../ui/loader';
+import { FilePreview } from '../file-preview/file-preview';
 import { formatBytes, iconOf } from '../../core/util/file-types';
+import { StoredFile } from '../../core/models/file.model';
 
 /** "Được chia sẻ với tôi" (mục 12.E nhóm C) — chỉ Xem + Tải xuống. */
 @Component({
   selector: 'app-shared-page',
-  imports: [TranslatePipe, Loader],
+  imports: [TranslatePipe, Loader, FilePreview],
   templateUrl: './shared-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -19,6 +21,7 @@ export class SharedPage implements OnInit {
   protected readonly loading = signal(false);
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
+  protected readonly previewTarget = signal<StoredFile | null>(null);
 
   ngOnInit(): void {
     void this.load();
@@ -35,10 +38,9 @@ export class SharedPage implements OnInit {
     }
   }
 
-  async open(item: SharedItem): Promise<void> {
+  open(item: SharedItem): void {
     if (item.kind !== 'file' || !item.file) return;
-    const { url } = await firstValueFrom(this.sharedApi.contentUrl(item.file.id));
-    window.open(url, '_blank');
+    this.previewTarget.set(item.file);
   }
 
   async download(item: SharedItem): Promise<void> {
