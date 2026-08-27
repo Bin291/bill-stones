@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { Loader } from './loader';
 
 /**
  * Hộp thoại xác nhận ở giữa màn hình (thay window.confirm).
@@ -7,10 +8,10 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
  */
 @Component({
   selector: 'app-confirm-dialog',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, Loader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="modal-backdrop" (click)="cancelled.emit()">
+    <div class="modal-backdrop" (click)="busy() ? null : cancelled.emit()">
       <div class="modal confirm-modal" (click)="$event.stopPropagation()">
         <div class="confirm-body">
           <span class="mi confirm-icon" [class.danger]="danger()">
@@ -22,7 +23,7 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
           }
         </div>
         <div class="confirm-actions">
-          <button class="btn" type="button" (click)="cancelled.emit()">
+          <button class="btn" type="button" [disabled]="busy()" (click)="cancelled.emit()">
             {{ 'action.cancel' | t }}
           </button>
           <button
@@ -30,9 +31,14 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
             type="button"
             [class.btn-danger]="danger()"
             [class.btn-primary]="!danger()"
+            [disabled]="busy()"
             (click)="confirmed.emit()"
           >
-            {{ confirmLabel() || ('action.confirm' | t) }}
+            @if (busy()) {
+              <app-loader [dot]="5" [gap]="3" />
+            } @else {
+              {{ confirmLabel() || ('action.confirm' | t) }}
+            }
           </button>
         </div>
       </div>
@@ -44,6 +50,8 @@ export class ConfirmDialog {
   readonly message = input<string>('');
   readonly confirmLabel = input<string>('');
   readonly danger = input<boolean>(false);
+  /** true = đang xử lý (VD xoá ~1-2s) — vô hiệu 2 nút, hiện loading trên nút xác nhận. */
+  readonly busy = input<boolean>(false);
 
   readonly confirmed = output<void>();
   readonly cancelled = output<void>();

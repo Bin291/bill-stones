@@ -54,13 +54,15 @@ export class ShareService {
     }
   }
 
+  /** Kiểm quyền sở hữu + trả về tên mục (dùng cho nội dung thông báo). */
   private async assertOwnedTarget(
     userId: string,
     fileId?: string,
     folderId?: string,
-  ): Promise<void> {
-    if (fileId) await this.files.assertOwned(fileId, userId);
-    else if (folderId) await this.folders.assertOwned(folderId, userId);
+  ): Promise<string> {
+    if (fileId) return (await this.files.assertOwned(fileId, userId)).name;
+    if (folderId) return (await this.folders.assertOwned(folderId, userId)).name;
+    return '';
   }
 
   private expiresAtFrom(days?: number | null): Date | null {
@@ -92,9 +94,9 @@ export class ShareService {
     return `${this.baseUrl.replace(/\/$/, '')}/s/${token}`;
   }
 
-  async invite(userId: string, dto: InviteDto): Promise<Share> {
+  async invite(userId: string, ownerEmail: string, dto: InviteDto): Promise<Share> {
     this.assertExactlyOneTarget(dto.fileId, dto.folderId);
-    await this.assertOwnedTarget(userId, dto.fileId, dto.folderId);
+    const itemName = await this.assertOwnedTarget(userId, dto.fileId, dto.folderId);
 
     const recipient = await this.lookupUserByEmail(dto.email);
     if (!recipient) {
@@ -120,18 +122,32 @@ export class ShareService {
       return existing;
     }
 
-    const share = await this.prisma.share.create({
-      data: {
-        userId,
-        fileId: dto.fileId ?? null,
-        folderId: dto.folderId ?? null,
-        sharedWithUserId: recipient.id,
-        sharedWithEmail: recipient.email,
-        allowDownload: dto.allowDownload ?? true,
-        expiresAt: this.expiresAtFrom(dto.expiresInDays),
-      },
+    // Tạo Share + Notification trong cùng transaction — người nhận thấy ngay
+    // "ai" đã chia sẻ "gì" với mình (mục 12.J).
+    return this.prisma.$transaction(async (tx) => {
+      const share = await tx.share.create({
+        data: {
+          userId,
+          fileId: dto.fileId ?? null,
+          folderId: dto.folderId ?? null,
+          sharedWithUserId: recipient.id,
+          sharedWithEmail: recipient.email,
+          allowDownload: dto.allowDownload ?? true,
+          expiresAt: this.expiresAtFrom(dto.expiresInDays),
+        },
+      });
+      await tx.notification.create({
+        data: {
+          userId: recipient.id,
+          type: 'share_received',
+          title: `${ownerEmail} đã chia sẻ một mục với bạn`,
+          body: itemName,
+          linkPath: '/shared',
+          shareId: share.id,
+        },
+      });
+      return share;
     });
-    return share;
   }
 
   async listForTarget(

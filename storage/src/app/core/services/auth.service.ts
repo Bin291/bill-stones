@@ -48,6 +48,15 @@ export class AuthService {
   readonly accessToken = computed(() => this._session()?.access_token ?? null);
 
   /**
+   * User đã có identity 'email' (tức đã từng đặt mật khẩu) hay chưa. User chỉ
+   * đăng nhập Google (chưa từng đặt mật khẩu) sẽ không có identity này —
+   * dùng để quyết định có bắt nhập mật khẩu cũ khi đổi mật khẩu hay không.
+   */
+  readonly hasPasswordIdentity = computed<boolean>(() =>
+    (this._session()?.user.identities ?? []).some((i) => i.provider === 'email'),
+  );
+
+  /**
    * Avatar tuỳ chỉnh (tải lên qua Cài đặt, lưu ở backend/R2 — presigned URL, hết
    * hạn sau 1 giờ). Ưu tiên hơn `profile().avatarUrl` (Google/Supabase metadata)
    * khi có. Set ngay khi tải lên/xoá để UI (sidebar) phản ánh tức thì, KHÔNG ghi
@@ -133,6 +142,20 @@ export class AuthService {
     this._session.set(data.session);
   }
 
+  /** Provider (email/google/...) đã đăng ký sẵn cho 1 email — dùng chặn sớm đăng ký trùng. */
+  async checkEmailProviders(email: string): Promise<string[]> {
+    try {
+      const res = await firstValueFrom(
+        this.http.get<{ providers: string[] }>(`${this.apiBase}/email-providers`, {
+          params: { email: email.trim() },
+        }),
+      );
+      return res.providers;
+    } catch {
+      return [];
+    }
+  }
+
   /** Kiểm tra tên đăng nhập còn trống không (gọi backend). */
   async isUsernameAvailable(username: string): Promise<boolean> {
     const res = await firstValueFrom(
@@ -185,6 +208,18 @@ export class AuthService {
     if (error) throw error;
   }
 
+  /**
+   * Xác minh mật khẩu HIỆN TẠI đúng hay không (Supabase không có API kiểm tra
+   * mật khẩu riêng — cách chuẩn là thử đăng nhập lại bằng chính mật khẩu đó).
+   * Chỉ dùng khi user đã có identity 'email' (đã từng đặt mật khẩu).
+   */
+  async verifyPassword(password: string): Promise<boolean> {
+    const email = this.profile()?.email;
+    if (!email) return false;
+    const { error } = await this.supabase.signInWithPassword(email, password);
+    return !error;
+  }
+
   /** Đổi tên hiển thị — cập nhật session ngay để UI (sidebar, hồ sơ) phản ánh tức thì. */
   async updateDisplayName(displayName: string): Promise<void> {
     const { data, error } = await this.supabase.updateDisplayName(displayName);
@@ -209,7 +244,9 @@ export class AuthService {
    * tới) — chỉ cần allow-list 1 Redirect URL. Session set khi client detectSessionInUrl.
    */
   async signInWithGoogle(target = '/files'): Promise<void> {
-    const redirectTo = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(target)}`;
+    // `via=google` để /auth/callback biết đây là phiên Google (khác magic
+    // link/OTP) — cần để phát hiện trường hợp email này đã có mật khẩu sẵn.
+    const redirectTo = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(target)}&via=google`;
     const { error } = await this.supabase.signInWithGoogle(redirectTo);
     if (error) throw error;
   }

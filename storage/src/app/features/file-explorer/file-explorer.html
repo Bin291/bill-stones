@@ -126,9 +126,13 @@
       @if (confirmingBulkDelete()) {
         <span class="select-confirm">{{ 'select.confirmDelete' | t: { n: selectedCount() } }}</span>
         <button class="btn danger" type="button" [disabled]="bulkBusy()" (click)="bulkTrash()">
-          <span class="mi">delete</span> {{ 'select.confirmYes' | t }}
+          @if (bulkBusy()) {
+            <app-loader [dot]="5" [gap]="3" />
+          } @else {
+            <span class="mi">delete</span> {{ 'select.confirmYes' | t }}
+          }
         </button>
-        <button class="btn" type="button" (click)="confirmingBulkDelete.set(false)">
+        <button class="btn" type="button" [disabled]="bulkBusy()" (click)="confirmingBulkDelete.set(false)">
           {{ 'action.cancel' | t }}
         </button>
       } @else {
@@ -569,6 +573,7 @@
         [message]="'confirm.trashMsg' | t: { name: d.name }"
         [confirmLabel]="'action.delete' | t"
         [danger]="true"
+        [busy]="deleteBusy()"
         (confirmed)="confirmDelete()"
         (cancelled)="dialog.set(null)"
       />

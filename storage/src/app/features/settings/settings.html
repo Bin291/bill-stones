@@ -53,8 +53,8 @@
       <h2 class="settings-label">{{ 'settings.avatar' | t }}</h2>
       <div class="settings-avatar-row">
         <div class="settings-avatar">
-          @if (account()?.avatarUrl || auth.profile()?.avatarUrl) {
-            <img [src]="account()?.avatarUrl || auth.profile()?.avatarUrl" alt="" />
+          @if ((account()?.avatarUrl || auth.profile()?.avatarUrl) && !avatarLoadFailed()) {
+            <img [src]="account()?.avatarUrl || auth.profile()?.avatarUrl" alt="" (error)="onAvatarError()" />
           } @else {
             <span class="mi" style="font-size: 40px">account_circle</span>
           }
@@ -191,7 +191,21 @@
 
     <section class="settings-block">
       <h2 class="settings-label">{{ 'settings.changePassword' | t }}</h2>
+      @if (auth.hasPasswordIdentity()) {
+        <p class="card-sub" style="margin-bottom: 4px">{{ 'settings.currentPasswordHint' | t }}</p>
+      } @else {
+        <p class="card-sub" style="margin-bottom: 4px">{{ 'settings.noPasswordHint' | t }}</p>
+      }
       <div class="col" style="gap: 8px; max-width: 320px">
+        @if (auth.hasPasswordIdentity()) {
+          <input
+            class="auth-input"
+            type="password"
+            [placeholder]="'settings.currentPassword' | t"
+            [value]="currentPassword()"
+            (input)="currentPassword.set($any($event.target).value)"
+          />
+        }
         <input
           class="auth-input"
           type="password"
@@ -210,7 +224,7 @@
           class="btn btn-primary"
           type="button"
           style="width: fit-content"
-          [disabled]="passwordBusy() || !newPassword()"
+          [disabled]="passwordBusy() || !newPassword() || (auth.hasPasswordIdentity() && !currentPassword())"
           (click)="submitPasswordChange()"
         >
           {{ 'settings.changePassword' | t }}
@@ -221,16 +235,19 @@
       </div>
     </section>
 
-    <section class="settings-block">
-      <h2 class="settings-label">{{ 'settings.signOutOthers' | t }}</h2>
-      <p class="card-sub">{{ 'settings.signOutOthersHint' | t }}</p>
-      <button class="btn" type="button" style="margin-top: 8px" [disabled]="signOutOthersBusy()" (click)="doSignOutOthers()">
-        <span class="mi">logout</span> {{ 'settings.signOutOthers' | t }}
-      </button>
-      @if (signOutOthersMsg()) {
-        <p class="card-sub">{{ signOutOthersMsg() }}</p>
-      }
-    </section>
+    <!-- Ẩn tạm khỏi Cài đặt theo yêu cầu — GIỮ NGUYÊN code (logic .ts vẫn còn), chỉ tắt hiển thị. -->
+    @if (false) {
+      <section class="settings-block">
+        <h2 class="settings-label">{{ 'settings.signOutOthers' | t }}</h2>
+        <p class="card-sub">{{ 'settings.signOutOthersHint' | t }}</p>
+        <button class="btn" type="button" style="margin-top: 8px" [disabled]="signOutOthersBusy()" (click)="doSignOutOthers()">
+          <span class="mi">logout</span> {{ 'settings.signOutOthers' | t }}
+        </button>
+        @if (signOutOthersMsg()) {
+          <p class="card-sub">{{ signOutOthersMsg() }}</p>
+        }
+      </section>
+    }
 
     <section class="settings-block">
       <h2 class="settings-label">{{ 'settings.defaultSharePrivacy' | t }}</h2>
@@ -265,4 +282,15 @@
 
 @if (folderPickerOpen()) {
   <app-folder-picker-dialog (chosen)="onFolderChosen($event)" (cancelled)="folderPickerOpen.set(false)" />
+}
+
+@if (leaveConfirmOpen()) {
+  <app-confirm-dialog
+    [title]="'settings.leaveConfirmTitle' | t"
+    [message]="'settings.leaveConfirm' | t"
+    [confirmLabel]="'settings.leaveAnyway' | t"
+    [danger]="true"
+    (confirmed)="confirmLeave()"
+    (cancelled)="cancelLeave()"
+  />
 }

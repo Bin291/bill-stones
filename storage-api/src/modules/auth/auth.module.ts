@@ -11,6 +11,6 @@ import { PublicAuthService } from './public-auth.service';
 @Module({
   controllers: [PublicAuthController],
   providers: [SupabaseJwtService, PublicAuthService],
-  exports: [SupabaseJwtService],
+  exports: [SupabaseJwtService, PublicAuthService],
 })
 export class AuthModule {}

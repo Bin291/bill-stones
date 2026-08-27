@@ -25,6 +25,7 @@ import {
 import { RefreshService } from '../../core/services/refresh.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { SettingsService } from '../../core/services/settings.service';
+import { SettingsApiService } from '../../core/services/settings-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ShareDialog, ShareTarget } from '../share/share-dialog';
 import { VideoPlayer } from '../video-player/video-player';
@@ -37,6 +38,7 @@ import { Autofocus } from '../ui/autofocus.directive';
 import { MoveDialog, MoveItem } from './move-dialog';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import { LangService } from '../../core/i18n/lang.service';
+import { ToastService } from '../../core/services/toast.service';
 import {
   BreadcrumbCrumb,
   Folder,
@@ -118,7 +120,9 @@ export class FileExplorer {
   private readonly tagsApi = inject(TagsApiService);
   private readonly prefetch = inject(PrefetchService);
   private readonly lang = inject(LangService);
+  private readonly toast = inject(ToastService);
   protected readonly settings = inject(SettingsService);
+  private readonly settingsApi = inject(SettingsApiService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly mode = signal<Mode>('folder');
@@ -197,6 +201,7 @@ export class FileExplorer {
   protected readonly previewTarget = signal<StoredFile | null>(null);
   protected readonly tagTarget = signal<TagTarget | null>(null);
   protected readonly dialog = signal<ExplorerDialog | null>(null);
+  protected readonly deleteBusy = signal(false);
   protected readonly moveTarget = signal<MoveItem[] | null>(null);
   protected readonly conflictPrompt = signal<UploadConflict | null>(null);
   private conflictResolver: ((r: ConflictResolution) => void) | null = null;
@@ -654,6 +659,7 @@ export class FileExplorer {
         firstValueFrom(this.foldersApi.trash(id)),
       );
       await Promise.all([...fileOps, ...folderOps]);
+      this.toast.success(this.lang.translate('toast.movedToTrash'));
       this.clearSelection();
       await this.revalidate();
       this.refresh.bump();
@@ -807,12 +813,20 @@ export class FileExplorer {
 
   async confirmDelete(): Promise<void> {
     const d = this.dialog();
-    this.dialog.set(null);
-    if (d?.type !== 'confirmDelete') return;
-    if (d.kind === 'file') await firstValueFrom(this.filesApi.trash(d.id));
-    else await firstValueFrom(this.foldersApi.trash(d.id));
-    void this.revalidate();
-    this.refresh.bump();
+    if (d?.type !== 'confirmDelete' || this.deleteBusy()) return;
+    this.deleteBusy.set(true);
+    try {
+      if (d.kind === 'file') await firstValueFrom(this.filesApi.trash(d.id));
+      else await firstValueFrom(this.foldersApi.trash(d.id));
+      this.toast.success(this.lang.translate('toast.movedToTrash'));
+      this.dialog.set(null);
+      void this.revalidate();
+      this.refresh.bump();
+    } catch {
+      this.toast.error(this.lang.translate('toast.actionFailed'));
+    } finally {
+      this.deleteBusy.set(false);
+    }
   }
 
   // --- Upload ---
@@ -867,7 +881,11 @@ export class FileExplorer {
    * Giữ cấu trúc thư mục qua webkitRelativePath (mục 2.1).
    */
   private uploadFileList(files: File[]): void {
-    const rootId = this.isFolderLens() ? this.folderId() : null;
+    // Đang xem đúng 1 thư mục cụ thể → tải vào đó. Ngược lại (gốc "Kho của
+    // tôi", hoặc các lăng kính không phải thư mục như Gắn sao/Thẻ/Tìm kiếm)
+    // → dùng "Thư mục tải lên mặc định" đã cấu hình ở Cài đặt, nếu có.
+    const explicitFolderId = this.isFolderLens() ? this.folderId() : null;
+    const rootId = explicitFolderId ?? this.settingsApi.defaultUploadFolderId();
 
     // Nhóm theo thư mục gốc; file lẻ đứng riêng.
     const folderGroups = new Map<string, File[]>();
