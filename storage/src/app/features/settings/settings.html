@@ -191,13 +191,13 @@
 
     <section class="settings-block">
       <h2 class="settings-label">{{ 'settings.changePassword' | t }}</h2>
-      @if (auth.hasPasswordIdentity()) {
+      @if (account()?.hasPassword) {
         <p class="card-sub" style="margin-bottom: 4px">{{ 'settings.currentPasswordHint' | t }}</p>
       } @else {
         <p class="card-sub" style="margin-bottom: 4px">{{ 'settings.noPasswordHint' | t }}</p>
       }
       <div class="col" style="gap: 8px; max-width: 320px">
-        @if (auth.hasPasswordIdentity()) {
+        @if (account()?.hasPassword) {
           <input
             class="auth-input"
             type="password"
@@ -224,7 +224,7 @@
           class="btn btn-primary"
           type="button"
           style="width: fit-content"
-          [disabled]="passwordBusy() || !newPassword() || (auth.hasPasswordIdentity() && !currentPassword())"
+          [disabled]="passwordBusy() || !newPassword() || (!!account()?.hasPassword && !currentPassword())"
           (click)="submitPasswordChange()"
         >
           {{ 'settings.changePassword' | t }}
