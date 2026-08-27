@@ -2,10 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   WritableSignal,
   computed,
+  effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
@@ -66,6 +69,8 @@ interface ContextMenu {
   id: string;
   name: string;
   isStarred: boolean;
+  /** false = mới mở, đang đo kích thước thật để định vị lại — chưa hiện ra. */
+  visible: boolean;
 }
 
 /** Một mục tải lên: 1 thư mục (nhiều file) hoặc 1 file lẻ. */
@@ -126,8 +131,9 @@ export class FileExplorer {
   protected readonly folders = signal<Folder[]>([]);
   protected readonly files = signal<StoredFile[]>([]);
 
-  // Tìm theo TÊN (lọc tại chỗ trên mọi lăng kính).
   protected readonly nameFilter = signal('');
+  protected readonly foldersExpanded = signal(true);
+  protected readonly filesExpanded = signal(true);
   protected readonly displayFolders = computed(() => this.filterByName(this.folders()));
   protected readonly displayFiles = computed(() => this.filterByName(this.files()));
   private filterByName<T extends { name: string }>(list: T[]): T[] {
@@ -185,6 +191,7 @@ export class FileExplorer {
   });
   readonly hasActiveUploads = computed(() => this.uploadBatches().length > 0);
   protected readonly menu = signal<ContextMenu | null>(null);
+  protected readonly menuEl = viewChild<ElementRef<HTMLElement>>('menuEl');
   protected readonly shareTarget = signal<ShareTarget | null>(null);
   protected readonly videoTarget = signal<{ id: string; name: string; size: string } | null>(null);
   protected readonly previewTarget = signal<StoredFile | null>(null);
@@ -281,6 +288,24 @@ export class FileExplorer {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.syncFromParams();
     });
+
+    // Định vị menu chuột phải sau khi đã render (đo được kích thước thật) —
+    // kiểu Google Drive: lật sang trái/lên trên nếu tràn màn hình, không bao
+    // giờ mở ra ngoài viewport. Menu render ẩn (visibility) tới khi đo xong.
+    effect(() => {
+      const el = this.menuEl()?.nativeElement;
+      const m = this.menu();
+      if (!el || !m || m.visible) return;
+      const pad = 8;
+      const rect = el.getBoundingClientRect();
+      let x = m.x;
+      let y = m.y;
+      if (x + rect.width + pad > window.innerWidth) x = m.x - rect.width; // lật trái
+      if (y + rect.height + pad > window.innerHeight) y = m.y - rect.height; // lật lên
+      x = Math.max(pad, Math.min(x, window.innerWidth - rect.width - pad));
+      y = Math.max(pad, Math.min(y, window.innerHeight - rect.height - pad));
+      this.menu.set({ ...m, x, y, visible: true });
+    });
   }
 
   private thumbRetries = 0;
@@ -356,6 +381,13 @@ export class FileExplorer {
       ]);
       return { folders, files, crumbs };
     }
+    if (mode === 'starred') {
+      const [folders, files] = await Promise.all([
+        firstValueFrom(this.foldersApi.listStarred()),
+        firstValueFrom(this.filesApi.list(query)),
+      ]);
+      return { folders, files, crumbs: [] };
+    }
     const files = await firstValueFrom(this.filesApi.list(query));
     return { folders: [], files, crumbs: [] };
   }
@@ -410,6 +442,13 @@ export class FileExplorer {
 
   goToFilePath(file: StoredFile): void {
     const last = file.folderPath?.at(-1);
+    if (last) void this.router.navigate(['/files/folder', last.id]);
+    else void this.router.navigate(['/files']);
+  }
+
+  /** Đưa tới thư mục CHA của 1 thư mục (dùng cho badge đường dẫn ở lăng kính Gắn sao). */
+  goToFolderParent(folder: Folder): void {
+    const last = folder.folderPath?.at(-1);
     if (last) void this.router.navigate(['/files/folder', last.id]);
     else void this.router.navigate(['/files']);
   }
@@ -527,6 +566,7 @@ export class FileExplorer {
       id: item.id,
       name: item.name,
       isStarred: item.isStarred,
+      visible: false,
     });
   }
 

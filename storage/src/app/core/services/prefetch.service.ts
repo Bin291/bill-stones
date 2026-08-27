@@ -85,7 +85,9 @@ export class PrefetchService {
         firstValueFrom(this.filesApi.list(query)),
         mode === 'folder'
           ? firstValueFrom(this.foldersApi.listChildren(p.folderId))
-          : Promise.resolve<Folder[]>([]),
+          : mode === 'starred'
+            ? firstValueFrom(this.foldersApi.listStarred())
+            : Promise.resolve<Folder[]>([]),
       ]);
       this.cache.set(viewKey(mode, p), { folders, files, crumbs: [] });
     } catch {
