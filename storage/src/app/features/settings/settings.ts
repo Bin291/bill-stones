@@ -65,6 +65,7 @@ export class Settings implements OnInit, CanComponentDeactivate {
   protected readonly folderPickerOpen = signal(false);
 
   // Bảo mật
+  protected readonly currentPassword = signal('');
   protected readonly newPassword = signal('');
   protected readonly confirmPassword = signal('');
   protected readonly passwordBusy = signal(false);
@@ -270,10 +271,19 @@ export class Settings implements OnInit, CanComponentDeactivate {
   }
 
   // --- Bảo mật ---
+  /**
+   * Đổi mật khẩu: nếu user đã có mật khẩu từ trước (identity 'email') thì BẮT
+   * BUỘC xác minh mật khẩu cũ trước khi cho đổi. User chỉ đăng nhập Google
+   * (chưa từng đặt mật khẩu) thì bỏ qua bước này — không có gì để xác minh.
+   */
   async submitPasswordChange(): Promise<void> {
     if (this.passwordBusy()) return;
     const pw = this.newPassword();
     this.passwordMsg.set(null);
+    if (this.auth.hasPasswordIdentity() && !this.currentPassword()) {
+      this.passwordMsg.set(this.lang.translate('settings.currentPasswordRequired'));
+      return;
+    }
     if (pw.length < 6) {
       this.passwordMsg.set(this.lang.translate('settings.passwordTooShort'));
       return;
@@ -284,7 +294,15 @@ export class Settings implements OnInit, CanComponentDeactivate {
     }
     this.passwordBusy.set(true);
     try {
+      if (this.auth.hasPasswordIdentity()) {
+        const ok = await this.auth.verifyPassword(this.currentPassword());
+        if (!ok) {
+          this.passwordMsg.set(this.lang.translate('settings.currentPasswordWrong'));
+          return;
+        }
+      }
       await this.auth.updatePassword(pw);
+      this.currentPassword.set('');
       this.newPassword.set('');
       this.confirmPassword.set('');
       this.passwordMsg.set(this.lang.translate('settings.passwordChanged'));

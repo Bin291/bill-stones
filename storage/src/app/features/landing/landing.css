@@ -17,6 +17,11 @@
   letter-spacing: -0.5px;
 }
 
+/* Tiêu đề hero — in đậm để nổi bật hơn phần còn lại của trang. */
+#hero h1.display-01 {
+  font-weight: 700;
+}
+
 .heading-04 {
   font-size: clamp(1.8rem, 3.2vw, 2.625rem);
   font-weight: 300;
@@ -270,6 +275,9 @@
   font-family: 'IBM Plex Sans', sans-serif;
   font-weight: 300;
   letter-spacing: 4px;
+  /* line-height mặc định của Tailwind (text-5xl…) gần bằng 1 — không đủ chỗ
+     cho dấu tiếng Việt (ẫ, ệ, ữ…), khiến dấu bị cắt cụt phía trên. */
+  line-height: 1.35;
   background: linear-gradient(180deg, #ffffff 0%, #78a9ff 50%, #0f62fe 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

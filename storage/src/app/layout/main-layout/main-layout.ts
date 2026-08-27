@@ -12,7 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgOptimizedImage } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, interval } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { FilesApiService } from '../../core/services/files-api.service';
 import { TagsApiService } from '../../core/services/tags-api.service';
@@ -28,6 +28,7 @@ import { ExtensionStat, TagWithCount } from '../../core/models/file.model';
 import { MiniAudioPlayer } from '../../features/audio-player/mini-audio-player';
 import { TagDialog } from '../../features/tags/tag-dialog';
 import { Loader } from '../../features/ui/loader';
+import { ToastContainer } from '../../features/ui/toast-container';
 import { PrefetchService } from '../../core/services/prefetch.service';
 
 interface NavItem {
@@ -47,6 +48,7 @@ interface NavItem {
     TagDialog,
     NgOptimizedImage,
     Loader,
+    ToastContainer,
   ],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.css',
@@ -129,6 +131,16 @@ export class MainLayout implements OnInit {
       )
       .subscribe(() => {
         this.loadStats();
+        this.loadSharedCount();
+      });
+    // App chưa có push/realtime cho thông báo — nạp lại định kỳ để badge "Thông
+    // báo"/"Được chia sẻ với tôi" tự cập nhật khi có người chia sẻ, không cần
+    // F5. 20s là đủ nhanh với người dùng mà không dội API liên tục.
+    interval(20000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.auth.isAuthenticated()) return;
+        void this.notifications.refresh();
         this.loadSharedCount();
       });
   }

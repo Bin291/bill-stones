@@ -38,6 +38,7 @@ import { Autofocus } from '../ui/autofocus.directive';
 import { MoveDialog, MoveItem } from './move-dialog';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import { LangService } from '../../core/i18n/lang.service';
+import { ToastService } from '../../core/services/toast.service';
 import {
   BreadcrumbCrumb,
   Folder,
@@ -119,6 +120,7 @@ export class FileExplorer {
   private readonly tagsApi = inject(TagsApiService);
   private readonly prefetch = inject(PrefetchService);
   private readonly lang = inject(LangService);
+  private readonly toast = inject(ToastService);
   protected readonly settings = inject(SettingsService);
   private readonly settingsApi = inject(SettingsApiService);
   private readonly destroyRef = inject(DestroyRef);
@@ -199,6 +201,7 @@ export class FileExplorer {
   protected readonly previewTarget = signal<StoredFile | null>(null);
   protected readonly tagTarget = signal<TagTarget | null>(null);
   protected readonly dialog = signal<ExplorerDialog | null>(null);
+  protected readonly deleteBusy = signal(false);
   protected readonly moveTarget = signal<MoveItem[] | null>(null);
   protected readonly conflictPrompt = signal<UploadConflict | null>(null);
   private conflictResolver: ((r: ConflictResolution) => void) | null = null;
@@ -656,6 +659,7 @@ export class FileExplorer {
         firstValueFrom(this.foldersApi.trash(id)),
       );
       await Promise.all([...fileOps, ...folderOps]);
+      this.toast.success(this.lang.translate('toast.movedToTrash'));
       this.clearSelection();
       await this.revalidate();
       this.refresh.bump();
@@ -809,12 +813,20 @@ export class FileExplorer {
 
   async confirmDelete(): Promise<void> {
     const d = this.dialog();
-    this.dialog.set(null);
-    if (d?.type !== 'confirmDelete') return;
-    if (d.kind === 'file') await firstValueFrom(this.filesApi.trash(d.id));
-    else await firstValueFrom(this.foldersApi.trash(d.id));
-    void this.revalidate();
-    this.refresh.bump();
+    if (d?.type !== 'confirmDelete' || this.deleteBusy()) return;
+    this.deleteBusy.set(true);
+    try {
+      if (d.kind === 'file') await firstValueFrom(this.filesApi.trash(d.id));
+      else await firstValueFrom(this.foldersApi.trash(d.id));
+      this.toast.success(this.lang.translate('toast.movedToTrash'));
+      this.dialog.set(null);
+      void this.revalidate();
+      this.refresh.bump();
+    } catch {
+      this.toast.error(this.lang.translate('toast.actionFailed'));
+    } finally {
+      this.deleteBusy.set(false);
+    }
   }
 
   // --- Upload ---

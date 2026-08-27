@@ -66,6 +66,13 @@ export class Register {
         this.error.set(this.lang.translate('auth.usernameTaken'));
         return;
       }
+      // Chặn sớm nếu email này đã đăng nhập bằng Google trước đó — tránh tạo
+      // ra 2 "tài khoản" khác nhau (2 identity) trên cùng 1 địa chỉ email.
+      const providers = await this.auth.checkEmailProviders(email);
+      if (providers.includes('google') && !providers.includes('email')) {
+        this.error.set(this.lang.translate('auth.emailGoogleOnly'));
+        return;
+      }
       const { needsConfirmation } = await this.auth.register(username, email, pw);
       if (needsConfirmation) {
         this.done.set(true);
