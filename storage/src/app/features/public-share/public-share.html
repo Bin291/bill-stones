@@ -9,12 +9,10 @@
       @if (m.requiresPassword) {
         <h1 class="auth-title"><span class="mi">lock</span> Cần mật khẩu</h1>
         <form (submit)="unlock($event)">
-          <input
-            class="auth-input"
-            type="password"
+          <app-password-input
             placeholder="Mật khẩu"
             [value]="password()"
-            (input)="password.set($any($event.target).value)"
+            (valueChange)="password.set($event)"
           />
           <button class="auth-btn" type="submit">Mở khoá</button>
         </form>

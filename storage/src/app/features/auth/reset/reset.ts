@@ -11,6 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { LangService } from '../../../core/i18n/lang.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { Loader } from '../../ui/loader';
+import { PasswordInput } from '../../ui/password-input';
 
 /**
  * Trang đặt mật khẩu mới — nơi liên kết "Quên mật khẩu" trong email trỏ tới.
@@ -18,7 +19,7 @@ import { Loader } from '../../ui/loader';
  */
 @Component({
   selector: 'app-auth-reset',
-  imports: [RouterLink, TranslatePipe, Loader],
+  imports: [RouterLink, TranslatePipe, Loader, PasswordInput],
   templateUrl: './reset.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -78,7 +79,16 @@ export class AuthReset {
       this.info.set(this.lang.translate('auth.passwordUpdated'));
       setTimeout(() => void this.router.navigateByUrl('/files'), 1200);
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : this.lang.translate('auth.loginFailed'));
+      const msg = err instanceof Error ? err.message : '';
+      if (/auth session missing/i.test(msg)) {
+        // Phiên khôi phục từ link email đã mất/hết hạn — form vẫn còn nhưng
+        // submit lại chắc chắn lỗi tiếp. Chuyển sang trạng thái "invalid" (đã
+        // có sẵn UI + nút "Về trang đăng nhập") thay vì để form chết, không
+        // lối thoát nào ngoài gõ lại đúng lỗi cũ.
+        this.status.set('invalid');
+        return;
+      }
+      this.error.set(msg || this.lang.translate('auth.loginFailed'));
     } finally {
       this.loading.set(false);
     }

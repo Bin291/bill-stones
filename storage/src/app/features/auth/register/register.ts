@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LangService } from '../../../core/i18n/lang.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { PasswordInput } from '../../ui/password-input';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_RE = /^[a-zA-Z0-9_.]{3,30}$/;
@@ -10,7 +11,7 @@ const USERNAME_RE = /^[a-zA-Z0-9_.]{3,30}$/;
 /** Đăng ký: tên đăng nhập + email + mật khẩu + nhập lại mật khẩu. */
 @Component({
   selector: 'app-register',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, PasswordInput],
   templateUrl: './register.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

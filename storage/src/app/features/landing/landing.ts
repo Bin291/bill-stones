@@ -18,6 +18,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { LangService } from '../../core/i18n/lang.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
+import { SettingsService } from '../../core/services/settings.service';
 
 export interface SearchResultItem {
   id: string;
@@ -63,9 +64,11 @@ export class Landing {
   private readonly router = inject(Router);
   readonly langService = inject(LangService);
   private readonly auth = inject(AuthService);
+  private readonly settings = inject(SettingsService);
   readonly isAuthenticated = this.auth.isAuthenticated;
 
   // UI State Signals
+  readonly themeIsDark = signal<boolean>(true);
   readonly mobileMenuOpen = signal<boolean>(false);
   readonly isScrolled = signal<boolean>(false);
   readonly activeNavSection = signal<string>('hero');
@@ -294,6 +297,11 @@ export class Landing {
   constructor() {
     afterNextRender(() => {
       if (isPlatformBrowser(this.platformId)) {
+        // Đồng bộ icon với theme thực tế đang áp trên <html> (SettingsService
+        // đã set data-theme khi được inject; mặc định 'system' -> theo OS).
+        this.themeIsDark.set(
+          document.documentElement.getAttribute('data-theme') !== 'light'
+        );
         // afterNextRender ở đây chạy TRƯỚC khi DOM thật sự "chốt" — nếu bind
         // ScrollTrigger ngay, GSAP giữ tham chiếu tới node sẽ bị thay thế ngay
         // sau đó (animation chạy nhưng vô hình vì áp lên node đã rời DOM).
@@ -305,6 +313,13 @@ export class Landing {
         }, 100);
       }
     });
+  }
+
+  // Bật/tắt giao diện sáng-tối cho landing (dùng chung SettingsService của app).
+  toggleTheme(): void {
+    const nextDark = !this.themeIsDark();
+    this.settings.setTheme(nextDark ? 'dark' : 'light');
+    this.themeIsDark.set(nextDark);
   }
 
   // Truy vấn mẫu -> điều hướng thật sang /search (yêu cầu đăng nhập qua authGuard).
@@ -364,8 +379,6 @@ export class Landing {
   private initGsapAnimations(): void {
     gsap.registerPlugin(ScrollTrigger);
 
-    const isDesktop = window.innerWidth >= 1024;
-
     // 1. Hero 3D Mockup Tilt Transition to Flat on Scroll
     const heroMockup = this.hostEl.nativeElement.querySelector('#hero-mockup');
     const heroSection = this.hostEl.nativeElement.querySelector('#hero');
@@ -403,14 +416,19 @@ export class Landing {
       });
     }
 
-    // 3. How BillPrime Works Section (Pinned Sequence on Desktop)
+    // 3. How BillPrime Works — PIN lại như bản master (bám sát yêu cầu của
+    // user): cuộn tự nhiên (scrub, không pin) khiến animation luôn hoàn tất
+    // trước khi người dùng kịp thấy — cuộn bình thường/nhanh là "vọt" qua hết
+    // quãng ngắn đó ngay. Pin khoá màn hình đứng yên trong lúc 3 thẻ + 2 đường
+    // nối hiện lần lượt, đảm bảo LUÔN thấy được animation dù cuộn nhanh cỡ
+    // nào. Khác với master (end: +=1600, rất dài, gây khoảng trống): ở đây
+    // dùng khoảng ngắn hơn nhiều (+=800) để hạn chế "khoảng chết" sau khi pin.
     const howItWorksSection = this.hostEl.nativeElement.querySelector('#how-it-works');
     const stepCards = this.hostEl.nativeElement.querySelectorAll('.how-step-card');
     const pathDraw1 = this.hostEl.nativeElement.querySelector('#pipeline-path-1');
     const pathDraw2 = this.hostEl.nativeElement.querySelector('#pipeline-path-2');
 
-    if (howItWorksSection && isDesktop) {
-      // Set initial states
+    if (howItWorksSection && stepCards.length > 0) {
       gsap.set(stepCards, { opacity: 0, y: 35 });
       if (pathDraw1) gsap.set(pathDraw1, { strokeDashoffset: 300 });
       if (pathDraw2) gsap.set(pathDraw2, { strokeDashoffset: 300 });
@@ -419,66 +437,62 @@ export class Landing {
         scrollTrigger: {
           trigger: howItWorksSection,
           start: 'top top',
-          end: '+=1600',
+          end: '+=800',
           pin: true,
           scrub: 1,
           anticipatePin: 1,
         },
       });
 
-      // Sequence: Card 1 -> Line 1 -> Card 2 -> Line 2 -> Card 3
-      if (stepCards[0]) {
-        howTimeline.to(stepCards[0], { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' });
-      }
+      // Trình tự: Thẻ 1 -> Đường nối 1 -> Thẻ 2 -> Đường nối 2 -> Thẻ 3
+      howTimeline.to(stepCards[0], { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' });
       if (pathDraw1) {
         howTimeline.to(pathDraw1, { strokeDashoffset: 0, duration: 0.8, ease: 'linear' });
       }
-      if (stepCards[1]) {
-        howTimeline.to(stepCards[1], { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' });
-      }
+      howTimeline.to(stepCards[1], { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' });
       if (pathDraw2) {
         howTimeline.to(pathDraw2, { strokeDashoffset: 0, duration: 0.8, ease: 'linear' });
       }
-      if (stepCards[2]) {
-        howTimeline.to(stepCards[2], { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' });
-      }
-    } else if (stepCards.length > 0) {
-      // Mobile fallback: simple stagger reveal on scroll
-      gsap.from(stepCards, {
-        scrollTrigger: {
-          trigger: howItWorksSection,
-          start: 'top 75%',
-        },
-        opacity: 0,
-        y: 30,
-        stagger: 0.25,
-        duration: 0.7,
-        ease: 'power2.out',
-      });
+      howTimeline.to(stepCards[2], { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' });
     }
 
-    const featuresSection = this.hostEl.nativeElement.querySelector('#features');
-    const bentoContainer = this.hostEl.nativeElement.querySelector('.bento-shutter-container');
+    // 4. Feature Bento Grid — 8 thẻ BAY TÁCH RA (scatter) theo hướng riêng của
+    // từng thẻ, để lộ thông điệp bảo mật nằm chồng phía sau — đúng hiệu ứng
+    // "Bento Shutter" gốc. Khác với bản pin cũ: quãng cuộn bám theo vị trí
+    // THẬT của lưới (scrub, KHÔNG pin) nên không cộng thêm chiều cao ảo và
+    // không gây "nhảy nhanh". Thông điệp dùng position: sticky (xem HTML) nên
+    // luôn lấp đầy màn hình suốt lúc lưới đã tan biến — không lộ khoảng trống
+    // dù các thẻ mờ hẳn về opacity 0.
+    const bentoGrid = this.hostEl.nativeElement.querySelector('.bento-shutter-container > .grid');
     const bentoTiles = this.hostEl.nativeElement.querySelectorAll('.bento-tile');
-    const shutterGlowMsg = this.hostEl.nativeElement.querySelector('.shutter-glow-message');
+    const shutterMsg = this.hostEl.nativeElement.querySelector('.shutter-glow-message');
 
-    if (bentoContainer && featuresSection && isDesktop && bentoTiles.length > 0) {
+    if (bentoGrid && bentoTiles.length > 0 && shutterMsg) {
+      gsap.set(shutterMsg, { opacity: 0, scale: 0.85 });
+
+      // start = lúc ĐÁY lưới đã hiện đủ (bottom 85% — còn dư ~15% viewport
+      // bên dưới) — trước đây dùng "top 50%" (đỉnh lưới chạm giữa màn hình)
+      // nên bay tách BẮT ĐẦU khi hàng cuối (2 thẻ Hybrid Fusion, Robustness)
+      // còn chưa kịp lọt vào khung nhìn (lưới cao ~1137px, cao hơn 1 viewport).
+      // end = 800px, đủ dài để không "banh" ngay sau một cái lướt nhẹ. Đã nới
+      // thêm pb-[420px] cho container (xem HTML) để vùng "dính" của message đủ
+      // rộng chứa trọn quãng bắt đầu-muộn + 800px này mà không bị nhả sớm.
       const bentoTimeline = gsap.timeline({
         scrollTrigger: {
-          trigger: bentoContainer,
-          start: 'top 72px',
-          end: '+=3200',
-          pin: featuresSection,
-          scrub: 1.2,
-          anticipatePin: 1,
+          trigger: bentoGrid,
+          start: 'bottom 85%',
+          end: '+=800',
+          // scrub: true — bám NGAY theo vị trí cuộn (không độ trễ). Độ trễ
+          // (số như 0.6s) khiến hình "đuổi theo" chậm hơn thao tác cuộn thật
+          // — cuộn nhanh/bình thường sẽ thấy như animation không chạy.
+          scrub: true,
         },
       });
 
-      // Giữ nguyên lưới (đọc được hết 8 thẻ) trong ~15% quãng cuộn đầu,
-      // rồi mới bắt đầu phân rã — tránh vỡ tan ngay khi vừa pin xong.
+      // Giữ nguyên lưới (đọc được hết 8 thẻ) trong ~15% quãng đầu, rồi mới
+      // bắt đầu bay tách — tránh vỡ tan ngay khi vừa chạm mốc.
       const HOLD = 0.15;
 
-      // Scatter each tile according to its metadata
       bentoTiles.forEach((tile: HTMLElement, idx: number) => {
         const feature = this.bentoFeatures[idx];
         if (feature) {
@@ -491,22 +505,18 @@ export class Landing {
               rotation: feature.scatterRotate,
               opacity: 0,
               scale: 0.45,
-              duration: 1,
               ease: 'power2.inOut',
             },
-            HOLD // All scatter at the same time, sau khi giữ lưới ổn định
+            HOLD
           );
         }
       });
 
-      if (shutterGlowMsg) {
-        bentoTimeline.fromTo(
-          shutterGlowMsg,
-          { opacity: 0.1, scale: 0.85 },
-          { opacity: 1, scale: 1.05, duration: 1, ease: 'power2.out' },
-          HOLD + 0.3
-        );
-      }
+      bentoTimeline.to(
+        shutterMsg,
+        { opacity: 1, scale: 1, ease: 'power2.out' },
+        HOLD + 0.3
+      );
     }
 
     // 5. SVG Shield Draw-in Animation on Scroll
@@ -583,7 +593,7 @@ export class Landing {
       const scrollY = window.scrollY;
       this.isScrolled.set(scrollY > 40);
 
-      const sections = ['hero', 'how-it-works', 'features', 'sandbox', 'security', 'pricing'];
+      const sections = ['hero', 'features', 'how-it-works', 'sandbox', 'security', 'pricing'];
       for (const sectionId of sections) {
         const el = document.getElementById(sectionId);
         if (el) {

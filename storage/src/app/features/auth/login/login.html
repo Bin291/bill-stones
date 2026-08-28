@@ -26,14 +26,12 @@
         />
 
         <label class="auth-label">{{ 'auth.password' | t }}</label>
-        <input
-          class="auth-input"
-          type="password"
+        <app-password-input
           autocomplete="current-password"
           [placeholder]="'auth.passwordPlaceholder' | t"
           [value]="password()"
-          (input)="password.set($any($event.target).value)"
-          required
+          [required]="true"
+          (valueChange)="password.set($event)"
         />
 
         <button class="auth-btn" type="submit" [disabled]="loading()">

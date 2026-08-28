@@ -1,5 +1,5 @@
 <!-- BillPrime - IBM Carbon Dark Theme Landing Page -->
-<div class="relative min-h-screen bg-[#161616] text-[#f4f4f4] overflow-x-hidden font-sans selection:bg-[#0f62fe] selection:text-white">
+<div class="relative min-h-screen bg-[#161616] text-[#f4f4f4] overflow-x-clip font-sans selection:bg-[#0f62fe] selection:text-white">
 
   <!-- ========================================== -->
   <!-- 1. STICKY HEADER NAVIGATION                -->
@@ -89,6 +89,16 @@
 
       <!-- Action Buttons -->
       <div class="hidden sm:flex items-center gap-3">
+        <!-- Theme Toggle (Light/Dark) -->
+        <button
+          type="button"
+          (click)="toggleTheme()"
+          class="p-2 text-[#c6c6c6] hover:text-white transition-colors cursor-pointer focus:outline-none"
+          [attr.aria-label]="themeIsDark() ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'"
+          title="Sáng / Tối"
+        >
+          <mat-icon>{{ themeIsDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
         @if (isAuthenticated()) {
           <a
             routerLink="/files"
@@ -108,15 +118,25 @@
         }
       </div>
 
-      <!-- Mobile Menu Toggle Button -->
-      <button
-        type="button"
-        (click)="toggleMobileMenu()"
-        class="md:hidden p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
-        aria-label="Toggle Navigation Menu"
-      >
-        <mat-icon>{{ mobileMenuOpen() ? 'close' : 'menu' }}</mat-icon>
-      </button>
+      <!-- Mobile Theme Toggle + Menu Button -->
+      <div class="md:hidden flex items-center gap-1">
+        <button
+          type="button"
+          (click)="toggleTheme()"
+          class="p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
+          [attr.aria-label]="themeIsDark() ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'"
+        >
+          <mat-icon>{{ themeIsDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+        <button
+          type="button"
+          (click)="toggleMobileMenu()"
+          class="p-2 text-[#c6c6c6] hover:text-white focus:outline-none"
+          aria-label="Toggle Navigation Menu"
+        >
+          <mat-icon>{{ mobileMenuOpen() ? 'close' : 'menu' }}</mat-icon>
+        </button>
+      </div>
     </div>
 
     <!-- Mobile Dropdown Menu -->
@@ -378,9 +398,104 @@
   </section>
 
   <!-- ========================================== -->
+  <!-- 4. FEATURE BENTO SHUTTER GRID (300vh Pin)  -->
+  <!-- ========================================== -->
+  <section id="features" class="relative py-24 bg-[#161616] border-t border-[#262626]">
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative">
+      
+      <!-- Section Title -->
+      <div class="mb-12 max-w-2xl z-20 relative">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-2 h-2 bg-[#0f62fe]"></div>
+          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
+            {{ 'landing.bentoEyebrow' | t }}
+          </span>
+        </div>
+        <h2 class="heading-04 text-white">{{ 'landing.bentoTitle' | t }}</h2>
+        <p class="body-long-01 text-[#c6c6c6]">
+          {{ 'landing.bentoDesc' | t }}
+        </p>
+      </div>
+
+      <!-- Bento Shutter Container: grid + thông điệp bảo mật cùng chiếm 1 ô
+           CSS Grid (chồng lên nhau, kiểu master — 1 khối duy nhất). Message
+           dùng position: sticky nên "dính" tại chỗ suốt chiều cao thật của
+           lưới khi cuộn qua — có đủ thời gian đọc trước khi hết section,
+           KHÔNG cần JS pin nên không cộng thêm chiều cao ảo/không nhảy nhanh. -->
+      <div class="bento-shutter-container relative">
+
+        <!-- Spacer VÔ HÌNH — cùng chia sẻ grid-area với message/lưới (xem CSS
+             .bento-shutter-container > *) để KÉO DÀI chính ô lưới đó. Lưu ý:
+             thêm padding-bottom vào container KHÔNG đủ — sticky trong CSS Grid
+             chỉ "dính" trong phạm vi grid-area của chính nó (bằng đúng lưới
+             8 thẻ, ~1137px), không tính phần đệm ngoài track. Phải kéo dài
+             chính track thì vùng dính của message mới dài theo. -->
+        <div class="h-[1900px] pointer-events-none" aria-hidden="true"></div>
+
+        <!-- Thông điệp bảo mật — sticky, hiện dần khi 8 thẻ bay tách ra (scatter)
+             khi cuộn qua. Có nền mờ (backdrop) để chữ luôn rõ. -->
+        <div class="shutter-glow-message sticky top-[calc(50vh-165px)] self-start z-20 flex flex-col items-center text-center px-4 pointer-events-none">
+          <div class="bg-[#161616]/90 backdrop-blur-sm px-6 py-8 sm:px-10 sm:py-10 flex flex-col items-center">
+            <div class="text-[10px] sm:text-xs font-mono text-[#78a9ff] tracking-[0.25em] mb-4 uppercase">
+              SECURITY &amp; PRIVACY AT CORE LEVEL
+            </div>
+            <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6" [innerHTML]="'landing.glowingText' | t">
+            </h2>
+            <div class="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+              <span class="carbon-tag carbon-tag-blue">AES-256-GCM ENCRYPTION</span>
+              <span class="carbon-tag carbon-tag-blue">POSTGRESQL + PGVECTOR</span>
+              <span class="carbon-tag carbon-tag-blue">HYBRID RRF SEARCH</span>
+              <span class="carbon-tag carbon-tag-green">{{ 'landing.heroAccountIsolation' | t | uppercase }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8 Bento Grid Tiles -->
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-10 self-start">
+
+          @for (feature of bentoFeatures; track feature.id) {
+            <div
+              [id]="feature.id"
+              class="bento-tile carbon-card p-5 flex flex-col justify-between {{ feature.colSpan }}"
+            >
+              <div>
+                <!-- Top Tag & Icon -->
+                <div class="flex items-center justify-between mb-4">
+                  <span class="carbon-tag text-[10px]">{{ feature.tag }}</span>
+                  <div class="w-8 h-8 bg-[#262626] flex items-center justify-center text-[#78a9ff]">
+                    <mat-icon class="text-lg">{{ feature.icon }}</mat-icon>
+                  </div>
+                </div>
+
+                <!-- Title & Subtitle -->
+                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title | t }}</h3>
+                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle | t }}</div>
+
+                <!-- Description -->
+                <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed mb-4">
+                  {{ feature.description | t }}
+                </p>
+              </div>
+
+              <!-- Tech Spec Footer -->
+              <div class="pt-3 border-t border-[#262626] text-[11px] font-mono text-[#8d8d8d]">
+                <span class="break-words whitespace-normal block w-full">{{ feature.techSpec }}</span>
+              </div>
+            </div>
+          }
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================== -->
   <!-- 3. HOW BILLPRIME WORKS (Pinned Sequence)   -->
   <!-- ========================================== -->
-  <section id="how-it-works" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center">
+  <section id="how-it-works" class="relative py-24 bg-[#161616] border-t border-[#262626]">
     
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
       
@@ -408,12 +523,12 @@
           viewBox="0 0 1000 50"
         >
           <!-- Background Track 1 -->
-          <line x1="280" y1="25" x2="380" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <line x1="280" y1="25" x2="380" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" class="pipeline-track" />
           <!-- Animated Draw Path 1 -->
           <path id="pipeline-path-1" d="M 280 25 L 380 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
 
           <!-- Background Track 2 -->
-          <line x1="620" y1="25" x2="720" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" />
+          <line x1="620" y1="25" x2="720" y2="25" stroke="#333333" stroke-width="2" stroke-dasharray="4 4" class="pipeline-track" />
           <!-- Animated Draw Path 2 -->
           <path id="pipeline-path-2" d="M 620 25 L 720 25" stroke="#0f62fe" stroke-width="2" class="pipeline-draw" />
         </svg>
@@ -509,86 +624,6 @@
               <span>{{ 'landing.step3Meta3Val' | t }}</span>
             </div>
           </div>
-        </div>
-
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================== -->
-  <!-- 4. FEATURE BENTO SHUTTER GRID (300vh Pin)  -->
-  <!-- ========================================== -->
-  <section id="features" class="relative min-h-screen py-24 bg-[#161616] border-t border-[#262626] flex flex-col justify-center overflow-hidden">
-    
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative">
-      
-      <!-- Section Title -->
-      <div class="mb-12 max-w-2xl z-20 relative">
-        <div class="flex items-center gap-2 mb-3">
-          <div class="w-2 h-2 bg-[#0f62fe]"></div>
-          <span class="font-mono text-xs text-[#8d8d8d] tracking-wider uppercase">
-            {{ 'landing.bentoEyebrow' | t }}
-          </span>
-        </div>
-        <h2 class="heading-04 text-white">{{ 'landing.bentoTitle' | t }}</h2>
-        <p class="body-long-01 text-[#c6c6c6]">
-          Cuộn chuột để phân rã 8 khối module và khám phá triết lý bảo mật cốt lõi bên dưới.
-        </p>
-      </div>
-
-      <!-- Bento Shutter Container (Overlayed over glowing message) -->
-      <div class="bento-shutter-container relative min-h-[580px]">
-        
-        <!-- Underlying Glowing Tech Message Revealed Upon Scroll Scatter -->
-        <div class="shutter-glow-message px-4 text-center">
-          <div class="text-[10px] sm:text-xs font-mono text-[#78a9ff] tracking-[0.25em] mb-4 uppercase">
-            SECURITY &amp; PRIVACY AT CORE LEVEL
-          </div>
-          <h2 class="glowing-tech-text text-xl sm:text-4xl md:text-5xl font-light mb-6" [innerHTML]="'landing.glowingText' | t">
-          </h2>
-          <div class="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
-            <span class="carbon-tag carbon-tag-blue">AES-256-GCM ENCRYPTION</span>
-            <span class="carbon-tag carbon-tag-blue">POSTGRESQL + PGVECTOR</span>
-            <span class="carbon-tag carbon-tag-blue">HYBRID RRF SEARCH</span>
-            <span class="carbon-tag carbon-tag-green">{{ 'landing.heroAccountIsolation' | t | uppercase }}</span>
-          </div>
-        </div>
-
-        <!-- 8 Bento Grid Tiles -->
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-10">
-          
-          @for (feature of bentoFeatures; track feature.id) {
-            <div
-              [id]="feature.id"
-              class="bento-tile carbon-card p-5 flex flex-col justify-between {{ feature.colSpan }}"
-            >
-              <div>
-                <!-- Top Tag & Icon -->
-                <div class="flex items-center justify-between mb-4">
-                  <span class="carbon-tag text-[10px]">{{ feature.tag }}</span>
-                  <div class="w-8 h-8 bg-[#262626] flex items-center justify-center text-[#78a9ff]">
-                    <mat-icon class="text-lg">{{ feature.icon }}</mat-icon>
-                  </div>
-                </div>
-
-                <!-- Title & Subtitle -->
-                <h3 class="text-base sm:text-lg font-medium text-white mb-1">{{ feature.title | t }}</h3>
-                <div class="text-xs text-[#78a9ff] font-mono mb-3">{{ feature.subtitle | t }}</div>
-                
-                <!-- Description -->
-                <p class="text-xs sm:text-sm text-[#a8a8a8] leading-relaxed mb-4">
-                  {{ feature.description | t }}
-                </p>
-              </div>
-
-              <!-- Tech Spec Footer -->
-              <div class="pt-3 border-t border-[#262626] text-[11px] font-mono text-[#8d8d8d]">
-                <span class="break-words whitespace-normal block w-full">{{ feature.techSpec }}</span>
-              </div>
-            </div>
-          }
-
         </div>
 
       </div>
@@ -878,7 +913,7 @@
               <rect x="145" y="135" width="10" height="28" fill="#0f62fe" />
 
               <!-- Active Status Indicators -->
-              <circle cx="150" cy="135" r="5" fill="#ffffff" />
+              <circle cx="150" cy="135" r="5" fill="#ffffff" class="shield-core-dot" />
             </svg>
 
             <!-- Scanning Laser Line Overlay -->

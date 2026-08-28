@@ -14,13 +14,14 @@ import {
 import { FoldersApiService } from '../../core/services/folders-api.service';
 import { FolderPickerDialog } from '../ui/folder-picker-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
+import { PasswordInput } from '../ui/password-input';
 import { formatBytes } from '../../core/util/file-types';
 import { CanComponentDeactivate } from '../../core/guards/unsaved-changes.guard';
 import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-settings',
-  imports: [TranslatePipe, FolderPickerDialog, ConfirmDialog],
+  imports: [TranslatePipe, FolderPickerDialog, ConfirmDialog, PasswordInput],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
