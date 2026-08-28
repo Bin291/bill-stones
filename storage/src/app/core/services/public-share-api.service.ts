@@ -50,6 +50,18 @@ export class PublicShareApiService {
     });
   }
 
+  /** Render docx/xlsx/csv/text/code thành HTML để xem trước inline (mục preview). */
+  previewHtml(
+    token: string,
+    session: string | null,
+    fileId?: string,
+  ): Observable<{ html: string }> {
+    const q = fileId ? `?fileId=${fileId}` : '';
+    return this.http.get<{ html: string }>(`${this.base}/${token}/preview${q}`, {
+      headers: this.headers(session),
+    });
+  }
+
   list(token: string, session: string | null, folderId?: string): Observable<PublicListing> {
     const q = folderId ? `?folderId=${folderId}` : '';
     return this.http.get<PublicListing>(`${this.base}/${token}/list${q}`, {

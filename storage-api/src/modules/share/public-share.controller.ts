@@ -80,6 +80,18 @@ export class PublicShareController {
     );
   }
 
+  /** Render nội dung tệp (docx/xlsx/csv/text/code) thành HTML để xem trước inline. */
+  @Get(':token/preview')
+  preview(
+    @Param('token') token: string,
+    @Headers('x-share-session') session?: string,
+    @Query('fileId') fileId?: string,
+  ) {
+    return this.withUnlocked(token, session, (share) =>
+      this.share.publicPreviewHtml(share, fileId),
+    );
+  }
+
   /** Chỉ với link folder: duyệt cây con read-only (verify hậu duệ trong service). */
   @Get(':token/list')
   list(

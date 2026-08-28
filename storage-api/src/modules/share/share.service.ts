@@ -536,6 +536,26 @@ export class ShareService {
     return { url };
   }
 
+  /**
+   * Render NỘI DUNG 1 tệp của link công khai thành HTML để xem trước NGAY trên
+   * trang share (docx→mammoth, xlsx/csv→bảng, text/code→<pre>) — dùng chung
+   * pipeline có cache R2 với bản xem trước trong app. Đi qua backend nên không
+   * vướng CORS. Chỉ gọi khi docPreview.supports(extension) = true.
+   */
+  async publicPreviewHtml(
+    share: Share & { file: File | null; folder: Folder | null },
+    childFileId?: string,
+  ): Promise<{ html: string }> {
+    const file = await this.resolveShareFile(share, childFileId);
+    const html = await this.docPreview.renderHtml(file);
+    return { html };
+  }
+
+  /** Đuôi tệp có hỗ trợ xem trước dạng HTML (docx/xlsx/csv/text/code). */
+  previewSupportsExtension(extension: string): boolean {
+    return this.docPreview.supports(extension);
+  }
+
   /** Với link folder: liệt kê con của folderId sau khi verify hậu duệ (mục 12.D). */
   async publicListChildren(
     share: Share & { folder: Folder | null },

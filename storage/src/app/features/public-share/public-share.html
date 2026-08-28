@@ -1,137 +1,235 @@
-<div class="auth-wrap">
-  <div class="auth-card" style="max-width: 520px">
-    @if (loading()) {
-      <div style="display: flex; justify-content: center; padding: 12px"><app-loader [dot]="9" [gap]="6" /></div>
-    } @else if (error()) {
-      <h1 class="auth-title">Không khả dụng</h1>
-      <p class="auth-sub">{{ error() }}</p>
-    } @else if (meta(); as m) {
-      @if (m.requiresPassword) {
-        <h1 class="auth-title"><span class="mi">lock</span> Cần mật khẩu</h1>
-        <form (submit)="unlock($event)">
-          <app-password-input
-            placeholder="Mật khẩu"
-            [value]="password()"
-            (valueChange)="password.set($event)"
-          />
-          <button class="auth-btn" type="submit">Mở khoá</button>
-        </form>
-      } @else if (m.kind === 'file') {
-        @if (inline(); as v) {
-          <!-- Xem ngay trên trang: ảnh/pdf/video/audio -->
-          <div class="ps-inline">
-            @switch (v.kind) {
-              @case ('image') {
-                <img [src]="v.url" [alt]="v.name" class="ps-inline-img" />
+<div class="share-page">
+  <!-- Thanh thương hiệu: logo + tên app, và lối vào app bên phải -->
+  <header class="share-header">
+    <a class="share-brand" href="/">
+      <img src="/logo.png" class="app-logo" width="24" height="24" alt="" />
+      BillPrime
+    </a>
+    <a class="share-cta" href="/">
+      <span class="mi">arrow_outward</span>
+      Mở BillPrime
+    </a>
+  </header>
+
+  @if (loading()) {
+    <main class="share-main">
+      <div class="share-card">
+        <div class="share-state">
+          <app-loader [dot]="10" [gap]="7" />
+          <p>Đang tải…</p>
+        </div>
+      </div>
+    </main>
+  } @else if (meta(); as m) {
+    @if (m.requiresPassword) {
+      <!-- Cần mật khẩu -->
+      <main class="share-main">
+        <div class="share-card">
+          <div class="share-lock">
+            <span class="mi">lock</span>
+            <h1>Nội dung được bảo vệ</h1>
+            <p>Nhập mật khẩu để xem nội dung được chia sẻ.</p>
+            <form (submit)="unlock($event)">
+              <app-password-input
+                placeholder="Mật khẩu"
+                [value]="password()"
+                (valueChange)="password.set($event)"
+              />
+              @if (error()) {
+                <p class="share-lock-error">{{ error() }}</p>
               }
-              @case ('pdf') {
-                <iframe [src]="v.safeUrl" class="ps-inline-frame" title="PDF"></iframe>
+              <button class="share-btn share-btn-primary" type="submit" style="justify-content: center">
+                Mở khoá
+              </button>
+            </form>
+          </div>
+        </div>
+      </main>
+    } @else if (m.kind === 'file') {
+      <!-- Link 1 tệp: xem trước ngay + nút hành động -->
+      <main class="share-main">
+        <div class="share-card">
+          @if (inline(); as v) {
+            @if (v.kind) {
+              <div class="share-preview" [class.is-doc]="v.kind === 'doc'">
+                @switch (v.kind) {
+                  @case ('image') { <img [src]="v.url" [alt]="v.name" /> }
+                  @case ('pdf') { <iframe [src]="v.safeUrl" title="PDF"></iframe> }
+                  @case ('video') { <video [src]="v.url" controls autoplay playsinline></video> }
+                  @case ('audio') {
+                    <div class="share-preview-audio">
+                      <span class="mi">music_note</span>
+                      <audio [src]="v.url" controls style="width: 100%; max-width: 360px"></audio>
+                    </div>
+                  }
+                  @case ('doc') { <div class="doc-view" [innerHTML]="v.html"></div> }
+                }
+              </div>
+            }
+          }
+          <div class="share-head">
+            <span class="share-head-icon"><span class="mi">{{ iconOf(m.extension || '') }}</span></span>
+            <div class="share-head-text">
+              <h1>{{ m.name }}</h1>
+              <p class="share-sub">
+                {{ formatBytes(m.size || '0') }}
+                @if (inline() && inline()!.kind === null) {
+                  · Không xem trước được định dạng này
+                }
+              </p>
+            </div>
+            <div class="share-head-actions">
+              @if (m.allowDownload) {
+                <button class="share-btn share-btn-primary" type="button" (click)="download(undefined, m.name)">
+                  <span class="mi">download</span> Tải xuống
+                </button>
               }
-              @case ('video') {
-                <video [src]="v.url" class="ps-inline-video" controls autoplay playsinline></video>
+            </div>
+          </div>
+        </div>
+      </main>
+    } @else {
+      <!-- Link THƯ MỤC: workspace 2 cột kiểu VS Code (preview trái · explorer phải) -->
+      <main class="share-workspace">
+        <!-- Cột trái: ô xem trước -->
+        <section class="ws-preview" [style.flexBasis.%]="previewPct()">
+          @if (paneLoading()) {
+            <div class="ws-empty"><app-loader [dot]="10" [gap]="7" /></div>
+          } @else if (pane(); as p) {
+            <div class="ws-preview-bar">
+              <span class="mi ws-preview-bar-icon">{{ iconOf(p.ext) }}</span>
+              <span class="ws-preview-bar-name">{{ p.name }}</span>
+              @if (m.allowDownload) {
+                <button class="share-icon-btn" type="button" title="Tải xuống" (click)="download(p.id, p.name)">
+                  <span class="mi">download</span>
+                </button>
               }
-              @case ('audio') {
-                <div class="ps-viewer-audio">
-                  <span class="mi" style="font-size: 56px; color: var(--primary)">music_note</span>
-                  <audio [src]="v.url" controls style="width: 100%; max-width: 360px"></audio>
-                </div>
+            </div>
+            <div class="ws-preview-body" [class.is-doc]="p.kind === 'doc'">
+              @switch (p.kind) {
+                @case ('image') { <img [src]="p.url" [alt]="p.name" class="ws-media" /> }
+                @case ('pdf') { <iframe [src]="p.safeUrl" class="ws-frame" title="PDF"></iframe> }
+                @case ('video') { <video [src]="p.url" class="ws-media" controls autoplay playsinline></video> }
+                @case ('audio') {
+                  <div class="ws-audio">
+                    <span class="mi">music_note</span>
+                    <div class="ws-audio-name">{{ p.name }}</div>
+                    <audio [src]="p.url" controls autoplay style="width: 100%; max-width: 420px"></audio>
+                  </div>
+                }
+                @case ('doc') { <div class="doc-view" [innerHTML]="p.html"></div> }
+                @default {
+                  <div class="ws-empty">
+                    <span class="mi ws-empty-icon">{{ iconOf(p.ext) }}</span>
+                    <p class="ws-empty-title">{{ p.name }}</p>
+                    <p class="ws-empty-sub">Không xem trước được định dạng này.</p>
+                    @if (m.allowDownload) {
+                      <button class="share-btn share-btn-primary" type="button" (click)="download(p.id, p.name)">
+                        <span class="mi">download</span> Tải xuống
+                      </button>
+                    }
+                  </div>
+                }
+              }
+            </div>
+          } @else {
+            <!-- Màn hình chào khi chưa chọn tệp (giống Welcome của VS Code) -->
+            <div class="ws-welcome">
+              <img src="/logo.png" alt="" class="ws-welcome-logo app-logo" />
+              <p class="ws-welcome-title">{{ m.name }}</p>
+              <p class="ws-welcome-sub">Chọn một tệp ở bảng bên phải để xem trước tại đây.</p>
+            </div>
+          }
+        </section>
+
+        <!-- Thanh kéo chia cột -->
+        <div
+          class="ws-splitter"
+          role="separator"
+          aria-orientation="vertical"
+          (pointerdown)="onSplitterDown($event)"
+        ></div>
+
+        <!-- Cột phải: explorer thư mục/tệp -->
+        <aside class="ws-explorer">
+          <div class="ws-explorer-head">
+            <span class="mi">folder_open</span>
+            <span class="ws-explorer-title">{{ m.name }}</span>
+          </div>
+
+          <div class="share-crumbs">
+            @for (c of crumbs(); track $index) {
+              @if (!$first) { <span class="share-crumb-sep">/</span> }
+              @if (c.ellipsis) {
+                <span class="share-crumb-ellipsis">…</span>
+              } @else {
+                <button type="button" [class.current]="c.current" (click)="goCrumb(c.index)">{{ c.label }}</button>
               }
             }
           </div>
-        } @else {
-          <div class="card-preview" style="height: 140px; border-radius: 8px; margin-bottom: 16px">
-            <span class="mi" style="font-size: 56px; color: var(--text-muted)">
-              {{ iconOf(m.extension || '') }}
-            </span>
-          </div>
-        }
-        <h1 class="auth-title" style="font-size: 18px">{{ m.name }}</h1>
-        <p class="auth-sub">{{ formatBytes(m.size || '0') }}</p>
-        <div class="row" style="gap: 8px; margin-top: 8px">
-          @if (!inline()) {
-            <button class="btn" type="button" (click)="view(undefined, m.name, m.extension)">
-              <span class="mi">open_in_new</span> Mở
-            </button>
-          }
-          @if (m.allowDownload) {
-            <button class="btn btn-primary" type="button" (click)="download(undefined, m.name)">
-              <span class="mi">download</span> Tải xuống
-            </button>
-          }
-        </div>
-      } @else {
-        <h1 class="auth-title"><span class="mi">folder</span> {{ m.name }}</h1>
-        <div class="shared-crumbs" style="margin-top: 8px">
-          <button class="crumb" type="button" (click)="goRoot()">{{ m.name }}</button>
-          @for (crumb of path(); track crumb.id; let i = $index; let last = $last) {
-            <span class="crumb-sep">/</span>
-            <button class="crumb" type="button" [class.current]="last" (click)="goToCrumb(i)">
-              {{ crumb.name }}
-            </button>
-          }
-        </div>
-        @if (listing(); as l) {
-          <table class="file-list" style="margin-top: 12px">
-            <tbody>
-              @for (folder of l.folders; track folder.id) {
-                <tr class="row-click" (click)="openFolder(folder)">
-                  <td><span class="mi" style="color: var(--primary)">folder</span> {{ folder.name }}</td>
-                  <td style="text-align: right">
-                    <span class="mi" style="color: var(--text-muted)">chevron_right</span>
-                  </td>
-                </tr>
-              }
-              @for (file of l.files; track file.id) {
-                <tr>
-                  <td>
-                    <span class="mi" style="color: var(--text-muted)">{{ iconOf(file.extension) }}</span>
-                    {{ file.name }}
-                  </td>
-                  <td style="text-align: right; white-space: nowrap">
-                    <button class="btn btn-icon" type="button" (click)="view(file.id, file.name, file.extension)">
-                      <span class="mi">visibility</span>
-                    </button>
-                    @if (m.allowDownload) {
-                      <button class="btn btn-icon" type="button" (click)="download(file.id, file.name)">
-                        <span class="mi">download</span>
-                      </button>
-                    }
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        }
-      }
-    }
-  </div>
-</div>
 
-<!-- Trình xem nội dung ngay trên trang (ảnh/pdf/video/audio) — bấm nền để đóng -->
-@if (viewer(); as v) {
-  <div class="ps-viewer" (click)="closeViewer()">
-    <button class="ps-viewer-close" type="button" (click)="closeViewer()">
-      <span class="mi">close</span>
-    </button>
-    <div class="ps-viewer-stage" (click)="$event.stopPropagation()">
-      @switch (v.kind) {
-        @case ('image') {
-          <img [src]="v.url" [alt]="v.name" class="ps-viewer-img" />
-        }
-        @case ('pdf') {
-          <iframe [src]="v.safeUrl" class="ps-viewer-frame" title="PDF"></iframe>
-        }
-        @case ('video') {
-          <video [src]="v.url" class="ps-viewer-video" controls autoplay playsinline></video>
-        }
-        @case ('audio') {
-          <div class="ps-viewer-audio">
-            <span class="mi" style="font-size: 56px; color: var(--primary)">music_note</span>
-            <div style="margin: 8px 0 12px; font-weight: 600">{{ v.name }}</div>
-            <audio [src]="v.url" controls autoplay style="width: 320px; max-width: 80vw"></audio>
-          </div>
-        }
-      }
-    </div>
-  </div>
-}
+          <!-- Thanh mảnh báo đang chuyển thư mục — KHÔNG che danh sách -->
+          @if (navLoading()) { <div class="ws-loading-bar"></div> }
+
+          @if (listing(); as l) {
+            <div class="ws-explorer-list">
+              @if (l.folders.length === 0 && l.files.length === 0) {
+                <div class="share-empty">Thư mục này trống.</div>
+              } @else {
+                @for (folder of l.folders; track folder.id) {
+                  <div
+                    class="share-row clickable"
+                    (click)="openFolder(folder)"
+                    (mouseenter)="prefetchFolder(folder.id)"
+                  >
+                    <span class="mi share-row-icon is-folder">folder</span>
+                    <span class="share-row-name">{{ folder.name }}</span>
+                    <span class="mi share-row-icon">chevron_right</span>
+                  </div>
+                }
+                @for (file of l.files; track file.id) {
+                  <div
+                    class="share-row clickable"
+                    [class.selected]="selectedId() === file.id"
+                    (click)="selectFile(file.id, file.name, file.extension)"
+                  >
+                    <span class="mi share-row-icon">{{ iconOf(file.extension) }}</span>
+                    <span class="share-row-name">{{ file.name }}</span>
+                    <span class="share-row-meta">{{ formatBytes(file.size || '0') }}</span>
+                    @if (m.allowDownload) {
+                      <div class="share-row-actions">
+                        <button
+                          class="share-icon-btn"
+                          type="button"
+                          title="Tải xuống"
+                          (click)="download(file.id, file.name); $event.stopPropagation()"
+                        >
+                          <span class="mi">download</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+            </div>
+          }
+        </aside>
+      </main>
+    }
+  } @else if (error()) {
+    <main class="share-main">
+      <div class="share-card">
+        <div class="share-state">
+          <span class="mi">link_off</span>
+          <h1>Không khả dụng</h1>
+          <p>{{ error() }}</p>
+        </div>
+      </div>
+    </main>
+  }
+
+  <footer class="share-footer">
+    <span class="mi">verified_user</span>
+    <span>Được chia sẻ an toàn qua BillPrime · © 2026 BillPrime</span>
+  </footer>
+</div>

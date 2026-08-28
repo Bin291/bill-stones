@@ -80,6 +80,14 @@
   --text-muted: var(--ink-muted);
 }
 
+/* Logo BillPrime là ảnh trắng (hợp nền tối). Ở theme SÁNG nền trắng sẽ "nuốt"
+   logo → tô ĐEN lại cho thấy rõ; theme TỐI giữ nguyên trắng. Áp cho mọi nơi gắn
+   class .app-logo (trang share, header landing…). brightness(0) biến pixel đục
+   thành đen, giữ nguyên vùng trong suốt. */
+:root[data-theme='light'] .app-logo {
+  filter: brightness(0);
+}
+
 html,
 body {
   margin: 0;
