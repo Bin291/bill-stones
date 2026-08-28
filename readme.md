@@ -40,3 +40,23 @@ make test      # run tests for frontend + backend
 make lint      # run lint for frontend + backend
 make clean     # remove node_modules and build output
 ```
+
+## GitHub Actions Deploy
+
+Workflow deploy đã được thêm tại:
+
+- `.github/workflows/deploy.yml`
+
+Workflow sẽ chạy khi:
+
+- push vào `main`
+- chạy thủ công qua **Actions > Deploy > Run workflow**
+
+Để deploy thật, cần cấu hình GitHub Secrets trong repository:
+
+- `RENDER_DEPLOY_HOOK_URL` (deploy backend lên Render qua Deploy Hook)
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_PAGES_PROJECT_NAME` (project Pages cho frontend)
+
+Nếu thiếu secrets của một môi trường, job deploy tương ứng sẽ tự bỏ qua.
