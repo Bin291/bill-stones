@@ -18,6 +18,15 @@ async function bootstrap() {
     '/uploads/part',
     raw({ type: () => true, limit: `${chunkSizeMb * 2}mb` }),
   );
+  // Quét virus: gửi nguyên bytes tệp thực thi lạ lên VT phân tích (trần 32MB).
+  const scanMaxMb = Math.ceil(
+    (config.get<number>('virusScan.maxUploadBytes') ?? 32 * 1024 * 1024) /
+      (1024 * 1024),
+  );
+  app.use(
+    '/uploads/scan-file',
+    raw({ type: () => true, limit: `${scanMaxMb + 2}mb` }),
+  );
   app.use(json({ limit: '5mb' }));
   app.use(urlencoded({ extended: true, limit: '5mb' }));
 

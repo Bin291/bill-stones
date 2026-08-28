@@ -246,21 +246,24 @@
       </section>
     }
 
-    <section class="settings-block">
-      <h2 class="settings-label">{{ 'settings.defaultSharePrivacy' | t }}</h2>
-      <div class="seg">
-        @for (opt of privacyOptions; track opt.value) {
-          <button
-            class="seg-btn"
-            type="button"
-            [class.active]="sharePrivacyInput() === opt.value"
-            (click)="sharePrivacyInput.set(opt.value)"
-          >
-            {{ opt.labelKey | t }}
-          </button>
-        }
-      </div>
-    </section>
+    <!-- Ẩn "Quyền chia sẻ mặc định" theo yêu cầu — GIỮ NGUYÊN logic .ts, chỉ tắt hiển thị. -->
+    @if (false) {
+      <section class="settings-block">
+        <h2 class="settings-label">{{ 'settings.defaultSharePrivacy' | t }}</h2>
+        <div class="seg">
+          @for (opt of privacyOptions; track opt.value) {
+            <button
+              class="seg-btn"
+              type="button"
+              [class.active]="sharePrivacyInput() === opt.value"
+              (click)="sharePrivacyInput.set(opt.value)"
+            >
+              {{ opt.labelKey | t }}
+            </button>
+          }
+        </div>
+      </section>
+    }
   </section>
 </div>
 

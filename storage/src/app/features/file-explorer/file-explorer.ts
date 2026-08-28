@@ -16,6 +16,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { FilesApiService } from '../../core/services/files-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
+import { VirusScanApiService, ScanResult } from '../../core/services/virus-scan-api.service';
 import {
   UploadService,
   UploadTask,
@@ -63,7 +64,8 @@ interface TagTarget {
 /** Hộp thoại tuỳ biến (thay prompt/confirm trình duyệt). */
 type ExplorerDialog =
   | { type: 'newFolder'; name: string }
-  | { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string };
+  | { type: 'confirmDelete'; kind: 'file' | 'folder'; id: string; name: string }
+  | { type: 'confirmBulkDelete'; count: number };
 
 interface ContextMenu {
   x: number;
@@ -121,6 +123,7 @@ export class FileExplorer {
   private readonly filesApi = inject(FilesApiService);
   private readonly foldersApi = inject(FoldersApiService);
   private readonly uploadService = inject(UploadService);
+  private readonly virusScan = inject(VirusScanApiService);
   private readonly refresh = inject(RefreshService);
   private readonly audioSvc = inject(AudioPlayerService);
   private readonly tagsApi = inject(TagsApiService);
@@ -213,6 +216,14 @@ export class FileExplorer {
   protected readonly conflictPrompt = signal<UploadConflict | null>(null);
   private conflictResolver: ((r: ConflictResolution) => void) | null = null;
 
+  // Cảnh báo tệp thực thi (.exe…) trước khi tải lên — sẽ quét virus (VirusTotal).
+  protected readonly exeWarn = signal<{ names: string[] } | null>(null);
+  private exeWarnResolver: ((proceed: boolean) => void) | null = null;
+
+  // Kết quả quét khi PHÁT HIỆN mã độc — hiện chi tiết rồi hỏi có tải lên không.
+  protected readonly scanResult = signal<{ fileName: string; result: ScanResult } | null>(null);
+  private scanResultResolver: ((proceed: boolean) => void) | null = null;
+
   private creatingBusy = false;
 
   // Đổi tên INLINE ngay trên card/hàng (không dùng hộp thoại).
@@ -226,7 +237,6 @@ export class FileExplorer {
   protected readonly selectionMode = signal(false);
   protected readonly selectedFileIds = signal<Set<string>>(new Set());
   protected readonly selectedFolderIds = signal<Set<string>>(new Set());
-  protected readonly confirmingBulkDelete = signal(false);
   protected readonly bulkBusy = signal(false);
   protected readonly selectedCount = computed(
     () => this.selectedFileIds().size + this.selectedFolderIds().size,
@@ -496,20 +506,9 @@ export class FileExplorer {
   }
 
   // --- Tạo thư mục (HỘP THOẠI riêng, có nút Huỷ) ---
-  /** Giới hạn 7 cấp: đang ở thư mục cấp 7 thì không cho tạo thêm cấp con. */
-  private static readonly MAX_FOLDER_DEPTH = 7;
-  protected readonly atMaxFolderDepth = computed(
-    () => this.breadcrumb().length >= FileExplorer.MAX_FOLDER_DEPTH,
-  );
-
-  /** Bấm "Thư mục mới" → mở dialog với ô tên điền sẵn (đánh số kiểu Windows). */
+  /** Bấm "Thư mục mới" → mở dialog với ô tên điền sẵn (đánh số kiểu Windows).
+   * Không còn giới hạn số cấp lồng nhau (theo yêu cầu — bỏ giới hạn 7 cấp). */
   createFolder(): void {
-    if (this.atMaxFolderDepth()) {
-      this.toast.error(
-        this.lang.translate('folder.maxDepth', { n: FileExplorer.MAX_FOLDER_DEPTH }),
-      );
-      return;
-    }
     this.dialog.set({ type: 'newFolder', name: this.nextFolderName() });
   }
 
@@ -707,7 +706,6 @@ export class FileExplorer {
   clearSelection(): void {
     this.selectedFileIds.set(new Set());
     this.selectedFolderIds.set(new Set());
-    this.confirmingBulkDelete.set(false);
   }
 
   isSelected(kind: 'file' | 'folder', id: string): boolean {
@@ -723,7 +721,6 @@ export class FileExplorer {
       else next.add(id);
       return next;
     });
-    this.confirmingBulkDelete.set(false);
   }
 
   selectAll(): void {
@@ -833,12 +830,14 @@ export class FileExplorer {
     }
   }
 
-  /** Chuyển toàn bộ mục đang chọn vào Thùng rác (xác nhận inline, không dùng hộp thoại trình duyệt). */
-  async bulkTrash(): Promise<void> {
-    if (!this.confirmingBulkDelete()) {
-      this.confirmingBulkDelete.set(true);
-      return;
-    }
+  /** Bấm "Xoá" hàng loạt → mở hộp thoại xác nhận của web app (không xoá ngay). */
+  bulkTrash(): void {
+    if (this.selectedCount() === 0 || this.bulkBusy()) return;
+    this.dialog.set({ type: 'confirmBulkDelete', count: this.selectedCount() });
+  }
+
+  /** Xác nhận từ hộp thoại → chuyển toàn bộ mục đang chọn vào Thùng rác. */
+  async confirmBulkTrash(): Promise<void> {
     if (this.bulkBusy() || this.selectedCount() === 0) return;
     this.bulkBusy.set(true);
     try {
@@ -850,6 +849,7 @@ export class FileExplorer {
       );
       await Promise.all([...fileOps, ...folderOps]);
       this.toast.success(this.lang.translate('toast.movedToTrash'));
+      this.dialog.set(null);
       this.clearSelection();
       await this.revalidate();
       this.refresh.bump();
@@ -1058,19 +1058,84 @@ export class FileExplorer {
     }
   }
 
-  onDrop(event: DragEvent): void {
+  async onDrop(event: DragEvent): Promise<void> {
     event.preventDefault();
     this.dragDepth = 0;
     this.dragOver.set(false);
-    const files = event.dataTransfer?.files;
+    const dt = event.dataTransfer;
+    if (!dt) return;
+    // Duyệt CẢ CÂY thư mục khi kéo-thả folder (webkitGetAsEntry) — nếu không,
+    // dataTransfer.files chỉ có mục cấp trên cùng, bỏ sót file (và .exe) bên trong.
+    const items = dt.items;
+    const entries: FileSystemEntry[] = [];
+    if (items && items.length) {
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry?.();
+        if (entry) entries.push(entry);
+      }
+    }
+    if (entries.length) {
+      const files = await this.collectDroppedEntries(entries);
+      if (files.length) void this.uploadFileList(files);
+      return;
+    }
+    const files = dt.files;
     if (files && files.length) void this.uploadFileList(Array.from(files));
+  }
+
+  /**
+   * Đệ quy đọc mọi file trong các entry được kéo-thả (gồm thư mục con), gắn
+   * webkitRelativePath để runBatch tái tạo cấu trúc thư mục như khi chọn bằng
+   * hộp thoại chọn thư mục.
+   */
+  private async collectDroppedEntries(entries: FileSystemEntry[]): Promise<File[]> {
+    const out: File[] = [];
+    const walk = async (entry: FileSystemEntry, prefix: string): Promise<void> => {
+      if (entry.isFile) {
+        const file = await new Promise<File>((resolve, reject) =>
+          (entry as FileSystemFileEntry).file(resolve, reject),
+        );
+        const rel = prefix ? `${prefix}/${file.name}` : file.name;
+        try {
+          Object.defineProperty(file, 'webkitRelativePath', { value: rel, configurable: true });
+        } catch {
+          /* một số trình duyệt không cho ghi đè — vẫn upload được dạng file lẻ */
+        }
+        out.push(file);
+      } else if (entry.isDirectory) {
+        const reader = (entry as FileSystemDirectoryEntry).createReader();
+        const children: FileSystemEntry[] = [];
+        // readEntries trả theo lô, phải gọi lặp tới khi rỗng.
+        for (;;) {
+          const batch = await new Promise<FileSystemEntry[]>((resolve, reject) =>
+            reader.readEntries(resolve, reject),
+          );
+          if (!batch.length) break;
+          children.push(...batch);
+        }
+        const dirPrefix = prefix ? `${prefix}/${entry.name}` : entry.name;
+        for (const child of children) await walk(child, dirPrefix);
+      }
+    };
+    for (const entry of entries) await walk(entry, '');
+    return out;
   }
 
   /**
    * Upload: gộp mỗi thư mục thành 1 "mục" hiện "X trong số N", mỗi file lẻ 1 mục.
    * Giữ cấu trúc thư mục qua webkitRelativePath (mục 2.1).
    */
-  private uploadFileList(files: File[]): void {
+  private async uploadFileList(files: File[]): Promise<void> {
+    // Cảnh báo tệp thực thi (.exe…) — kể cả khi nằm bên trong thư mục kéo-thả.
+    // Người dùng phải xác nhận; các tệp này sẽ được quét virus khi tải lên.
+    const execNames = files
+      .filter((f) => this.virusScan.isExecutable(f.name))
+      .map((f) => (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name);
+    if (execNames.length > 0) {
+      const proceed = await this.warnExecutables(execNames);
+      if (!proceed) return;
+    }
+
     // Đang xem đúng 1 thư mục cụ thể → tải vào đó. Ngược lại (gốc "Kho của
     // tôi", hoặc các lăng kính không phải thư mục như Gắn sao/Thẻ/Tìm kiếm)
     // → dùng "Thư mục tải lên mặc định" đã cấu hình ở Cài đặt, nếu có.
@@ -1136,6 +1201,16 @@ export class FileExplorer {
       const task = this.uploadService.createTask(file);
       batch.tasks.push(task);
       if (!batch.isFolder) batch.firstTask.set(task);
+
+      // Quét virus tệp thực thi TRƯỚC khi lưu — chặn nếu phát hiện mã độc.
+      if (this.virusScan.isExecutable(file.name)) {
+        const blocked = await this.scanBeforeUpload(task, file);
+        if (blocked) {
+          batch.failed.update((v) => v + 1);
+          continue;
+        }
+      }
+
       const result = await this.uploadService.run(task, file, targetFolderId, (c) =>
         this.askConflict(c),
       );
@@ -1149,6 +1224,68 @@ export class FileExplorer {
 
     void this.revalidate();
     this.refresh.bump();
+  }
+
+  /**
+   * Quét virus 1 tệp thực thi trước khi lưu. Trả TRUE nếu bị chặn (mã độc) →
+   * caller bỏ qua tệp này. Trả FALSE nếu an toàn/không xác định → cho tải tiếp.
+   */
+  private async scanBeforeUpload(task: UploadTask, file: File): Promise<boolean> {
+    task.status.set('scanning');
+    let result: ScanResult | null = null;
+    try {
+      result = await this.virusScan.scan(file);
+    } catch {
+      result = null; // lỗi quét → không chặn, để người dùng vẫn tải được
+    }
+    if (result && (result.verdict === 'malicious' || result.verdict === 'suspicious')) {
+      // Hiện CHI TIẾT kết quả quét rồi để người dùng tự quyết định có tải lên không.
+      const proceed = await this.showScanResult(file.name, result);
+      if (!proceed) {
+        const n = result.malicious || result.suspicious;
+        task.status.set('error');
+        task.error.set(this.lang.translate('scan.blocked', { n }));
+        this.toast.error(
+          this.lang.translate('scan.blockedToast', { name: file.name, n, total: result.total }),
+        );
+        return true; // người dùng chọn KHÔNG tải lên → chặn
+      }
+      return false; // người dùng chấp nhận rủi ro → vẫn tải lên
+    }
+    if (result && result.verdict === 'clean') {
+      this.toast.success(
+        this.lang.translate('scan.clean', { name: file.name, total: result.total }),
+      );
+    }
+    return false;
+  }
+
+  /** Mở hộp thoại CHI TIẾT kết quả quét (mã độc) và đợi người dùng quyết định. */
+  private showScanResult(fileName: string, result: ScanResult): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.scanResultResolver = resolve;
+      this.scanResult.set({ fileName, result });
+    });
+  }
+
+  resolveScanResult(proceed: boolean): void {
+    this.scanResult.set(null);
+    this.scanResultResolver?.(proceed);
+    this.scanResultResolver = null;
+  }
+
+  /** Mở cảnh báo tệp thực thi và đợi người dùng quyết định (tiếp tục/huỷ). */
+  private warnExecutables(names: string[]): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.exeWarnResolver = resolve;
+      this.exeWarn.set({ names });
+    });
+  }
+
+  resolveExeWarn(proceed: boolean): void {
+    this.exeWarn.set(null);
+    this.exeWarnResolver?.(proceed);
+    this.exeWarnResolver = null;
   }
 
   /** Mở hộp thoại "Trùng tên file" và đợi người dùng chọn (mục Cài đặt — Hỏi lại). */

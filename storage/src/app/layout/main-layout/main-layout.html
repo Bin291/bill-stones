@@ -5,7 +5,7 @@
   </div>
 }
 
-<div class="shell" [class.sidebar-collapsed]="sidebarVisiblyCollapsed()" (click)="notifOpen.set(false)">
+<div class="shell" [class.sidebar-collapsed]="sidebarVisiblyCollapsed()" (click)="closeNotif()">
   <aside
     class="sidebar"
     (mouseenter)="onSidebarMouseEnter()"
@@ -58,6 +58,9 @@
         {{ item.labelKey | t }}
         @if (item.path === '/shared') {
           <span class="nav-count">{{ sharedCount() || '' }}</span>
+        }
+        @if (item.path === '/trash') {
+          <span class="nav-count">{{ trashCount() || '' }}</span>
         }
       </a>
     }
@@ -147,7 +150,12 @@
 
 <!-- Bảng thông báo — neo dưới nút chuông ở đầu sidebar (mục 11.F, 12.J). -->
 @if (notifOpen()) {
-  <div class="notif-dropdown sidebar-notif" (click)="$event.stopPropagation()">
+  <div
+    class="notif-dropdown sidebar-notif"
+    [class.closing]="notifClosing()"
+    (click)="$event.stopPropagation()"
+    (mouseleave)="closeNotif()"
+  >
     <div class="upload-head">
       {{ 'nav.notifications' | t }}
       @if (notifications.unreadCount() > 0) {

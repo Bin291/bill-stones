@@ -17,7 +17,14 @@ interface CompletedPart {
   ETag: string;
 }
 
-export type UploadStatus = 'pending' | 'uploading' | 'completing' | 'done' | 'error' | 'canceled';
+export type UploadStatus =
+  | 'pending'
+  | 'scanning'
+  | 'uploading'
+  | 'completing'
+  | 'done'
+  | 'error'
+  | 'canceled';
 
 /** Trùng tên (chính sách 'ask') — đủ thông tin để hỏi lại người dùng. */
 export interface UploadConflict {
