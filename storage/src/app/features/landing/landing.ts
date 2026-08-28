@@ -536,6 +536,16 @@ export class Landing {
       });
     }
 
+    // Layout còn thay đổi SAU khi tạo trigger: pin-spacer của how-it-works chèn
+    // thêm chiều cao, và font (Google/Material Icons) tải bất đồng bộ làm dịch
+    // chuyển nội dung phía dưới. Nếu không refresh, start/end của các trigger sau
+    // (bento, shield) bị lệch → shield không vẽ, bento tan biến sai chỗ. Refresh
+    // lại nhiều nhịp cho tới khi mọi thứ ổn định.
+    ScrollTrigger.refresh();
+    window.addEventListener('load', () => ScrollTrigger.refresh());
+    if (document.fonts?.ready) void document.fonts.ready.then(() => ScrollTrigger.refresh());
+    setTimeout(() => ScrollTrigger.refresh(), 800);
+
     // Register cleanup on component destroy
     this.destroyRef.onDestroy(() => {
       ScrollTrigger.getAll().forEach(t => t.kill());
