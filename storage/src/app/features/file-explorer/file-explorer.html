@@ -560,6 +560,32 @@
   <app-file-preview [file]="pf" (closed)="previewTarget.set(null)" />
 }
 
+<!-- Cảnh báo hiệu năng: máy yếu + mở file nặng -->
+@if (perfWarn(); as pw) {
+  <div class="modal-backdrop" (click)="perfCancel()">
+    <div class="modal" style="max-width: 460px" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <span><span class="mi" style="color: #f1c21b">warning</span> {{ 'perf.title' | t }}</span>
+      </div>
+      <div style="padding: 16px">
+        <p class="card-sub" style="margin: 0 0 8px">
+          {{ 'perf.config' | t }}: <strong style="color: var(--ink)">{{ deviceSummary() || ('perf.unknown' | t) }}</strong>
+        </p>
+        <p style="margin: 0 0 4px">{{ 'perf.warnFile' | t: { name: pw.name } }}</p>
+        <p class="card-sub" style="margin: 0">{{ 'perf.warnBody' | t }}</p>
+        <div class="row" style="justify-content: flex-end; gap: 8px; margin-top: 20px">
+          <button class="btn perf-stop" type="button" (click)="perfCancel()">
+            {{ 'perf.stop' | t }}
+          </button>
+          <button class="btn btn-primary" type="button" (click)="perfContinue()">
+            {{ 'perf.continue' | t }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 <!-- Dialog chuyển đến thư mục -->
 @if (moveTarget(); as mt) {
   <app-move-dialog [items]="mt" (moved)="onMoved()" (cancelled)="moveTarget.set(null)" />

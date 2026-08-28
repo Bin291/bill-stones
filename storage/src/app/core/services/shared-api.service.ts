@@ -13,6 +13,14 @@ export interface SharedItem {
   folder?: Folder;
 }
 
+/** Nội dung 1 thư mục được chia sẻ khi mở vào để duyệt. */
+export interface SharedFolderContents {
+  folder: { id: string; name: string };
+  folders: Folder[];
+  files: StoredFile[];
+  allowDownload: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SharedApiService {
   private readonly http = inject(HttpClient);
@@ -22,8 +30,18 @@ export class SharedApiService {
     return this.http.get<SharedItem[]>(this.base);
   }
 
+  /** Duyệt nội dung 1 thư mục được chia sẻ (hoặc thư mục con của nó). */
+  listFolder(folderId: string): Observable<SharedFolderContents> {
+    return this.http.get<SharedFolderContents>(`${this.base}/folder/${folderId}/list`);
+  }
+
   contentUrl(fileId: string): Observable<{ url: string }> {
     return this.http.get<{ url: string }>(`${this.base}/file/${fileId}/content`);
+  }
+
+  /** HTML xem trước cho docx/xlsx/text được chia sẻ. */
+  previewHtml(fileId: string): Observable<{ html: string }> {
+    return this.http.get<{ html: string }>(`${this.base}/file/${fileId}/preview-html`);
   }
 
   downloadUrl(fileId: string): Observable<{ url: string }> {

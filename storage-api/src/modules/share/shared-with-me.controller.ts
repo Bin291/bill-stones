@@ -13,9 +13,21 @@ export class SharedWithMeController {
     return this.share.listSharedWithMe(userId);
   }
 
+  /** Duyệt nội dung 1 thư mục được chia sẻ (hoặc thư mục con của nó). */
+  @Get('folder/:folderId/list')
+  listFolder(@CurrentUser('id') userId: string, @Param('folderId') folderId: string) {
+    return this.share.listSharedFolderChildren(userId, folderId);
+  }
+
   @Get('file/:fileId/content')
   content(@CurrentUser('id') userId: string, @Param('fileId') fileId: string) {
     return this.share.sharedFileContentUrl(userId, fileId, 'inline');
+  }
+
+  /** Xem trước docx/xlsx/text của file được chia sẻ (render HTML). */
+  @Get('file/:fileId/preview-html')
+  previewHtml(@CurrentUser('id') userId: string, @Param('fileId') fileId: string) {
+    return this.share.sharedFilePreviewHtml(userId, fileId);
   }
 
   @Get('file/:fileId/download')

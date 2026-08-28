@@ -81,12 +81,24 @@ export class FoldersService {
     return result;
   }
 
+  /** Số cấp thư mục lồng nhau tối đa (thư mục gốc = cấp 1). */
+  private static readonly MAX_DEPTH = 7;
+
   async create(
     userId: string,
     name: string,
     parentId: string | null,
   ): Promise<Folder> {
-    if (parentId) await this.assertOwned(parentId, userId);
+    if (parentId) {
+      await this.assertOwned(parentId, userId);
+      // Giới hạn 7 cấp: nếu thư mục cha đã ở cấp 7 thì không cho tạo cấp 8.
+      const parentDepth = (await this.breadcrumb(userId, parentId)).length;
+      if (parentDepth >= FoldersService.MAX_DEPTH) {
+        throw new BadRequestException(
+          `Chỉ được tạo tối đa ${FoldersService.MAX_DEPTH} cấp thư mục lồng nhau.`,
+        );
+      }
+    }
     const siblings = await this.prisma.folder.findMany({
       where: { userId, parentId: parentId ?? null, deletedAt: null },
       select: { name: true },

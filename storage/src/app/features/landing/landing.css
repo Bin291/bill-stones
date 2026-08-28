@@ -284,9 +284,11 @@
 }
 
 /* Security Shield Animations */
+/* dasharray/offset phải ≥ chiều dài path (viền khiên ngoài dài ~604) — nếu để 600
+   thì thiếu ~4px ở chóp khiên, tạo khe hở không nối liền. Dùng 620 cho đủ. */
 .shield-draw-path {
-  stroke-dasharray: 600;
-  stroke-dashoffset: 600;
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
 }
 
 .shield-scan-line {
@@ -318,4 +320,13 @@
 @keyframes spinShieldReverse {
   from { transform: rotate(360deg); }
   to { transform: rotate(0deg); }
+}
+
+/* Angular Material CSS không được nạp → <mat-icon> để glyph lệch góc trên-trái
+   trong hộp 24px. Ép canh giữa để icon nằm CHÍNH GIỮA ô màu (mục Bảo mật…). */
+mat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }

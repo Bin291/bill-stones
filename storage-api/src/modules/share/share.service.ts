@@ -11,6 +11,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { FilesService } from '../files/files.service';
 import { FoldersService } from '../folders/folders.service';
+import { DocPreviewService } from '../files/doc-preview.service';
+import { NotificationService } from '../notification/notification.service';
 import { CreateLinkDto, InviteDto, UpdateShareDto } from './dto/share.dto';
 import {
   generateShareToken,
@@ -37,6 +39,8 @@ export class ShareService {
     private readonly storage: StorageService,
     private readonly files: FilesService,
     private readonly folders: FoldersService,
+    private readonly docPreview: DocPreviewService,
+    private readonly notifications: NotificationService,
     config: ConfigService,
   ) {
     this.baseUrl =
@@ -124,8 +128,8 @@ export class ShareService {
 
     // Tạo Share + Notification trong cùng transaction — người nhận thấy ngay
     // "ai" đã chia sẻ "gì" với mình (mục 12.J).
-    return this.prisma.$transaction(async (tx) => {
-      const share = await tx.share.create({
+    const share = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.share.create({
         data: {
           userId,
           fileId: dto.fileId ?? null,
@@ -143,11 +147,14 @@ export class ShareService {
           title: `${ownerEmail} đã chia sẻ một mục với bạn`,
           body: itemName,
           linkPath: '/shared',
-          shareId: share.id,
+          shareId: created.id,
         },
       });
-      return share;
+      return created;
     });
+    // Sau khi commit: đẩy realtime để người nhận thấy thông báo NGAY (không đợi poll).
+    void this.notifications.pingUser(recipient.id);
+    return share;
   }
 
   async listForTarget(
@@ -341,6 +348,59 @@ export class ShareService {
     return result;
   }
 
+  /**
+   * Liệt kê con của một thư mục ĐƯỢC CHIA SẺ cho user (hoặc thư mục con nằm trong
+   * cây đó) — để mở/duyệt thư mục ở trang "Được chia sẻ với tôi". Quyền: chính chủ,
+   * hoặc có share (chưa hết hạn) trên chính thư mục hoặc một thư mục tổ tiên.
+   */
+  async listSharedFolderChildren(
+    userId: string,
+    folderId: string,
+  ): Promise<{
+    folder: { id: string; name: string };
+    folders: Folder[];
+    files: unknown[];
+    allowDownload: boolean;
+  }> {
+    const folder = await this.prisma.folder.findUnique({ where: { id: folderId } });
+    if (!folder || folder.deletedAt) {
+      throw new NotFoundException('Thư mục không tồn tại');
+    }
+
+    let allowDownload = true;
+    if (folder.userId !== userId) {
+      const now = new Date();
+      // ancestorFolderIds gồm cả chính folderId → khớp share trên folder này hoặc tổ tiên.
+      const ancestorIds = await this.ancestorFolderIds(folderId);
+      const share = await this.prisma.share.findFirst({
+        where: {
+          sharedWithUserId: userId,
+          folderId: { in: ancestorIds },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+      });
+      if (!share) throw new NotFoundException('Thư mục không tồn tại');
+      allowDownload = share.allowDownload;
+    }
+
+    const [folders, files] = await Promise.all([
+      this.prisma.folder.findMany({
+        where: { parentId: folderId, deletedAt: null },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.file.findMany({
+        where: { folderId, deletedAt: null, status: 'ready' },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+    return {
+      folder: { id: folder.id, name: folder.name },
+      folders,
+      files: files.map((f) => ({ ...f, size: f.size.toString() })),
+      allowDownload,
+    };
+  }
+
   private async ownerEmail(ownerId: string): Promise<string | null> {
     try {
       const rows = await this.prisma.$queryRaw<AuthUserRow[]>`
@@ -372,6 +432,17 @@ export class ShareService {
       responseContentType: file.mimeType,
     });
     return { url };
+  }
+
+  /**
+   * Render docx/xlsx/text của file ĐƯỢC CHIA SẺ thành HTML để xem trước ngay trong
+   * app (không cần tải về). Verify quyền qua assertGrantedAccess (chủ / share
+   * trực tiếp / share thư mục tổ tiên).
+   */
+  async sharedFilePreviewHtml(userId: string, fileId: string): Promise<{ html: string }> {
+    const file = await this.assertGrantedAccess(userId, fileId);
+    const html = await this.docPreview.renderHtml(file);
+    return { html };
   }
 
   private async assertDownloadAllowed(

@@ -26,6 +26,7 @@ import { RefreshService } from '../../core/services/refresh.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { SettingsApiService } from '../../core/services/settings-api.service';
+import { DeviceCapabilityService } from '../../core/services/device-capability.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ShareDialog, ShareTarget } from '../share/share-dialog';
 import { VideoPlayer } from '../video-player/video-player';
@@ -128,6 +129,7 @@ export class FileExplorer {
   private readonly toast = inject(ToastService);
   protected readonly settings = inject(SettingsService);
   private readonly settingsApi = inject(SettingsApiService);
+  private readonly device = inject(DeviceCapabilityService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly mode = signal<Mode>('folder');
@@ -494,8 +496,20 @@ export class FileExplorer {
   }
 
   // --- Tạo thư mục (HỘP THOẠI riêng, có nút Huỷ) ---
+  /** Giới hạn 7 cấp: đang ở thư mục cấp 7 thì không cho tạo thêm cấp con. */
+  private static readonly MAX_FOLDER_DEPTH = 7;
+  protected readonly atMaxFolderDepth = computed(
+    () => this.breadcrumb().length >= FileExplorer.MAX_FOLDER_DEPTH,
+  );
+
   /** Bấm "Thư mục mới" → mở dialog với ô tên điền sẵn (đánh số kiểu Windows). */
   createFolder(): void {
+    if (this.atMaxFolderDepth()) {
+      this.toast.error(
+        this.lang.translate('folder.maxDepth', { n: FileExplorer.MAX_FOLDER_DEPTH }),
+      );
+      return;
+    }
     this.dialog.set({ type: 'newFolder', name: this.nextFolderName() });
   }
 
@@ -523,6 +537,13 @@ export class FileExplorer {
       }
       void this.revalidate();
       this.refresh.bump();
+    } catch (e) {
+      // VD vượt 7 cấp → backend trả 400 kèm thông báo; hiện toast cho người dùng.
+      const msg =
+        e && typeof e === 'object' && 'error' in e
+          ? (e as { error?: { message?: string } }).error?.message
+          : undefined;
+      this.toast.error(msg || this.lang.translate('folder.createFailed'));
     } finally {
       this.creatingBusy = false;
     }
@@ -553,12 +574,27 @@ export class FileExplorer {
   }
 
   // --- Download / mở file ---
+  /** Ngưỡng "file nặng" để cảnh báo trên máy yếu (50MB). */
+  private static readonly HEAVY_FILE_BYTES = 50 * 1024 * 1024;
+  /** File đang chờ mở sau cảnh báo hiệu năng (máy yếu). null = không có cảnh báo. */
+  protected readonly perfWarn = signal<StoredFile | null>(null);
+
   openFile(file: StoredFile): void {
     if (this.selectionMode()) {
       this.toggleSelect('file', file.id);
       return;
     }
     if (file.status !== 'ready') return;
+    // Máy yếu + file nặng → hỏi trước (mở có thể lâu/giảm hiệu năng tạm thời).
+    if (this.device.isWeak() && Number(file.size) >= FileExplorer.HEAVY_FILE_BYTES) {
+      this.perfWarn.set(file);
+      return;
+    }
+    this.doOpenFile(file);
+  }
+
+  /** Mở thật sự (sau khi qua kiểm tra cảnh báo). */
+  private doOpenFile(file: StoredFile): void {
     const cat = categoryOf(file.extension);
     // Video -> player HLS; Âm thanh -> mini-player góc dưới; còn lại -> preview modal.
     if (cat === 'video') {
@@ -568,6 +604,23 @@ export class FileExplorer {
     } else {
       this.previewTarget.set(file);
     }
+  }
+
+  /** Tóm tắt cấu hình máy (hiện trong cảnh báo hiệu năng). */
+  protected deviceSummary(): string {
+    return this.device.summary();
+  }
+
+  /** Người dùng chọn "Tiếp tục" trong cảnh báo hiệu năng → mở file. */
+  perfContinue(): void {
+    const file = this.perfWarn();
+    this.perfWarn.set(null);
+    if (file) this.doOpenFile(file);
+  }
+
+  /** Người dùng chọn "Dừng lại" → huỷ mở. */
+  perfCancel(): void {
+    this.perfWarn.set(null);
   }
 
   async download(file: StoredFile): Promise<void> {
@@ -692,7 +745,7 @@ export class FileExplorer {
     const t = event.target as HTMLElement;
     if (
       t.closest(
-        '.card, button, a, input, textarea, label, .toolbar, .select-bar, .menu, .sort-pop, .explorer-section-title, .inline-name, .uploads-panel',
+        '.card, [data-id], tr, button, a, input, textarea, label, .toolbar, .select-bar, .menu, .sort-pop, .explorer-section-title, .inline-name, .uploads-panel',
       )
     ) {
       return;
@@ -728,11 +781,11 @@ export class FileExplorer {
     event.preventDefault();
   }
 
-  /** Chọn mọi card giao với hình chữ nhật (toạ độ viewport). */
+  /** Chọn mọi mục (card ở lưới HOẶC hàng ở danh sách) giao với hình chữ nhật. */
   private applyMarqueeSelection(l: number, t: number, r: number, b: number): void {
     const files = new Set(this.marqueeBaseFiles);
     const folders = new Set(this.marqueeBaseFolders);
-    const cards = document.querySelectorAll<HTMLElement>('.explorer-root .card[data-id]');
+    const cards = document.querySelectorAll<HTMLElement>('.explorer-root [data-id][data-kind]');
     cards.forEach((el) => {
       const rect = el.getBoundingClientRect();
       const hit = rect.left < r && rect.right > l && rect.top < b && rect.bottom > t;

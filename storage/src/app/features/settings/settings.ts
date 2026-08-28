@@ -360,7 +360,8 @@ export class Settings implements OnInit, CanComponentDeactivate {
 
   async signOut(): Promise<void> {
     await this.auth.signOut();
-    await this.router.navigateByUrl('/login');
+    // Về Landing page (không phải trang đăng nhập). Dùng location để reset sạch state.
+    location.href = '/';
   }
 
   private extractError(e: unknown): string {

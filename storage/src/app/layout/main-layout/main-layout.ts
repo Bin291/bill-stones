@@ -77,12 +77,15 @@ export class MainLayout implements OnInit {
   protected readonly notifOpen = signal(false);
   protected readonly tags = signal<TagWithCount[]>([]);
   protected readonly tagDialogOpen = signal(false);
+  /** Thu gọn sidebar (chỉ còn icon) — nhớ lựa chọn qua localStorage. */
+  protected readonly sidebarCollapsed = signal(this.readCollapsed());
 
   private readonly stats = signal<ExtensionStat[]>([]);
   protected readonly sharedCount = signal(0);
 
+  // "Kho của tôi" (/files) render riêng ở TRÊN nút Thông báo (xem template);
+  // danh sách này là các mục còn lại bên dưới nút Thông báo.
   protected readonly browseItems: NavItem[] = [
-    { icon: 'cloud', labelKey: 'nav.myStorage', path: '/files' },
     { icon: 'star_border', labelKey: 'nav.starred', path: '/starred' },
     { icon: 'schedule', labelKey: 'nav.recent', path: '/recent' },
     { icon: 'search', labelKey: 'nav.search', path: '/search' },
@@ -111,6 +114,11 @@ export class MainLayout implements OnInit {
       this.avatarUrl();
       this.avatarLoadFailed.set(false);
     });
+    // Lắng nghe realtime thông báo NGAY khi biết user (để nhận tức thì khi được chia sẻ).
+    effect(() => {
+      const uid = this.profile()?.id;
+      if (uid) this.notifications.startRealtime(uid);
+    });
     // Nạp lại số đếm khi có tín hiệu dữ liệu đổi (upload/xoá). CHỜ có phiên đăng
     // nhập (đọc isAuthenticated) — tránh gọi API lúc reload khi token chưa sẵn sàng
     // → 401 → danh sách rỗng và không tự nạp lại.
@@ -135,12 +143,13 @@ export class MainLayout implements OnInit {
       });
     // App chưa có push/realtime cho thông báo — nạp lại định kỳ để badge "Thông
     // báo"/"Được chia sẻ với tôi" tự cập nhật khi có người chia sẻ, không cần
-    // F5. 20s là đủ nhanh với người dùng mà không dội API liên tục.
+    // F5. refresh(true) → HIỆN TOAST ngay cho thông báo MỚI (VD vừa được chia sẻ),
+    // không cần mở bảng thông báo. 20s là đủ nhanh mà không dội API liên tục.
     interval(20000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         if (!this.auth.isAuthenticated()) return;
-        void this.notifications.refresh();
+        void this.notifications.refresh(true);
         this.loadSharedCount();
       });
   }
@@ -196,6 +205,26 @@ export class MainLayout implements OnInit {
     this.tagDialogOpen.set(true);
   }
 
+  /** Đọc trạng thái thu gọn sidebar đã lưu (an toàn với SSR). */
+  private readCollapsed(): boolean {
+    try {
+      return localStorage.getItem('app.sidebarCollapsed') === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  /** Bật/thu sidebar và nhớ lựa chọn. */
+  toggleSidebar(): void {
+    const next = !this.sidebarCollapsed();
+    this.sidebarCollapsed.set(next);
+    try {
+      localStorage.setItem('app.sidebarCollapsed', next ? '1' : '0');
+    } catch {
+      /* bỏ qua nếu không dùng được localStorage */
+    }
+  }
+
   /** Avatar tải lỗi (URL presigned hết hạn, mạng chập chờn…) → ẩn ảnh, hiện icon dự phòng. */
   onAvatarError(): void {
     this.avatarLoadFailed.set(true);
@@ -227,6 +256,6 @@ export class MainLayout implements OnInit {
   async logout(): Promise<void> {
     this.prefetch.clear(); // xoá cache để tài khoản khác không thấy dữ liệu cũ
     await this.auth.signOut();
-    location.href = '/login';
+    location.href = '/'; // về Landing page (không phải trang đăng nhập)
   }
 }
