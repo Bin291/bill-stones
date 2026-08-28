@@ -37,6 +37,8 @@ export class PublicShare implements OnInit {
 
   protected readonly meta = signal<ShareMeta | null>(null);
   protected readonly listing = signal<PublicListing | null>(null);
+  /** Đường dẫn thư mục con đang duyệt (breadcrumb; rỗng = ở thư mục gốc được chia sẻ). */
+  protected readonly path = signal<{ id: string; name: string }[]>([]);
   protected readonly password = signal('');
   protected readonly error = signal<string | null>(null);
   protected readonly loading = signal(true);
@@ -66,6 +68,43 @@ export class PublicShare implements OnInit {
     } catch {
       this.error.set('Link không tồn tại hoặc đã hết hạn.');
       this.meta.set(null);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Bấm vào thư mục con → duyệt vào trong (backend verify là hậu duệ của link). */
+  async openFolder(folder: { id: string; name: string }): Promise<void> {
+    this.loading.set(true);
+    try {
+      this.listing.set(await firstValueFrom(this.api.list(this.token, this.session, folder.id)));
+      this.path.update((p) => [...p, { id: folder.id, name: folder.name }]);
+    } catch {
+      this.error.set('Không mở được thư mục.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Về thư mục gốc được chia sẻ. */
+  async goRoot(): Promise<void> {
+    this.loading.set(true);
+    try {
+      this.listing.set(await firstValueFrom(this.api.list(this.token, this.session)));
+      this.path.set([]);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Nhảy tới 1 mốc breadcrumb (index trong path). */
+  async goToCrumb(index: number): Promise<void> {
+    const crumb = this.path()[index];
+    if (!crumb) return;
+    this.loading.set(true);
+    try {
+      this.listing.set(await firstValueFrom(this.api.list(this.token, this.session, crumb.id)));
+      this.path.update((p) => p.slice(0, index + 1));
     } finally {
       this.loading.set(false);
     }

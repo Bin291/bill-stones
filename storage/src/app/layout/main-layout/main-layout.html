@@ -5,11 +5,20 @@
   </div>
 }
 
-<div class="shell" (click)="notifOpen.set(false)">
+<div class="shell" [class.sidebar-collapsed]="sidebarCollapsed()" (click)="notifOpen.set(false)">
   <aside class="sidebar">
     <div class="brand">
       <img class="brand-logo" ngSrc="logo.png" width="24" height="24" priority alt="" />
-      {{ 'app.title' | t }}
+      <span class="brand-name">{{ 'app.title' | t }}</span>
+      <button
+        class="sidebar-toggle"
+        type="button"
+        (click)="toggleSidebar(); $event.stopPropagation()"
+        [attr.aria-label]="sidebarCollapsed() ? ('nav.expandSidebar' | t) : ('nav.collapseSidebar' | t)"
+        [title]="sidebarCollapsed() ? ('nav.expandSidebar' | t) : ('nav.collapseSidebar' | t)"
+      >
+        <span class="mi">{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</span>
+      </button>
     </div>
 
     <!-- "Kho của tôi" đặt TRÊN nút Thông báo (theo yêu cầu). -->

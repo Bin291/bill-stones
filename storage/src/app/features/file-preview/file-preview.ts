@@ -55,10 +55,15 @@ export class FilePreview implements OnInit {
     this.kind.set(this.detectKind(f.extension));
     try {
       if (this.sharedMode()) {
-        // Shared file mode: fetch shared content URL.
-        const { url } = await firstValueFrom(this.sharedApi.contentUrl(f.id));
-        this.url.set(url);
-        this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+        // Shared file mode: docx/xlsx/text → render HTML; các loại khác → URL nội dung.
+        if (this.kind() === 'doc') {
+          const { html } = await firstValueFrom(this.sharedApi.previewHtml(f.id));
+          this.html.set(this.sanitizer.bypassSecurityTrustHtml(html));
+        } else {
+          const { url } = await firstValueFrom(this.sharedApi.contentUrl(f.id));
+          this.url.set(url);
+          this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+        }
       } else {
         if (this.kind() === 'doc') {
           // Backend render docx/excel/text -> HTML.

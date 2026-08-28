@@ -39,6 +39,11 @@ export class SharedApiService {
     return this.http.get<{ url: string }>(`${this.base}/file/${fileId}/content`);
   }
 
+  /** HTML xem trước cho docx/xlsx/text được chia sẻ. */
+  previewHtml(fileId: string): Observable<{ html: string }> {
+    return this.http.get<{ html: string }>(`${this.base}/file/${fileId}/preview-html`);
+  }
+
   downloadUrl(fileId: string): Observable<{ url: string }> {
     return this.http.get<{ url: string }>(`${this.base}/file/${fileId}/download`);
   }

@@ -1,8 +1,10 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ToastService } from './toast.service';
+import { SupabaseService } from './supabase.service';
 
 export interface AppNotification {
   id: string;
@@ -19,6 +21,8 @@ export interface AppNotification {
 export class NotificationService {
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
+  private readonly supa = inject(SupabaseService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly base = `${environment.apiUrl}/notifications`;
 
   readonly items = signal<AppNotification[]>([]);
@@ -26,6 +30,22 @@ export class NotificationService {
 
   /** Id thông báo đã thấy — để chỉ "bắn" toast cho thông báo MỚI xuất hiện. */
   private readonly seenIds = new Set<string>();
+  /** User đang lắng nghe realtime — tránh subscribe trùng. */
+  private realtimeUserId: string | null = null;
+
+  /**
+   * Lắng nghe realtime kênh cá nhân `notif:<userId>` (Supabase Broadcast). Khi có
+   * người chia sẻ, backend "ping" kênh này → nạp lại NGAY (kèm toast), không đợi
+   * poll. Poll 20s vẫn giữ làm dự phòng nếu realtime rớt.
+   */
+  startRealtime(userId: string): void {
+    if (!this.isBrowser || !userId || this.realtimeUserId === userId) return;
+    this.realtimeUserId = userId;
+    this.supa.client
+      .channel(`notif:${userId}`)
+      .on('broadcast', { event: 'new' }, () => void this.refresh(true))
+      .subscribe();
+  }
 
   /**
    * Nạp danh sách thông báo + số chưa đọc.
