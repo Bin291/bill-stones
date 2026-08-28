@@ -91,25 +91,31 @@ export class FilesService {
     });
 
     // Đính presigned thumbnail URL + thẻ cho mọi file; kèm breadcrumb nếu withPath.
+    // Presign chạy SONG SONG (mỗi file độc lập) thay vì tuần tự — trước đây vòng
+    // lặp await từng file khiến danh sách nhiều file mất nhiều giây mới trả về.
     const cache = new Map<string, BreadcrumbCrumb[]>();
-    const result: FileWithPath[] = [];
-    for (const f of files) {
-      const { tags, ...bare } = f;
-      const withThumb = await this.withThumb(bare);
-      const flatTags = tags.map((ft) => ft.tag);
-      if (!q.withPath) {
-        result.push({ ...withThumb, tags: flatTags });
-        continue;
-      }
-      let path: BreadcrumbCrumb[] = [];
-      if (f.folderId) {
-        if (!cache.has(f.folderId)) {
-          cache.set(f.folderId, await this.folders.breadcrumb(userId, f.folderId));
-        }
-        path = cache.get(f.folderId)!;
-      }
-      result.push({ ...withThumb, folderPath: path, tags: flatTags });
+    if (q.withPath) {
+      const uniqueFolderIds = [
+        ...new Set(files.map((f) => f.folderId).filter((id): id is string => !!id)),
+      ];
+      await Promise.all(
+        uniqueFolderIds.map(async (fid) => {
+          cache.set(fid, await this.folders.breadcrumb(userId, fid));
+        }),
+      );
     }
+    const result: FileWithPath[] = await Promise.all(
+      files.map(async (f) => {
+        const { tags, ...bare } = f;
+        const withThumb = await this.withThumb(bare);
+        const flatTags = tags.map((ft) => ft.tag);
+        if (!q.withPath) {
+          return { ...withThumb, tags: flatTags };
+        }
+        const path = f.folderId ? (cache.get(f.folderId) ?? []) : [];
+        return { ...withThumb, folderPath: path, tags: flatTags };
+      }),
+    );
     return result;
   }
 
