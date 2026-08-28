@@ -5,20 +5,27 @@
   </div>
 }
 
-<div class="shell" [class.sidebar-collapsed]="sidebarCollapsed()" (click)="notifOpen.set(false)">
-  <aside class="sidebar">
+<div class="shell" [class.sidebar-collapsed]="sidebarVisiblyCollapsed()" (click)="notifOpen.set(false)">
+  <aside
+    class="sidebar"
+    (mouseenter)="onSidebarMouseEnter()"
+    (mouseleave)="onSidebarMouseLeave()"
+    (click)="onSidebarClick()"
+  >
     <div class="brand">
       <img class="brand-logo" ngSrc="logo.png" width="24" height="24" priority alt="" />
       <span class="brand-name">{{ 'app.title' | t }}</span>
-      <button
-        class="sidebar-toggle"
-        type="button"
-        (click)="toggleSidebar(); $event.stopPropagation()"
-        [attr.aria-label]="sidebarCollapsed() ? ('nav.expandSidebar' | t) : ('nav.collapseSidebar' | t)"
-        [title]="sidebarCollapsed() ? ('nav.expandSidebar' | t) : ('nav.collapseSidebar' | t)"
-      >
-        <span class="mi">{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</span>
-      </button>
+      @if (!sidebarVisiblyCollapsed()) {
+        <button
+          class="sidebar-toggle"
+          type="button"
+          (click)="toggleSidebar(); $event.stopPropagation()"
+          [attr.aria-label]="sidebarCollapsed() ? ('nav.expandSidebar' | t) : ('nav.collapseSidebar' | t)"
+          [title]="sidebarCollapsed() ? ('nav.expandSidebar' | t) : ('nav.collapseSidebar' | t)"
+        >
+          <span class="mi">{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</span>
+        </button>
+      }
     </div>
 
     <!-- "Kho của tôi" đặt TRÊN nút Thông báo (theo yêu cầu). -->
@@ -55,22 +62,37 @@
       </a>
     }
 
-    <div class="nav-section-title">{{ 'nav.categories' | t }}</div>
-    @for (cat of categories; track cat.key) {
-      <a class="nav-item" [routerLink]="['/type', cat.key]" routerLinkActive="active">
-        <span class="mi">{{ cat.icon }}</span>
-        {{ cat.labelKey | t }}
-        <span class="nav-count">{{ categoryCounts()[cat.key] || '' }}</span>
-      </a>
-    }
+    <div class="nav-section-row" (click)="categoriesExpanded.set(!categoriesExpanded())">
+      <button class="nav-item nav-collapsible-trigger" type="button">
+        <span class="mi">category</span>
+        {{ 'nav.categories' | t }}
+      </button>
+      <!-- Spacer vô hình bằng đúng kích thước .tag-manage-btn (28x28) — để mũi
+           tên hàng này thẳng cột với mũi tên hàng "Thẻ" (có nút quản lý thật). -->
+      <span class="tag-manage-btn-spacer" aria-hidden="true"></span>
+      <span class="mi nav-collapsible-chevron" [style.transform]="categoriesExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
+    </div>
+    <div class="nav-collapsible" [class.collapsed]="!categoriesExpanded()">
+      @for (cat of categories; track cat.key) {
+        <a class="nav-item" [routerLink]="['/type', cat.key]" routerLinkActive="active">
+          <span class="mi">{{ cat.icon }}</span>
+          {{ cat.labelKey | t }}
+          <span class="nav-count">{{ categoryCounts()[cat.key] || '' }}</span>
+        </a>
+      }
+    </div>
 
-    <div class="nav-section-row">
-      <div class="nav-section-title">{{ 'nav.tags' | t }}</div>
-      <button class="tag-manage-btn" type="button" (click)="openTagManager()" [title]="'tags.manage' | t">
+    <div class="nav-section-row" (click)="tagsExpanded.set(!tagsExpanded())">
+      <button class="nav-item nav-collapsible-trigger" type="button">
+        <span class="mi">label</span>
+        {{ 'nav.tags' | t }}
+      </button>
+      <button class="tag-manage-btn" type="button" (click)="openTagManager(); $event.stopPropagation()" [title]="'tags.manage' | t">
         <span class="mi">tune</span>
       </button>
+      <span class="mi nav-collapsible-chevron" [style.transform]="tagsExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'">chevron_right</span>
     </div>
-    <div class="tag-scroll">
+    <div class="tag-scroll nav-collapsible" [class.collapsed]="!tagsExpanded()">
       @for (tag of tags(); track tag.id) {
         <a class="nav-item" [routerLink]="['/tag', tag.id]" routerLinkActive="active">
           <span class="tag-dot" [style.background]="tag.color"></span>
