@@ -180,6 +180,14 @@ export class UploadService {
         .sort((a, b) => a.PartNumber - b.PartNumber);
       const result = await this.complete(init.fileId, init.uploadId, parts);
 
+      // Người dùng bấm Huỷ TRONG lúc gọi complete (~99%): tuy server đã ghép
+      // xong tệp, vẫn phải HUỶ — gọi abort để xoá tệp vừa tạo, KHÔNG để lên kho.
+      if (controller.canceled) {
+        await this.abort(init.fileId, init.uploadId).catch(() => undefined);
+        localStorage.removeItem(rk);
+        return null;
+      }
+
       localStorage.removeItem(rk);
       task.progress.set(100);
       task.status.set('done');

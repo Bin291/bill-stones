@@ -14,7 +14,7 @@
 @if (loading()) {
   <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
 } @else if (items().length === 0) {
-  <div class="empty">
+  <div class="empty empty--static">
     <span class="mi" style="font-size: 40px">delete_outline</span>
     <p>{{ 'files.empty' | t }}</p>
   </div>

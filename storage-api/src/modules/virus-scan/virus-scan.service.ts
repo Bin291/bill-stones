@@ -176,11 +176,21 @@ export class VirusScanService {
     }
   }
 
-  /** Chờ 1 analysis hoàn tất (poll mỗi 4s tới timeout). */
+  /**
+   * Chờ 1 analysis hoàn tất — poll NHANH (nhịp ngắn) để lấy kết quả sớm nhất có
+   * thể. Độ CHÍNH XÁC không đổi: vẫn chờ đủ mọi engine chấm xong (status
+   * 'completed'), chỉ rút ngắn thời gian phát hiện đã xong. Kết quả (verdict +
+   * chi tiết từng engine) lấy thẳng từ analysis, KHÔNG gọi thêm 1 vòng tra hash
+   * (bỏ round-trip thừa cho nhanh).
+   */
   private async pollAnalysis(analysisId: string): Promise<ScanResult> {
     const deadline = Date.now() + this.analysisTimeoutMs;
+    // Kiểm tra sớm ngay từ ~1.2s (nhiều tệp phổ biến VT trả gần như tức thì), sau
+    // đó poll mỗi 1.5s thay vì 4s.
+    let wait = 1200;
     while (Date.now() < deadline) {
-      await this.sleep(4000);
+      await this.sleep(wait);
+      wait = 1500;
       try {
         const res = await fetch(
           `${VirusScanService.API}/analyses/${analysisId}`,
@@ -199,14 +209,6 @@ export class VirusScanService {
           const sha256 =
             json.meta?.file_info?.sha256 ??
             json.data?.meta?.file_info?.sha256;
-          // Với tệp lạ: analysis chỉ có kết quả từng engine, chưa có nhãn phân
-          // loại tổng hợp → tra thêm theo sha256 để lấy popular_threat_classification.
-          if (sha256) {
-            const detailed = await this.scanByHash(sha256).catch(() => null);
-            if (detailed && detailed.verdict !== 'unknown' && detailed.verdict !== 'error') {
-              return detailed;
-            }
-          }
           return this.fromAttributes(attrs, sha256);
         }
       } catch {

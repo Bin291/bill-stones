@@ -2476,6 +2476,14 @@ tr.selected {
   min-width: 100px;
   justify-content: center;
 }
+/* Khi đang xử lý: loader đặt giữa, cao bằng hàng nút (~40px) để hộp thoại không giật. */
+.confirm-actions-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  width: 100%;
+}
 .btn-danger {
   background: var(--danger);
   color: #fff;

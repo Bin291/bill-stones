@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../../core/services/public-share-api.service';
 import { categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
 import { SettingsService } from '../../core/services/settings.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Loader } from '../ui/loader';
 import { PasswordInput } from '../ui/password-input';
 
@@ -52,6 +53,8 @@ const DOC_EXT = new Set([
 })
 export class PublicShare implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   private readonly api = inject(PublicShareApiService);
   private readonly sanitizer = inject(DomSanitizer);
   // Inject để áp theme sáng/tối đã lưu (SettingsService tự set <html data-theme>
@@ -71,15 +74,12 @@ export class PublicShare implements OnInit {
   /** Đang chuyển thư mục trong workspace — chỉ hiện thanh mảnh, KHÔNG che cả trang. */
   protected readonly navLoading = signal(false);
 
-  // Xem NGAY trên trang cho link 1 tệp.
-  protected readonly inline = signal<PaneState | null>(null);
-
-  /** Ô preview bên trái (workspace 2 cột kiểu VS Code) cho link THƯ MỤC. */
+  /** Khung xem LỚN bên phải (workspace: sidebar trái · nội dung phải). */
   protected readonly pane = signal<PaneState | null>(null);
   protected readonly paneLoading = signal(false);
   protected readonly selectedId = signal<string | null>(null);
-  /** Bề rộng ô preview (theo %) — kéo thanh chia để tuỳ chỉnh. */
-  protected readonly previewPct = signal(62);
+  /** Bề rộng thanh bên trái (px) — kéo thanh chia để tuỳ chỉnh. */
+  protected readonly sidebarPx = signal(320);
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
@@ -105,6 +105,13 @@ export class PublicShare implements OnInit {
     void this.loadMeta();
   }
 
+  /** Bấm "BillPrime" / "Mở BillPrime": đã đăng nhập → trang chính (/files);
+   * chưa đăng nhập → trang giới thiệu (landing '/'). */
+  goHome(ev: Event): void {
+    ev.preventDefault();
+    void this.router.navigateByUrl(this.auth.isAuthenticated() ? '/files' : '/');
+  }
+
   async loadMeta(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
@@ -114,7 +121,21 @@ export class PublicShare implements OnInit {
       if (!meta.requiresPassword && meta.kind === 'folder') {
         this.listing.set(await this.fetchList());
       } else if (!meta.requiresPassword && meta.kind === 'file') {
-        await this.prepareInline(meta);
+        // Link 1 TỆP: hiện thanh bên như explorer 1 mục + tự mở xem trước ở
+        // khung lớn bên phải (dùng chung workspace với link thư mục).
+        this.listing.set({
+          folders: [],
+          files: [
+            {
+              id: '',
+              name: meta.name ?? '',
+              extension: meta.extension ?? '',
+              size: meta.size ?? '0',
+              mimeType: meta.mimeType ?? '',
+            },
+          ],
+        });
+        await this.selectFile('', meta.name ?? '', meta.extension ?? '');
       }
     } catch {
       this.error.set('Link không tồn tại hoặc đã hết hạn.');
@@ -267,15 +288,6 @@ export class PublicShare implements OnInit {
     }
   }
 
-  /** Chuẩn bị nội dung xem ngay trên trang cho link 1 tệp. */
-  private async prepareInline(meta: ShareMeta): Promise<void> {
-    try {
-      this.inline.set(await this.buildPane('', meta.name ?? '', meta.extension ?? ''));
-    } catch {
-      this.inline.set(null);
-    }
-  }
-
   private viewKind(extension?: string): ViewKind | null {
     const e = (extension || '').toLowerCase();
     if (e === 'pdf') return 'pdf';
@@ -286,16 +298,16 @@ export class PublicShare implements OnInit {
     return null;
   }
 
-  /** Kéo thanh chia giữa 2 cột để đổi bề rộng ô preview (giới hạn 30–80%). */
+  /** Kéo thanh chia để đổi bề rộng thanh bên trái (giới hạn 220–560px). */
   onSplitterDown(ev: PointerEvent): void {
     ev.preventDefault();
     const workspace = (ev.currentTarget as HTMLElement).parentElement;
     if (!workspace) return;
     const rect = workspace.getBoundingClientRect();
     const move = (e: PointerEvent): void => {
-      // Ô preview nằm bên PHẢI → bề rộng tính từ mép phải tới con trỏ.
-      const pct = ((rect.right - e.clientX) / rect.width) * 100;
-      this.previewPct.set(Math.min(80, Math.max(30, Math.round(pct))));
+      // Sidebar nằm bên TRÁI → bề rộng = con trỏ trừ mép trái.
+      const px = e.clientX - rect.left;
+      this.sidebarPx.set(Math.min(560, Math.max(220, Math.round(px))));
     };
     const up = (): void => {
       document.removeEventListener('pointermove', move);
