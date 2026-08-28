@@ -470,17 +470,16 @@ export class Landing {
     if (bentoGrid && bentoTiles.length > 0 && shutterMsg) {
       gsap.set(shutterMsg, { opacity: 0, scale: 0.85 });
 
-      // start = lúc ĐÁY lưới đã hiện đủ (bottom 85% — còn dư ~15% viewport
-      // bên dưới) — trước đây dùng "top 50%" (đỉnh lưới chạm giữa màn hình)
-      // nên bay tách BẮT ĐẦU khi hàng cuối (2 thẻ Hybrid Fusion, Robustness)
-      // còn chưa kịp lọt vào khung nhìn (lưới cao ~1137px, cao hơn 1 viewport).
-      // end = 800px, đủ dài để không "banh" ngay sau một cái lướt nhẹ. Đã nới
-      // thêm pb-[420px] cho container (xem HTML) để vùng "dính" của message đủ
-      // rộng chứa trọn quãng bắt đầu-muộn + 800px này mà không bị nhả sớm.
+      // start = lúc HÀNG ĐẦU TIÊN của lưới chạm đúng mép dưới thanh topbar cố
+      // định (79px — đo thật từ #main-nav), không phải chạm mép trên cùng màn
+      // hình (top 0). Nhờ có HOLD (giữ nguyên lưới ~15% quãng đầu) nên các thẻ
+      // vẫn chưa mờ ngay — người dùng vẫn kịp cuộn thêm để thấy trọn cả lưới
+      // trước khi bay tách thật sự diễn ra.
+      // end = 800px, đủ dài để không "banh" ngay sau một cái lướt nhẹ.
       const bentoTimeline = gsap.timeline({
         scrollTrigger: {
           trigger: bentoGrid,
-          start: 'bottom 85%',
+          start: 'top 79px',
           end: '+=800',
           // scrub: true — bám NGAY theo vị trí cuộn (không độ trễ). Độ trễ
           // (số như 0.6s) khiến hình "đuổi theo" chậm hơn thao tác cuộn thật
