@@ -51,16 +51,21 @@ jobs:
     name: Deploy backend to Render
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
     steps:
       - name: Trigger Render deploy hook
-        run: curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "${RENDER_DEPLOY_HOOK_URL}" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL is not set, skipping backend deploy."
+            exit 0
+          fi
+          curl -fsSL -X POST "${RENDER_DEPLOY_HOOK_URL}"
 
   deploy-frontend-cloudflare:
     name: Deploy frontend to Cloudflare Pages
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' && secrets.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -96,4 +101,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler@4 pages deploy "${{ steps.artifact.outputs.dir }}" --project-name "${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}"
+          CLOUDFLARE_PAGES_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID}" ] || [ -z "${CLOUDFLARE_PAGES_PROJECT_NAME}" ]; then
+            echo "Cloudflare secrets are missing, skipping frontend deploy."
+            exit 0
+          fi
+          npx wrangler@4 pages deploy "${{ steps.artifact.outputs.dir }}" --project-name "${CLOUDFLARE_PAGES_PROJECT_NAME}"
