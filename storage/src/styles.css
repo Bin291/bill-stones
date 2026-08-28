@@ -276,6 +276,7 @@ body {
 .shell {
   display: grid;
   grid-template-columns: 256px 1fr;
+  transition: grid-template-columns 0.18s ease;
   height: 100dvh;
   background: var(--surface-1);
   /* Không cho bôi xanh (text selection) khi click/kéo vùng trống ở mọi trang trong
@@ -314,6 +315,7 @@ body {
   align-items: center;
   gap: 8px;
   color: var(--ink);
+  transition: gap 0.18s ease, padding 0.18s ease, font-size 0.18s ease;
 }
 .brand-logo {
   width: 24px;
@@ -324,11 +326,56 @@ body {
 :root[data-theme='light'] .brand-logo {
   filter: invert(1);
 }
-.nav-section-title {
-  font-size: 12px;
-  letter-spacing: 0.32px;
+/* "Theo loại" / "Thẻ" — nút bấm để thu gọn, dùng chung style .nav-item với
+   các mục khác (VD "Thùng rác") thay vì tiêu đề nhỏ khác biệt trước đây.
+   CHỈ ép flex:1 khi nút nằm trong .nav-section-row (case "Thẻ", cần chia chỗ
+   với nút quản lý bên cạnh) — để bare/không giới hạn thì .sidebar (cũng là
+   flex-column) sẽ khiến trực tiếp nút "Theo loại" bị giãn to chiếm hết chỗ
+   trống thừa trong cột, y hệt lỗi vừa gặp. */
+.nav-section-row .nav-collapsible-trigger {
+  flex: 1;
+  min-width: 0;
+}
+.nav-collapsible-chevron {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 18px;
   color: var(--ink-subtle);
-  padding: 16px 16px 8px;
+  transition: transform 0.2s;
+}
+/* Mở/thu danh sách bên dưới mượt bằng max-height thay vì bung/biến mất đột
+   ngột (@if trước đây gây giật cục khi chèn/xoá DOM tức thời). */
+.nav-collapsible {
+  max-height: 2000px;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+.nav-collapsible.collapsed {
+  max-height: 0;
+}
+/* .tag-scroll có sẵn min-height:40px + flex:1 (để không quá bé khi ít thẻ) —
+   2 quy tắc đó THẮNG max-height:0 theo chuẩn CSS nên phải ghi đè riêng khi
+   thu gọn, nếu không thẻ đầu vẫn lộ ra dù đã bấm thu gọn. */
+.tag-scroll.nav-collapsible.collapsed {
+  min-height: 0;
+  flex: 0 0 auto;
+}
+/* Mục con (Tài liệu/Ảnh/.../thẻ) — nhỏ hơn + thụt phải so với "Theo loại"/
+   "Thẻ" (cha) để phân biệt rõ cấp bậc, tránh nhìn giống hệt mục cha. */
+.nav-collapsible .nav-item {
+  padding-left: 30px;
+  gap: 10px;
+  font-size: 13px;
+}
+.nav-collapsible .nav-item .mi {
+  font-size: 17px;
+}
+.nav-collapsible .nav-item .tag-dot {
+  width: 10px;
+  height: 10px;
+}
+.shell.sidebar-collapsed .nav-collapsible .nav-item {
+  padding-left: 0;
 }
 .nav-item {
   display: flex;
@@ -347,6 +394,10 @@ body {
   width: 100%;
   text-align: left;
   font-family: inherit;
+  /* Đồng bộ với transition grid-template-columns 0.18s của .shell — nếu
+     không, bề rộng sidebar co giãn mượt nhưng gap/padding/cỡ chữ bên trong
+     lại đổi tức thì, nhìn giật cục giữa 2 lớp animation lệch nhịp nhau. */
+  transition: gap 0.18s ease, padding 0.18s ease, font-size 0.18s ease;
 }
 .nav-item:hover {
   background: var(--surface-1);
@@ -391,9 +442,15 @@ body {
   grid-template-columns: 64px 1fr;
 }
 .shell.sidebar-collapsed .brand-name,
-.shell.sidebar-collapsed .nav-section-title,
 .shell.sidebar-collapsed .nav-count,
-.shell.sidebar-collapsed .tag-manage-btn {
+.shell.sidebar-collapsed .tag-manage-btn,
+.shell.sidebar-collapsed .tag-manage-btn-spacer {
+  display: none;
+}
+/* Độ đặc thù phải BẰNG/HƠN ".shell.sidebar-collapsed .sidebar .mi" (đặt
+   display:inline-block cho mọi icon) — nếu không, rule đó thắng và làm mũi
+   tên hiện lại dù đã .collapse. */
+.shell.sidebar-collapsed .sidebar .mi.nav-collapsible-chevron {
   display: none;
 }
 .shell.sidebar-collapsed .nav-item,
@@ -1721,9 +1778,6 @@ body {
   justify-content: space-between;
   padding-right: 8px;
 }
-.nav-section-row .nav-section-title {
-  flex: 1;
-}
 .tag-manage-btn {
   border: none;
   background: none;
@@ -1734,6 +1788,14 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 0;
+}
+/* Spacer vô hình cùng kích thước .tag-manage-btn — dùng ở hàng "Theo loại"
+   (không có nút quản lý thật) để mũi tên 2 hàng thẳng cột với nhau. */
+.tag-manage-btn-spacer {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
 }
 .tag-manage-btn:hover {
   background: var(--surface-1);

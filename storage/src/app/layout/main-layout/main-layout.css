@@ -12,8 +12,8 @@
   :host ::ng-deep .sidebar .mi {
     font-size: 22px;
   }
-  :host ::ng-deep .nav-section-title,
-  :host ::ng-deep .nav-count {
+  :host ::ng-deep .nav-count,
+  :host ::ng-deep .nav-collapsible-chevron {
     display: none;
   }
   :host ::ng-deep .content {

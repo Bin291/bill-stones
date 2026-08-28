@@ -79,6 +79,16 @@ export class MainLayout implements OnInit {
   protected readonly tagDialogOpen = signal(false);
   /** Thu gọn sidebar (chỉ còn icon) — nhớ lựa chọn qua localStorage. */
   protected readonly sidebarCollapsed = signal(this.readCollapsed());
+  /** Hover tạm thời trên sidebar đang thu gọn — "hé mở" xem trước, KHÔNG lưu. */
+  protected readonly sidebarPeek = signal(false);
+  /** Trạng thái hiển thị THẬT của sidebar: thu gọn chỉ khi đã pin thu gọn VÀ
+   * không đang hover xem trước. */
+  protected readonly sidebarVisiblyCollapsed = computed(
+    () => this.sidebarCollapsed() && !this.sidebarPeek(),
+  );
+  /** Thu gọn/mở "Theo loại" và "Thẻ" trong sidebar — giống Folders/Files. */
+  protected readonly categoriesExpanded = signal(true);
+  protected readonly tagsExpanded = signal(true);
 
   private readonly stats = signal<ExtensionStat[]>([]);
   protected readonly sharedCount = signal(0);
@@ -216,12 +226,34 @@ export class MainLayout implements OnInit {
 
   /** Bật/thu sidebar và nhớ lựa chọn. */
   toggleSidebar(): void {
-    const next = !this.sidebarCollapsed();
+    this.setSidebarCollapsed(!this.sidebarCollapsed());
+  }
+
+  private setSidebarCollapsed(next: boolean): void {
     this.sidebarCollapsed.set(next);
     try {
       localStorage.setItem('app.sidebarCollapsed', next ? '1' : '0');
     } catch {
       /* bỏ qua nếu không dùng được localStorage */
+    }
+  }
+
+  /** Chuột vào sidebar đang thu gọn → hé mở tạm thời (không lưu trạng thái). */
+  onSidebarMouseEnter(): void {
+    if (this.sidebarCollapsed()) this.sidebarPeek.set(true);
+  }
+
+  /** Chuột rời sidebar → thu lại về đúng trạng thái đã pin (nếu đang thu gọn). */
+  onSidebarMouseLeave(): void {
+    this.sidebarPeek.set(false);
+  }
+
+  /** Bấm vào sidebar lúc đang thu gọn (kể cả đang hé mở do hover) → GHIM mở
+   * hẳn, không tự đóng lại khi rời chuột nữa. */
+  onSidebarClick(): void {
+    if (this.sidebarCollapsed()) {
+      this.setSidebarCollapsed(false);
+      this.sidebarPeek.set(false);
     }
   }
 
