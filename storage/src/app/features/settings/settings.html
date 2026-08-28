@@ -37,12 +37,6 @@
       </div>
     </section>
 
-    <section class="settings-block">
-      <h2 class="settings-label">{{ 'settings.account' | t }}</h2>
-      <button class="signout-btn" type="button" (click)="signOut()">
-        {{ 'nav.logout' | t }}
-      </button>
-    </section>
   </section>
 
   <!-- Hồ sơ -->
@@ -264,6 +258,13 @@
         </div>
       </section>
     }
+  </section>
+
+  <!-- Đăng xuất: đặt CUỐI trang cài đặt (theo yêu cầu — không còn nhãn "Tài khoản"). -->
+  <section class="settings-group">
+    <button class="signout-btn" type="button" (click)="signOut()">
+      {{ 'nav.logout' | t }}
+    </button>
   </section>
 </div>
 

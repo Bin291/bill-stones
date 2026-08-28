@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import {
   SharedApiService,
@@ -6,20 +7,23 @@ import {
   SharedItem,
 } from '../../core/services/shared-api.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { LangService } from '../../core/i18n/lang.service';
 import { Loader } from '../ui/loader';
 import { FilePreview } from '../file-preview/file-preview';
 import { formatBytes, iconOf } from '../../core/util/file-types';
+import { relativeTime } from '../../core/util/relative-time';
 import { Folder, StoredFile } from '../../core/models/file.model';
 
 /** "Được chia sẻ với tôi" (mục 12.E nhóm C) — Xem + Tải xuống, có thể mở thư mục để duyệt. */
 @Component({
   selector: 'app-shared-page',
-  imports: [TranslatePipe, Loader, FilePreview],
+  imports: [TranslatePipe, DatePipe, Loader, FilePreview],
   templateUrl: './shared-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SharedPage implements OnInit {
   private readonly sharedApi = inject(SharedApiService);
+  private readonly lang = inject(LangService);
 
   protected readonly items = signal<SharedItem[]>([]);
   protected readonly loading = signal(false);
@@ -112,5 +116,10 @@ export class SharedPage implements OnInit {
   async downloadItem(item: SharedItem): Promise<void> {
     if (item.kind !== 'file' || !item.file || !item.allowDownload) return;
     await this.download(item.file);
+  }
+
+  /** "X phút/giờ/ngày trước" — thời điểm được chia sẻ. */
+  protected agoOf(sharedAt: string): string {
+    return relativeTime(sharedAt, (key, params) => this.lang.translate(key, params));
   }
 }
