@@ -522,7 +522,19 @@ export class FileExplorer {
     const typed = name.trim();
     const finalName = this.uniqueFolderName(typed || base);
     try {
-      await firstValueFrom(this.foldersApi.create(finalName, this.folderId()));
+      const created = await firstValueFrom(
+        this.foldersApi.create(finalName, this.folderId()),
+      );
+      // Hiện thư mục mới NGAY (optimistic) — không chờ revalidate full bundle,
+      // vì bundle gộp cả danh sách file (có thể tải chậm) nên thư mục sẽ bị "kẹt"
+      // chờ theo tới khi files về. Chèn ngay rồi revalidate im lặng để đồng bộ.
+      if (this.mode() === 'folder') {
+        this.folders.update((list) =>
+          [...list, { ...created, tags: created.tags ?? [] }].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          ),
+        );
+      }
       void this.revalidate();
       this.refresh.bump();
     } catch (e) {

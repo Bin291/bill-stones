@@ -2350,3 +2350,85 @@ tr.selected {
 .gsap-init-hidden {
   visibility: visible;
 }
+
+/* ============================================================
+   LANDING PAGE - LIGHT THEME (chi ap khi <html data-theme="light">)
+   Scope [data-theme=light] app-landing de KHONG dung toi phan con lai.
+   Giu nguyen giao dien toi goc (master); chi them ban sang.
+   ============================================================ */
+[data-theme='light'] app-landing { background-color: #ffffff; color: #161616; }
+
+/* --- Inline Tailwind utility overrides --- */
+[data-theme='light'] app-landing .bg-\[\#111111\] { background-color: #f4f4f4; }
+[data-theme='light'] app-landing .bg-\[\#161616\] { background-color: #ffffff; }
+[data-theme='light'] app-landing .bg-\[\#161616\]\/90 { background-color: rgba(255,255,255,0.9); }
+[data-theme='light'] app-landing .bg-\[\#161616\]\/60 { background-color: rgba(255,255,255,0.6); }
+[data-theme='light'] app-landing .bg-\[\#1c1c1c\] { background-color: #f4f4f4; }
+[data-theme='light'] app-landing .bg-\[\#262626\] { background-color: #e0e0e0; }
+[data-theme='light'] app-landing .bg-\[\#42be65\] { background-color: #24a148; }
+[data-theme='light'] app-landing .bg-\[\#42be65\]\/10 { background-color: rgba(36,161,72,0.1); }
+[data-theme='light'] app-landing .bg-\[\#fa4d56\] { background-color: #da1e28; }
+[data-theme='light'] app-landing .bg-\[\#fa4d56\]\/20 { background-color: rgba(218,30,40,0.12); }
+[data-theme='light'] app-landing .border-\[\#262626\] { border-color: #e0e0e0; }
+[data-theme='light'] app-landing .border-\[\#333333\] { border-color: #c6c6c6; }
+[data-theme='light'] app-landing .border-\[\#393939\] { border-color: #c6c6c6; }
+[data-theme='light'] app-landing .border-\[\#42be65\] { border-color: #24a148; }
+[data-theme='light'] app-landing .border-\[\#42be65\]\/30 { border-color: rgba(36,161,72,0.3); }
+[data-theme='light'] app-landing .border-\[\#42be65\]\/40 { border-color: rgba(36,161,72,0.4); }
+[data-theme='light'] app-landing .border-\[\#4589ff\] { border-color: #0f62fe; }
+[data-theme='light'] app-landing .text-white { color: #161616; }
+[data-theme='light'] app-landing .hover\:text-white:hover { color: #161616; }
+[data-theme='light'] app-landing .text-\[\#f4f4f4\] { color: #161616; }
+[data-theme='light'] app-landing .text-\[\#c6c6c6\] { color: #525252; }
+[data-theme='light'] app-landing .text-\[\#8d8d8d\] { color: #6f6f6f; }
+[data-theme='light'] app-landing .placeholder\:text-\[\#8d8d8d\]::placeholder { color: #6f6f6f; }
+[data-theme='light'] app-landing .text-\[\#a8a8a8\] { color: #6f6f6f; }
+[data-theme='light'] app-landing .text-\[\#42be65\] { color: #24a148; }
+[data-theme='light'] app-landing .text-\[\#78a9ff\] { color: #0043ce; }
+[data-theme='light'] app-landing .hover\:text-\[\#78a9ff\]:hover { color: #0043ce; }
+[data-theme='light'] app-landing .text-\[\#4589ff\] { color: #0043ce; }
+[data-theme='light'] app-landing .text-\[\#be95ff\] { color: #6929c4; }
+[data-theme='light'] app-landing .text-\[\#fa4d56\] { color: #da1e28; }
+
+/* Ngoai le: toast nen xanh dac giu chu trang */
+[data-theme='light'] app-landing .bg-\[\#0f62fe\].text-white { color: #ffffff; }
+
+/* --- Component-class overrides --- */
+[data-theme='light'] app-landing .body-long-01 { color: #525252; }
+[data-theme='light'] app-landing .body-short-01 { color: #6f6f6f; }
+
+[data-theme='light'] app-landing .carbon-card,
+[data-theme='light'] app-landing .carbon-card-interactive {
+  background-color: #f4f4f4;
+  border-color: #e0e0e0;
+}
+[data-theme='light'] app-landing .carbon-card:hover { border-color: #8d8d8d; background-color: #ededed; }
+[data-theme='light'] app-landing .carbon-card-interactive:hover { border-color: #0f62fe; background-color: #ededed; }
+
+[data-theme='light'] app-landing .btn-secondary { background-color: #e0e0e0; color: #161616; border-color: #e0e0e0; }
+[data-theme='light'] app-landing .btn-secondary:hover { background-color: #d1d1d1; border-color: #d1d1d1; }
+[data-theme='light'] app-landing .btn-ghost:hover { color: #0043ce; }
+
+[data-theme='light'] app-landing .carbon-tag { border-color: #c6c6c6; background-color: #e0e0e0; color: #525252; }
+[data-theme='light'] app-landing .carbon-tag-blue { color: #0043ce; }
+[data-theme='light'] app-landing .carbon-tag-green { color: #198038; }
+
+[data-theme='light'] app-landing .hero-3d-mockup {
+  box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='light'] app-landing .bento-tile { background: #f4f4f4; border-color: #e0e0e0; }
+
+[data-theme='light'] app-landing .glowing-tech-text {
+  background: linear-gradient(180deg, #161616 0%, #0f62fe 60%, #0043ce 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 0 0 40px rgba(15, 98, 254, 0.2);
+}
+
+/* --- SVG overrides --- */
+[data-theme='light'] app-landing .pipeline-track { stroke: #c6c6c6; }
+[data-theme='light'] app-landing .shield-ring-rotate { stroke: #e0e0e0; }
+[data-theme='light'] app-landing .shield-ring-reverse { stroke: #c6c6c6; }
+[data-theme='light'] app-landing .shield-core-dot { fill: #161616; }
+
