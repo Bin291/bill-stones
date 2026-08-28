@@ -27,6 +27,7 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { CATEGORIES, CategoryKey, categoryOf } from '../../core/util/file-types';
 import { ExtensionStat, TagWithCount } from '../../core/models/file.model';
 import { MiniAudioPlayer } from '../../features/audio-player/mini-audio-player';
+import { UploadPanel } from '../../features/uploads/upload-panel';
 import { TagDialog } from '../../features/tags/tag-dialog';
 import { Loader } from '../../features/ui/loader';
 import { ToastContainer } from '../../features/ui/toast-container';
@@ -46,6 +47,7 @@ interface NavItem {
     RouterLinkActive,
     TranslatePipe,
     MiniAudioPlayer,
+    UploadPanel,
     TagDialog,
     NgOptimizedImage,
     Loader,

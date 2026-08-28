@@ -132,7 +132,7 @@
             <div class="ws-preview-bar">
               <span class="mi ws-preview-bar-icon">{{ iconOf(p.ext) }}</span>
               <span class="ws-preview-bar-name">{{ p.name }}</span>
-              @if (m.allowDownload) {
+              @if (m.allowDownload && p.kind) {
                 <button class="share-btn share-btn-primary ws-download-btn" type="button" (click)="download(p.id, p.name)">
                   Tải xuống
                 </button>
