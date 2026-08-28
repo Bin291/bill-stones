@@ -1218,12 +1218,16 @@ export class FileExplorer {
       else if (task.status() !== 'canceled') batch.failed.update((v) => v + 1);
     }
 
+    // NẠP LẠI danh sách TRƯỚC khi đánh dấu xong — để tệp đã THẬT SỰ hiện trong
+    // kho đúng lúc mục tải lên chuyển sang trạng thái "xong" (tick ✓), tránh
+    // khoảng hở lúc trước: tick 100% + tệp đã hiện nhưng panel vẫn còn hiện
+    // "đang tải lên" (vì revalidate còn đang chạy phía sau, chưa xong).
+    if (!batch.canceled) await this.revalidate();
+    this.refresh.bump();
+
     if (batch.canceled) batch.status.set('canceled');
     else if (batch.failed() > 0) batch.status.set('error');
     else batch.status.set('done');
-
-    void this.revalidate();
-    this.refresh.bump();
   }
 
   /**

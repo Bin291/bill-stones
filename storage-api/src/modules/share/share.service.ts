@@ -332,6 +332,7 @@ export class ShareService {
           kind: 'file',
           sharedByEmail: await this.ownerEmail(s.userId),
           allowDownload: s.allowDownload,
+          sharedAt: s.createdAt,
           file: { ...s.file, size: s.file.size.toString() },
         });
       } else if (s.folder) {
@@ -341,6 +342,7 @@ export class ShareService {
           kind: 'folder',
           sharedByEmail: await this.ownerEmail(s.userId),
           allowDownload: s.allowDownload,
+          sharedAt: s.createdAt,
           folder: s.folder,
         });
       }

@@ -9,6 +9,8 @@ export interface SharedItem {
   kind: 'file' | 'folder';
   sharedByEmail: string | null;
   allowDownload: boolean;
+  /** Thời điểm được chia sẻ (ISO) — hiện dạng "X phút/giờ trước". */
+  sharedAt: string;
   file?: StoredFile;
   folder?: Folder;
 }
