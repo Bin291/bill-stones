@@ -11,6 +11,7 @@ import * as mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { ConcurrencyLimiter } from '../../common/concurrency-limiter';
 
 const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'avif']);
 const VIDEO_EXT = new Set(['mp4', 'mov', 'webm', 'avi', 'mkv', 'm4v', 'flv', 'wmv']);
@@ -44,6 +45,9 @@ if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
 export class ThumbnailService {
   private readonly logger = new Logger(ThumbnailService.name);
   private readonly inProgress = new Set<string>();
+  // Chỉ 1 thumbnail sinh cùng lúc (mở thư mục nhiều ảnh/video không được bắn
+  // hàng chục sharp/ffmpeg song song trên container 512MB).
+  private readonly limiter = new ConcurrencyLimiter(1);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -63,7 +67,8 @@ export class ThumbnailService {
   generateInBackground(file: Pick<File, 'id' | 'userId' | 'r2Key' | 'extension' | 'size'>): void {
     if (this.inProgress.has(file.id)) return;
     this.inProgress.add(file.id);
-    void this.generate(file)
+    void this.limiter
+      .run(() => this.generate(file))
       .catch((err) => this.logger.warn(`Thumbnail ${file.id} lỗi: ${(err as Error).message}`))
       .finally(() => this.inProgress.delete(file.id));
   }
