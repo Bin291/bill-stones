@@ -17,7 +17,14 @@ interface CompletedPart {
   ETag: string;
 }
 
-export type UploadStatus = 'pending' | 'uploading' | 'completing' | 'done' | 'error' | 'canceled';
+export type UploadStatus =
+  | 'pending'
+  | 'scanning'
+  | 'uploading'
+  | 'completing'
+  | 'done'
+  | 'error'
+  | 'canceled';
 
 /** Trùng tên (chính sách 'ask') — đủ thông tin để hỏi lại người dùng. */
 export interface UploadConflict {
@@ -172,6 +179,14 @@ export class UploadService {
         .map(([PartNumber, ETag]) => ({ PartNumber, ETag }))
         .sort((a, b) => a.PartNumber - b.PartNumber);
       const result = await this.complete(init.fileId, init.uploadId, parts);
+
+      // Người dùng bấm Huỷ TRONG lúc gọi complete (~99%): tuy server đã ghép
+      // xong tệp, vẫn phải HUỶ — gọi abort để xoá tệp vừa tạo, KHÔNG để lên kho.
+      if (controller.canceled) {
+        await this.abort(init.fileId, init.uploadId).catch(() => undefined);
+        localStorage.removeItem(rk);
+        return null;
+      }
 
       localStorage.removeItem(rk);
       task.progress.set(100);

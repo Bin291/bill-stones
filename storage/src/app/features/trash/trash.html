@@ -1,5 +1,8 @@
 <div class="toolbar">
   <h1 class="page-title" style="margin: 0">{{ 'nav.trash' | t }}</h1>
+  @if (items().length) {
+    <span class="trash-count-badge">{{ 'trash.itemCount' | t: { n: items().length } }}</span>
+  }
   <span class="spacer"></span>
   @if (items().length) {
     <button class="btn" type="button" (click)="askEmpty()">
@@ -11,7 +14,7 @@
 @if (loading()) {
   <div class="loading-center"><app-loader [dot]="10" [gap]="7" /></div>
 } @else if (items().length === 0) {
-  <div class="empty">
+  <div class="empty empty--static">
     <span class="mi" style="font-size: 40px">delete_outline</span>
     <p>{{ 'files.empty' | t }}</p>
   </div>

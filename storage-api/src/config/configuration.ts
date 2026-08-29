@@ -60,6 +60,23 @@ export default () => ({
     retentionDays: parseInt(process.env.TRASH_RETENTION_DAYS ?? '30', 10),
   },
 
+  // Quét virus tệp thực thi (.exe…) bằng VirusTotal API v3 (mục cảnh báo .exe).
+  // Lấy key miễn phí tại https://www.virustotal.com/gui/join-us. Để trống -> chỉ
+  // cảnh báo .exe, bỏ qua bước quét thật.
+  virusScan: {
+    apiKey: process.env.VIRUSTOTAL_API_KEY || undefined,
+    // Trần dung lượng gửi bytes lên VT để phân tích (free tier: 32MB).
+    maxUploadBytes: parseInt(
+      process.env.VIRUSTOTAL_MAX_UPLOAD_MB ?? '32',
+      10,
+    ) * 1024 * 1024,
+    // Thời gian tối đa chờ VT phân tích xong 1 tệp lạ (ms).
+    analysisTimeoutMs: parseInt(
+      process.env.VIRUSTOTAL_TIMEOUT_MS ?? '90000',
+      10,
+    ),
+  },
+
   share: {
     contentTtlSeconds: parseInt(
       process.env.SHARE_CONTENT_TTL_SECONDS ?? '600',

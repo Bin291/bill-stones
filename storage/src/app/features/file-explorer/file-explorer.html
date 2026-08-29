@@ -126,34 +126,20 @@
 
       <span class="spacer"></span>
 
-      @if (confirmingBulkDelete()) {
-        <span class="select-confirm">{{ 'select.confirmDelete' | t: { n: selectedCount() } }}</span>
-        <button class="btn danger" type="button" [disabled]="bulkBusy()" (click)="bulkTrash()">
-          @if (bulkBusy()) {
-            <app-loader [dot]="5" [gap]="3" />
-          } @else {
-            <span class="mi">delete</span> {{ 'select.confirmYes' | t }}
-          }
-        </button>
-        <button class="btn" type="button" [disabled]="bulkBusy()" (click)="confirmingBulkDelete.set(false)">
-          {{ 'action.cancel' | t }}
-        </button>
-      } @else {
-        @if (mode() !== 'starred') {
-          <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(true)">
-            <span class="mi">star</span> {{ 'action.star' | t }}
-          </button>
-        }
-        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(false)">
-          <span class="mi">star_border</span> {{ 'action.unstar' | t }}
-        </button>
-        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkMove()">
-          <span class="mi">drive_file_move</span> {{ 'action.move' | t }}
-        </button>
-        <button class="btn danger" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkTrash()">
-          <span class="mi">delete</span> {{ 'action.delete' | t }}
+      @if (mode() !== 'starred') {
+        <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(true)">
+          <span class="mi">star</span> {{ 'action.star' | t }}
         </button>
       }
+      <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkStar(false)">
+        <span class="mi">star_border</span> {{ 'action.unstar' | t }}
+      </button>
+      <button class="btn" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkMove()">
+        <span class="mi">drive_file_move</span> {{ 'action.move' | t }}
+      </button>
+      <button class="btn danger" type="button" [disabled]="selectedCount() === 0 || bulkBusy()" (click)="bulkTrash()">
+        <span class="mi">delete</span> {{ 'action.delete' | t }}
+      </button>
 
       <button class="btn btn-icon" type="button" (click)="toggleSelectionMode()" [title]="'select.clear' | t">
         <span class="mi">close</span>
@@ -626,10 +612,98 @@
         (cancelled)="dialog.set(null)"
       />
     }
+    @case ('confirmBulkDelete') {
+      <app-confirm-dialog
+        [title]="'action.delete' | t"
+        [message]="'select.confirmDelete' | t: { n: d.count }"
+        [confirmLabel]="'action.delete' | t"
+        [danger]="true"
+        [busy]="bulkBusy()"
+        (confirmed)="confirmBulkTrash()"
+        (cancelled)="dialog.set(null)"
+      />
+    }
   }
 }
 
 <!-- Hỏi lại khi trùng tên file (chính sách 'ask' trong Cài đặt) -->
+@if (exeWarn(); as ew) {
+  <div class="modal-backdrop">
+    <div class="modal confirm-modal" style="max-width: 460px">
+      <div class="confirm-body">
+        <span class="mi confirm-icon" style="color: var(--danger)">gpp_maybe</span>
+        <h2 class="confirm-title">{{ 'scan.warnTitle' | t }}</h2>
+        <p class="confirm-message">{{ 'scan.warnMsg' | t: { n: ew.names.length } }}</p>
+        <ul class="exe-warn-list">
+          @for (name of ew.names; track name) {
+            <li><span class="mi">terminal</span> {{ name }}</li>
+          }
+        </ul>
+      </div>
+      <div class="confirm-actions">
+        <button class="btn" type="button" (click)="resolveExeWarn(false)">
+          {{ 'action.cancel' | t }}
+        </button>
+        <button class="btn btn-primary" type="button" (click)="resolveExeWarn(true)">
+          {{ 'scan.warnProceed' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Kết quả quét khi PHÁT HIỆN mã độc — chi tiết + hỏi có tải lên không -->
+@if (scanResult(); as sr) {
+  <div class="modal-backdrop">
+    <div class="modal confirm-modal scan-result-modal" style="max-width: 560px">
+      <div class="confirm-body">
+        <span class="mi confirm-icon" style="color: var(--danger)">coronavirus</span>
+        <h2 class="confirm-title">{{ 'scan.resultTitle' | t }}</h2>
+        <p class="confirm-message">
+          {{ 'scan.resultMsg' | t: { name: sr.fileName, n: sr.result.malicious || sr.result.suspicious, total: sr.result.total } }}
+        </p>
+        @if (sr.result.threatLabel) {
+          <p class="scan-threat-label">
+            <span class="mi">bug_report</span>
+            {{ 'scan.threatType' | t }}: <strong>{{ sr.result.threatLabel }}</strong>
+          </p>
+        }
+        @if (sr.result.threatCategories?.length) {
+          <div class="scan-threat-cats">
+            @for (c of sr.result.threatCategories; track c) {
+              <span class="scan-threat-cat">{{ c }}</span>
+            }
+          </div>
+        }
+        @if (sr.result.detections?.length) {
+          <div class="scan-detections-title">{{ 'scan.detections' | t }}</div>
+          <ul class="scan-detections">
+            @for (d of sr.result.detections; track d.engine) {
+              <li>
+                <span class="scan-det-engine">{{ d.engine }}</span>
+                <span class="scan-det-name" [class.suspicious]="d.category === 'suspicious'">{{ d.result }}</span>
+              </li>
+            }
+          </ul>
+        }
+        @if (sr.result.permalink) {
+          <a class="scan-vt-link" [href]="sr.result.permalink" target="_blank" rel="noopener noreferrer">
+            <span class="mi">open_in_new</span> {{ 'scan.viewOnVt' | t }}
+          </a>
+        }
+      </div>
+      <div class="confirm-actions">
+        <button class="btn btn-primary" type="button" (click)="resolveScanResult(false)">
+          {{ 'scan.resultCancel' | t }}
+        </button>
+        <button class="btn btn-danger" type="button" (click)="resolveScanResult(true)">
+          {{ 'scan.resultUploadAnyway' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 @if (conflictPrompt(); as cf) {
   <div class="modal-backdrop">
     <div class="modal confirm-modal" style="max-width: 420px">
@@ -689,7 +763,11 @@
                   {{ 'upload.ofTotal' | t: { done: b.done(), total: b.total } }}
                   @if (b.failed() > 0) { · {{ 'upload.errCount' | t: { n: b.failed() } }} }
                 } @else if (b.firstTask(); as tk) {
-                  {{ tk.progress() }}%
+                  @if (tk.status() === 'scanning') {
+                    {{ 'scan.scanning' | t }}
+                  } @else {
+                    {{ tk.progress() }}%
+                  }
                 }
               </div>
             </div>

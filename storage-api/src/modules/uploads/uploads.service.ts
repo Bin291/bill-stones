@@ -216,6 +216,9 @@ export class UploadsService {
     } catch (err) {
       this.logger.warn(`Abort R2 lỗi (bỏ qua): ${(err as Error).message}`);
     }
+    // Huỷ ở ~99% (đã gọi complete): multipart không abort được nữa nhưng object đã
+    // ghép xong → xoá object để không bỏ lại rác trên R2.
+    await this.storage.deleteObjects([file.r2Key]).catch(() => undefined);
     await this.prisma.file.delete({ where: { id: fileId } });
   }
 

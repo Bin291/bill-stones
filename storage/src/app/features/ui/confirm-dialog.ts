@@ -23,23 +23,23 @@ import { Loader } from './loader';
           }
         </div>
         <div class="confirm-actions">
-          <button class="btn" type="button" [disabled]="busy()" (click)="cancelled.emit()">
-            {{ 'action.cancel' | t }}
-          </button>
-          <button
-            class="btn"
-            type="button"
-            [class.btn-danger]="danger()"
-            [class.btn-primary]="!danger()"
-            [disabled]="busy()"
-            (click)="confirmed.emit()"
-          >
-            @if (busy()) {
-              <app-loader [dot]="5" [gap]="3" />
-            } @else {
+          @if (busy()) {
+            <!-- Đang xử lý: ẨN 2 nút, dùng loader của app đặt CHÍNH GIỮA. -->
+            <div class="confirm-actions-loading"><app-loader [dot]="5" [gap]="3" /></div>
+          } @else {
+            <button class="btn" type="button" (click)="cancelled.emit()">
+              {{ 'action.cancel' | t }}
+            </button>
+            <button
+              class="btn"
+              type="button"
+              [class.btn-danger]="danger()"
+              [class.btn-primary]="!danger()"
+              (click)="confirmed.emit()"
+            >
               {{ confirmLabel() || ('action.confirm' | t) }}
-            }
-          </button>
+            </button>
+          }
         </div>
       </div>
     </div>

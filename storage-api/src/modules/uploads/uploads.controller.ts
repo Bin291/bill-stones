@@ -15,10 +15,54 @@ import {
   InitUploadDto,
 } from './dto/upload.dto';
 import { UploadsService } from './uploads.service';
+import { VirusScanService } from '../virus-scan/virus-scan.service';
 
 @Controller('uploads')
 export class UploadsController {
-  constructor(private readonly uploads: UploadsService) {}
+  constructor(
+    private readonly uploads: UploadsService,
+    private readonly virusScan: VirusScanService,
+  ) {}
+
+  /**
+   * POST /uploads/scan-hash — quét virus theo sha256 (tệp đã có trong CSDL
+   * VirusTotal → kết quả tức thì, không cần tải bytes). Client tính sha256.
+   */
+  @Post('scan-hash')
+  scanHash(
+    @CurrentUser('id') _userId: string,
+    @Body() body: { sha256?: string },
+  ) {
+    const sha = (body.sha256 ?? '').trim().toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(sha)) {
+      throw new BadRequestException('sha256 không hợp lệ');
+    }
+    return this.virusScan.scanByHash(sha);
+  }
+
+  /**
+   * POST /uploads/scan-file — quét virus tệp LẠ (hash 404): client gửi nguyên
+   * bytes (raw octet-stream), backend tải lên VirusTotal phân tích rồi chờ.
+   * Tên tệp qua header x-file-name.
+   */
+  @Post('scan-file')
+  scanFile(
+    @CurrentUser('id') _userId: string,
+    @Req() req: Request,
+    @Headers('x-file-name') fileNameRaw: string,
+  ) {
+    const body = req.body as unknown;
+    if (!Buffer.isBuffer(body) || body.length === 0) {
+      throw new BadRequestException('Body phải là octet-stream (Buffer)');
+    }
+    let fileName = 'upload.bin';
+    try {
+      fileName = fileNameRaw ? decodeURIComponent(fileNameRaw) : fileName;
+    } catch {
+      /* header không decode được — dùng tên mặc định */
+    }
+    return this.virusScan.scanBytes(body, fileName);
+  }
 
   /** POST /uploads/init — mở phiên multipart. */
   @Post('init')

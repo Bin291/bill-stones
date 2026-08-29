@@ -37,12 +37,6 @@
       </div>
     </section>
 
-    <section class="settings-block">
-      <h2 class="settings-label">{{ 'settings.account' | t }}</h2>
-      <button class="signout-btn" type="button" (click)="signOut()">
-        {{ 'nav.logout' | t }}
-      </button>
-    </section>
   </section>
 
   <!-- Hồ sơ -->
@@ -246,21 +240,31 @@
       </section>
     }
 
-    <section class="settings-block">
-      <h2 class="settings-label">{{ 'settings.defaultSharePrivacy' | t }}</h2>
-      <div class="seg">
-        @for (opt of privacyOptions; track opt.value) {
-          <button
-            class="seg-btn"
-            type="button"
-            [class.active]="sharePrivacyInput() === opt.value"
-            (click)="sharePrivacyInput.set(opt.value)"
-          >
-            {{ opt.labelKey | t }}
-          </button>
-        }
-      </div>
-    </section>
+    <!-- Ẩn "Quyền chia sẻ mặc định" theo yêu cầu — GIỮ NGUYÊN logic .ts, chỉ tắt hiển thị. -->
+    @if (false) {
+      <section class="settings-block">
+        <h2 class="settings-label">{{ 'settings.defaultSharePrivacy' | t }}</h2>
+        <div class="seg">
+          @for (opt of privacyOptions; track opt.value) {
+            <button
+              class="seg-btn"
+              type="button"
+              [class.active]="sharePrivacyInput() === opt.value"
+              (click)="sharePrivacyInput.set(opt.value)"
+            >
+              {{ opt.labelKey | t }}
+            </button>
+          }
+        </div>
+      </section>
+    }
+  </section>
+
+  <!-- Đăng xuất: đặt CUỐI trang cài đặt (theo yêu cầu — không còn nhãn "Tài khoản"). -->
+  <section class="settings-group">
+    <button class="signout-btn" type="button" (click)="signOut()">
+      {{ 'nav.logout' | t }}
+    </button>
   </section>
 </div>
 

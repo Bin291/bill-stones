@@ -308,11 +308,25 @@ body {
   overflow: hidden; /* chỉ danh sách thẻ (.tag-scroll) cuộn, không cuộn cả sidebar */
   padding: 8px 0;
 }
-/* Danh sách thẻ trong sidebar tự cuộn khi quá nhiều — không kéo theo cả sidebar */
+/* CHỈ danh sách thẻ tự cuộn (theo yêu cầu) — mọi mục khác đứng yên.
+   - flex:0 1 auto: KHÔNG giãn (nên khi ÍT thẻ vẫn cao tự nhiên, xem đủ, không bị
+     bóp vào ô 40px như trước) nhưng ĐƯỢC co lại khi tổng nội dung vượt chiều cao
+     sidebar → lúc đó vùng thẻ thu nhỏ và tự cuộn.
+   - min-height:0 để co được dưới cả chiều cao nội dung (điều kiện để cuộn). */
 .tag-scroll {
-  flex: 1 1 auto;
-  min-height: 40px;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+/* overflow-y:auto phải THẮNG `.nav-collapsible { overflow:hidden }` (khai báo sau)
+   nên tăng độ đặc hiệu bằng 2 lớp; nếu chỉ .tag-scroll thì bị ghi đè thành hidden
+   → không cuộn được dù nội dung tràn. */
+.tag-scroll.nav-collapsible {
   overflow-y: auto;
+}
+/* Mọi mục KHÁC trong sidebar không co lại — chỉ .tag-scroll gánh phần co/cuộn.
+   Nhờ vậy "Theo loại" luôn hiện đủ (không bị ép về 0, không đè lên "Thẻ"). */
+.sidebar > *:not(.tag-scroll) {
+  flex-shrink: 0;
 }
 .brand {
   font-size: 18px;
@@ -484,8 +498,19 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
-/* Ẩn thanh cuộn danh sách thẻ khi thu gọn — nếu không, thanh cuộn làm hẹp vùng
-   khiến các chấm thẻ lệch trái so với icon phía trên. */
+/* Thanh cuộn danh sách thẻ: mảnh, kín đáo. */
+.tag-scroll {
+  scrollbar-width: thin;
+}
+.tag-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.tag-scroll::-webkit-scrollbar-thumb {
+  background: var(--hairline);
+  border-radius: 3px;
+}
+/* Ẩn hẳn thanh cuộn danh sách thẻ khi thu gọn — nếu không, thanh cuộn làm hẹp
+   vùng khiến chấm thẻ lệch trái so với icon phía trên. */
 .shell.sidebar-collapsed .tag-scroll {
   scrollbar-width: none;
 }
@@ -573,6 +598,130 @@ body {
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 24px;
+}
+/* Hộp thoại chi tiết kết quả quét virus. */
+.scan-result-modal .confirm-body {
+  align-items: stretch;
+  text-align: left;
+}
+.scan-threat-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+.scan-threat-label .mi {
+  font-size: 18px;
+  color: var(--danger);
+}
+.scan-threat-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.scan-threat-cat {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.scan-detections-title {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-subtle);
+}
+.scan-detections {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--hairline);
+}
+.scan-detections li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--hairline);
+}
+.scan-detections li:last-child {
+  border-bottom: none;
+}
+.scan-det-engine {
+  color: var(--ink-subtle);
+  flex-shrink: 0;
+}
+.scan-det-name {
+  color: var(--danger);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+.scan-det-name.suspicious {
+  color: var(--warning, #d2a106);
+}
+.scan-vt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--primary);
+  text-decoration: none;
+}
+.scan-vt-link:hover {
+  text-decoration: underline;
+}
+.scan-vt-link .mi {
+  font-size: 16px;
+}
+/* Danh sách tệp thực thi trong hộp cảnh báo quét virus. */
+.exe-warn-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  width: 100%;
+  text-align: left;
+}
+.exe-warn-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface-1, rgba(127, 127, 127, 0.08));
+  border: 1px solid var(--hairline);
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+.exe-warn-list li .mi {
+  font-size: 16px;
+  color: var(--danger);
+  flex-shrink: 0;
+}
+/* Badge số mục trong Thùng rác cạnh tiêu đề trang. */
+.trash-count-badge {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-subtle);
+  background: var(--surface-2, rgba(127, 127, 127, 0.12));
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 2px 10px;
 }
 .breadcrumb {
   display: flex;
@@ -1218,6 +1367,32 @@ body {
   border: 1px solid var(--hairline);
   border-radius: 0;
   z-index: 150;
+  animation: notifIn 0.18s cubic-bezier(0.2, 0, 0.38, 0.9);
+}
+/* Đóng có hiệu ứng: mờ dần + trượt nhẹ lên trước khi gỡ khỏi DOM. */
+.notif-dropdown.closing {
+  animation: notifOut 0.18s cubic-bezier(0.2, 0, 0.38, 0.9) forwards;
+  pointer-events: none;
+}
+@keyframes notifIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes notifOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 /* Neo dưới nút "Thông báo" ở đầu sidebar — fixed để thoát overflow:hidden của .sidebar. */
 .sidebar-notif {
@@ -2300,6 +2475,14 @@ tr.selected {
 .confirm-actions .btn {
   min-width: 100px;
   justify-content: center;
+}
+/* Khi đang xử lý: loader đặt giữa, cao bằng hàng nút (~40px) để hộp thoại không giật. */
+.confirm-actions-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  width: 100%;
 }
 .btn-danger {
   background: var(--danger);

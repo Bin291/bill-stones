@@ -18,6 +18,7 @@ import { FilesApiService } from '../../core/services/files-api.service';
 import { TagsApiService } from '../../core/services/tags-api.service';
 import { SettingsApiService } from '../../core/services/settings-api.service';
 import { SharedApiService } from '../../core/services/shared-api.service';
+import { TrashApiService } from '../../core/services/trash-api.service';
 import { LangService } from '../../core/i18n/lang.service';
 import { SettingsService } from '../../core/services/settings.service';
 import { RefreshService } from '../../core/services/refresh.service';
@@ -60,6 +61,7 @@ export class MainLayout implements OnInit {
   private readonly tagsApi = inject(TagsApiService);
   private readonly settingsApi = inject(SettingsApiService);
   private readonly sharedApi = inject(SharedApiService);
+  private readonly trashApi = inject(TrashApiService);
   private readonly lang = inject(LangService);
   private readonly router = inject(Router);
   private readonly refresh = inject(RefreshService);
@@ -75,6 +77,9 @@ export class MainLayout implements OnInit {
   // Hiện đủ các nhóm loại, gồm cả "Khác" (đã bỏ nhóm Code — file code rơi vào Khác).
   protected readonly categories = CATEGORIES;
   protected readonly notifOpen = signal(false);
+  /** Đang chạy hiệu ứng đóng bảng thông báo (fade-out) trước khi gỡ khỏi DOM. */
+  protected readonly notifClosing = signal(false);
+  private notifCloseTimer: ReturnType<typeof setTimeout> | null = null;
   protected readonly tags = signal<TagWithCount[]>([]);
   protected readonly tagDialogOpen = signal(false);
   /** Thu gọn sidebar (chỉ còn icon) — nhớ lựa chọn qua localStorage. */
@@ -92,6 +97,8 @@ export class MainLayout implements OnInit {
 
   private readonly stats = signal<ExtensionStat[]>([]);
   protected readonly sharedCount = signal(0);
+  /** Số mục (file + thư mục) đang nằm trong Thùng rác — badge cạnh "Thùng rác". */
+  protected readonly trashCount = signal(0);
 
   // "Kho của tôi" (/files) render riêng ở TRÊN nút Thông báo (xem template);
   // danh sách này là các mục còn lại bên dưới nút Thông báo.
@@ -134,7 +141,10 @@ export class MainLayout implements OnInit {
     // → 401 → danh sách rỗng và không tự nạp lại.
     effect(() => {
       this.refresh.filesChanged();
-      if (this.auth.isAuthenticated()) this.loadStats();
+      if (this.auth.isAuthenticated()) {
+        this.loadStats();
+        this.loadTrashCount();
+      }
     });
     // Nạp lại danh sách thẻ khi có thay đổi (tạo/sửa/xoá/gán) hoặc khi phiên sẵn sàng.
     effect(() => {
@@ -202,6 +212,16 @@ export class MainLayout implements OnInit {
     });
   }
 
+  /** Đếm số mục trong Thùng rác để hiện badge cạnh "Thùng rác". */
+  loadTrashCount(): void {
+    this.trashApi.list().subscribe({
+      next: (items) => this.trashCount.set(items.length),
+      error: () => {
+        /* lỗi tạm thời: giữ nguyên số đếm cũ */
+      },
+    });
+  }
+
   loadTags(): void {
     this.tagsApi.list().subscribe({
       next: (t) => this.tags.set(t),
@@ -263,12 +283,37 @@ export class MainLayout implements OnInit {
   }
 
   toggleNotif(): void {
-    this.notifOpen.update((v) => !v);
-    if (this.notifOpen()) void this.notifications.refresh();
+    if (this.notifOpen()) {
+      this.closeNotif();
+      return;
+    }
+    this.cancelNotifClose();
+    this.notifOpen.set(true);
+    void this.notifications.refresh();
+  }
+
+  /** Đóng bảng thông báo có hiệu ứng fade-out rồi mới gỡ khỏi DOM. */
+  closeNotif(): void {
+    if (!this.notifOpen() || this.notifClosing()) return;
+    this.notifClosing.set(true);
+    this.notifCloseTimer = setTimeout(() => {
+      this.notifOpen.set(false);
+      this.notifClosing.set(false);
+      this.notifCloseTimer = null;
+    }, 180);
+  }
+
+  private cancelNotifClose(): void {
+    if (this.notifCloseTimer) {
+      clearTimeout(this.notifCloseTimer);
+      this.notifCloseTimer = null;
+    }
+    this.notifClosing.set(false);
   }
 
   async openNotif(n: AppNotification): Promise<void> {
     await this.notifications.markRead(n.id);
+    this.cancelNotifClose();
     this.notifOpen.set(false);
     if (n.linkPath) void this.router.navigateByUrl(n.linkPath);
   }

@@ -5,7 +5,11 @@
    xanh #0f62fe, KHÔNG đổ bóng.
    ============================================================ */
 .share-page {
-  min-height: 100dvh;
+  /* Chiều cao CỐ ĐỊNH theo viewport (không phải min-height): để khung xem con có
+     chiều cao xác định → ảnh/video giới hạn max-height:100% nằm GỌN trong khung,
+     không kéo dài làm cả trang cuộn xuống. */
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--surface-1);
@@ -64,6 +68,8 @@
 /* ---- Vùng nội dung giữa trang ---- */
 .share-main {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -365,8 +371,8 @@
 }
 
 /* ============================================================
-   Workspace 2 cột kiểu VS Code (chỉ dùng cho link THƯ MỤC):
-   ô preview bên trái · explorer bên phải · thanh kéo chia giữa.
+   Workspace kiểu file explorer: THANH BÊN explorer bên TRÁI ·
+   KHUNG XEM lớn bên PHẢI · thanh kéo chia giữa.
    ============================================================ */
 .share-workspace {
   flex: 1;
@@ -375,10 +381,9 @@
   overflow: hidden;
 }
 
-/* ---- Cột PHẢI: preview (explorer bên trái, preview bên phải — kiểu VS Code) ---- */
+/* ---- KHUNG XEM bên PHẢI (lớn nhất — chiếm hết phần còn lại) ---- */
 .ws-preview {
-  order: 2;
-  flex: 0 0 auto; /* bề rộng do flex-basis (%) điều khiển */
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -515,7 +520,6 @@
 
 /* ---- Thanh kéo chia cột ---- */
 .ws-splitter {
-  order: 1;
   flex: 0 0 5px;
   cursor: col-resize;
   background: var(--hairline);
@@ -527,11 +531,11 @@
   background: var(--primary);
 }
 
-/* ---- Cột TRÁI: explorer ---- */
+/* ---- THANH BÊN TRÁI: explorer (bề rộng do [style.width.px] điều khiển) ---- */
 .ws-explorer {
-  order: 0;
-  flex: 1;
-  min-width: 240px;
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
   background: var(--canvas);
@@ -592,22 +596,28 @@
   box-shadow: inset 2px 0 0 var(--primary);
 }
 
-/* Mobile: xếp dọc (explorer trên · preview dưới), ẩn thanh kéo */
+/* Nút "Tải xuống" trên thanh tiêu đề khung xem — xanh, chỉ chữ, gọn */
+.ws-download-btn {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+}
+
+/* Mobile: xếp dọc (explorer trên · khung xem dưới), ẩn thanh kéo */
 @media (max-width: 820px) {
   .share-workspace {
     flex-direction: column;
   }
-  .ws-preview {
-    flex-basis: auto !important;
-    order: 2;
-    min-height: 320px;
-    border-top: 1px solid var(--hairline);
-  }
   .ws-explorer {
-    order: 1;
-    border-right: none;
+    width: auto !important;
     min-width: 0;
-    max-height: 45vh;
+    max-width: none;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .ws-preview {
+    flex: 1 1 auto;
+    min-height: 320px;
   }
   .ws-splitter {
     display: none;
