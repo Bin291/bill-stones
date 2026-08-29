@@ -16,8 +16,14 @@ import Hls from 'hls.js';
 import { environment } from '../../../environments/environment';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { VideoApiService } from '../../core/services/video-api.service';
+import { FilesApiService } from '../../core/services/files-api.service';
 import { formatBytes } from '../../core/util/file-types';
 import { Loader } from '../ui/loader';
+
+/** Chờ HLS tối đa ~60s (20 lần poll x 3s) rồi chuyển sang phát trực tiếp file
+ * gốc từ R2 — free-tier CPU yếu + có thể ngủ giữa chừng khiến transcode video
+ * lớn không bao giờ xong; không thể bắt người dùng chờ vô thời hạn. */
+const MAX_POLL_ATTEMPTS = 20;
 
 interface LevelOpt {
   index: number;
@@ -39,6 +45,7 @@ interface LevelOpt {
 export class VideoPlayer implements AfterViewInit, OnDestroy {
   private readonly supabase = inject(SupabaseService);
   private readonly videoApi = inject(VideoApiService);
+  private readonly filesApi = inject(FilesApiService);
 
   readonly fileId = input.required<string>();
   readonly fileName = input<string>('');
@@ -84,6 +91,7 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
+  private pollAttempts = 0;
 
   async ngAfterViewInit(): Promise<void> {
     try {
@@ -91,8 +99,7 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
       if (status.hlsStatus === 'ready') {
         await this.attach();
       } else if (status.hlsStatus === 'failed') {
-        this.phase.set('error');
-        this.error.set('Xử lý video thất bại.');
+        await this.attachDirect();
       } else {
         // null hoặc processing -> kích hoạt + poll
         this.phase.set('processing');
@@ -108,13 +115,18 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
   private poll(): void {
     this.pollTimer = setTimeout(async () => {
       if (this.destroyed) return;
+      this.pollAttempts++;
       try {
         const s = await firstValueFrom(this.videoApi.status(this.fileId()));
         if (s.hlsStatus === 'ready') {
           await this.attach();
         } else if (s.hlsStatus === 'failed') {
-          this.phase.set('error');
-          this.error.set('Xử lý video thất bại.');
+          await this.attachDirect();
+        } else if (this.pollAttempts >= MAX_POLL_ATTEMPTS) {
+          // Xử lý quá lâu (video lớn / server yếu) — phát tạm bản gốc thay vì
+          // bắt người dùng chờ vô thời hạn. Transcode vẫn chạy nền, lần sau
+          // mở lại có thể đã sẵn HLS.
+          await this.attachDirect();
         } else {
           this.poll();
         }
@@ -122,6 +134,23 @@ export class VideoPlayer implements AfterViewInit, OnDestroy {
         this.poll();
       }
     }, 3000);
+  }
+
+  /** Phát thẳng file gốc từ R2 (Range request có sẵn, không cần transcode) —
+   * dùng khi HLS lỗi hoặc xử lý quá lâu. Mất chọn chất lượng/ABR, đổi lại
+   * luôn xem được kể cả video rất lớn trên server yếu. */
+  private async attachDirect(): Promise<void> {
+    const el = this.video()?.nativeElement;
+    if (!el) return;
+    try {
+      const { url } = await firstValueFrom(this.filesApi.previewUrl(this.fileId()));
+      this.phase.set('playing');
+      el.src = url;
+      void el.play().catch(() => undefined);
+    } catch {
+      this.phase.set('error');
+      this.error.set('Không tải được video.');
+    }
   }
 
   private async attach(): Promise<void> {
