@@ -1,0 +1,2 @@
+# Cloudflare Wrangler local cache/state — not part of the app
+.wrangler/
