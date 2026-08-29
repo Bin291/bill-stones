@@ -141,6 +141,9 @@
 
 <!-- Mini-player âm thanh toàn cục — ĐẶT NGOÀI .shell để không phá lưới sidebar -->
 <app-mini-audio-player />
+<!-- Khung tải lên — ĐẶT NGOÀI <router-outlet> (giống mini audio player) nên
+     KHÔNG biến mất khi chuyển sang mục khác ở sidebar giữa lúc đang tải lên. -->
+<app-upload-panel />
 <app-toast-container />
 
 <!-- Dialog quản lý thẻ (mở từ nút cài đặt cạnh mục "Thẻ") -->

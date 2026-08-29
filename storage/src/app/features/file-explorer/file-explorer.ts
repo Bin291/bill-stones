@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  WritableSignal,
   computed,
   effect,
   inject,
@@ -16,13 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { FilesApiService } from '../../core/services/files-api.service';
 import { FoldersApiService } from '../../core/services/folders-api.service';
-import { VirusScanApiService, ScanResult } from '../../core/services/virus-scan-api.service';
-import {
-  UploadService,
-  UploadTask,
-  UploadConflict,
-  ConflictResolution,
-} from '../../core/services/upload.service';
+import { UploadQueueService } from '../../core/services/upload-queue.service';
 import { RefreshService } from '../../core/services/refresh.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { SettingsService } from '../../core/services/settings.service';
@@ -35,7 +28,6 @@ import { FilePreview } from '../file-preview/file-preview';
 import { TagDialog } from '../tags/tag-dialog';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { PromptDialog } from '../ui/prompt-dialog';
-import { Loader } from '../ui/loader';
 import { Autofocus } from '../ui/autofocus.directive';
 import { MoveDialog, MoveItem } from './move-dialog';
 import { TagsApiService } from '../../core/services/tags-api.service';
@@ -48,7 +40,7 @@ import {
   StoredFile,
   Tag,
 } from '../../core/models/file.model';
-import { categoryByKey, categoryOf, extensionOf, formatBytes, iconOf } from '../../core/util/file-types';
+import { categoryByKey, categoryOf, formatBytes, iconOf } from '../../core/util/file-types';
 import { PrefetchService, ViewBundle } from '../../core/services/prefetch.service';
 import { Lens, ViewParams, buildListQuery, viewKey } from '../../core/util/list-query';
 
@@ -78,21 +70,6 @@ interface ContextMenu {
   visible: boolean;
 }
 
-/** Một mục tải lên: 1 thư mục (nhiều file) hoặc 1 file lẻ. */
-interface UploadBatch {
-  id: string;
-  label: string;
-  isFolder: boolean;
-  total: number;
-  done: WritableSignal<number>;
-  failed: WritableSignal<number>;
-  status: WritableSignal<'uploading' | 'done' | 'error' | 'canceled'>;
-  firstTask: WritableSignal<UploadTask | null>; // cho file lẻ hiện %
-  tasks: UploadTask[];
-  files: File[];
-  canceled: boolean;
-}
-
 @Component({
   selector: 'app-file-explorer',
   imports: [
@@ -105,7 +82,6 @@ interface UploadBatch {
     ConfirmDialog,
     PromptDialog,
     MoveDialog,
-    Loader,
     Autofocus,
   ],
   templateUrl: './file-explorer.html',
@@ -122,8 +98,7 @@ export class FileExplorer {
   private readonly router = inject(Router);
   private readonly filesApi = inject(FilesApiService);
   private readonly foldersApi = inject(FoldersApiService);
-  private readonly uploadService = inject(UploadService);
-  private readonly virusScan = inject(VirusScanApiService);
+  private readonly uploadQueue = inject(UploadQueueService);
   private readonly refresh = inject(RefreshService);
   private readonly audioSvc = inject(AudioPlayerService);
   private readonly tagsApi = inject(TagsApiService);
@@ -186,24 +161,6 @@ export class FileExplorer {
     return this.sort() === sort && this.order() === order;
   }
   protected readonly uploadMenuOpen = signal(false);
-
-  protected readonly uploadBatches = signal<UploadBatch[]>([]);
-  protected readonly uploadsCollapsed = signal(false);
-  protected readonly uploadingCount = computed(
-    () => this.uploadBatches().filter((b) => b.status() === 'uploading').length,
-  );
-  // Tổng số mục con (file) + số đã xử lý (xong/lỗi) + % — hiện dưới tiêu đề panel.
-  protected readonly uploadTotalItems = computed(() =>
-    this.uploadBatches().reduce((s, b) => s + b.total, 0),
-  );
-  protected readonly uploadDoneItems = computed(() =>
-    this.uploadBatches().reduce((s, b) => s + b.done() + b.failed(), 0),
-  );
-  protected readonly uploadPercent = computed(() => {
-    const total = this.uploadTotalItems();
-    return total > 0 ? Math.round((this.uploadDoneItems() / total) * 100) : 0;
-  });
-  readonly hasActiveUploads = computed(() => this.uploadBatches().length > 0);
   protected readonly menu = signal<ContextMenu | null>(null);
   protected readonly menuEl = viewChild<ElementRef<HTMLElement>>('menuEl');
   protected readonly shareTarget = signal<ShareTarget | null>(null);
@@ -213,16 +170,6 @@ export class FileExplorer {
   protected readonly dialog = signal<ExplorerDialog | null>(null);
   protected readonly deleteBusy = signal(false);
   protected readonly moveTarget = signal<MoveItem[] | null>(null);
-  protected readonly conflictPrompt = signal<UploadConflict | null>(null);
-  private conflictResolver: ((r: ConflictResolution) => void) | null = null;
-
-  // Cảnh báo tệp thực thi (.exe…) trước khi tải lên — sẽ quét virus (VirusTotal).
-  protected readonly exeWarn = signal<{ names: string[] } | null>(null);
-  private exeWarnResolver: ((proceed: boolean) => void) | null = null;
-
-  // Kết quả quét khi PHÁT HIỆN mã độc — hiện chi tiết rồi hỏi có tải lên không.
-  protected readonly scanResult = signal<{ fileName: string; result: ScanResult } | null>(null);
-  private scanResultResolver: ((proceed: boolean) => void) | null = null;
 
   private creatingBusy = false;
 
@@ -265,11 +212,6 @@ export class FileExplorer {
 
   protected readonly iconOf = iconOf;
   protected readonly formatBytes = formatBytes;
-
-  /** Icon đúng loại file cho 1 mục upload (dựa trên tên file, ligature Material Icons hợp lệ). */
-  protected uploadIconOf(label: string): string {
-    return iconOf(extensionOf(label));
-  }
 
   /** File ảnh? → thumbnail hiển thị đúng tỉ lệ gốc (object-fit: contain). */
   protected isImage(extension: string): boolean {
@@ -343,6 +285,16 @@ export class FileExplorer {
       x = Math.max(pad, Math.min(x, window.innerWidth - rect.width - pad));
       y = Math.max(pad, Math.min(y, window.innerHeight - rect.height - pad));
       this.menu.set({ ...m, x, y, visible: true });
+    });
+
+    // Tự nạp lại danh sách khi có tín hiệu "dữ liệu file đổi" (VD: khung tải
+    // lên toàn cục — UploadQueueService — vừa tải xong 1 tệp). Trước đây khung
+    // tải lên báo "xong" nhưng THẺ FILE trong lưới vẫn còn chữ trạng thái cũ
+    // (VD "uploading") cho tới khi người dùng đổi trang rồi quay lại (mới nạp
+    // lại). Giờ trang tự nạp lại NGAY khi refresh báo — không cần rời trang.
+    effect(() => {
+      this.refresh.filesChanged();
+      void this.revalidate();
     });
   }
 
@@ -526,7 +478,8 @@ export class FileExplorer {
       );
       // Hiện thư mục mới NGAY (optimistic) — không chờ revalidate full bundle,
       // vì bundle gộp cả danh sách file (có thể tải chậm) nên thư mục sẽ bị "kẹt"
-      // chờ theo tới khi files về. Chèn ngay rồi revalidate im lặng để đồng bộ.
+      // chờ theo tới khi files về. Chèn ngay; refresh.bump() sẽ tự kích revalidate
+      // im lặng để đồng bộ (effect ở constructor lắng nghe refresh.filesChanged()).
       if (this.mode() === 'folder') {
         this.folders.update((list) =>
           [...list, { ...created, tags: created.tags ?? [] }].sort((a, b) =>
@@ -534,7 +487,6 @@ export class FileExplorer {
           ),
         );
       }
-      void this.revalidate();
       this.refresh.bump();
     } catch (e) {
       // VD vượt 7 cấp → backend trả 400 kèm thông báo; hiện toast cho người dùng.
@@ -880,11 +832,10 @@ export class FileExplorer {
     this.moveTarget.set(items);
   }
 
-  /** Sau khi chuyển xong: đóng dialog, bỏ chọn, nạp lại. */
+  /** Sau khi chuyển xong: đóng dialog, bỏ chọn, nạp lại (qua refresh.bump()). */
   onMoved(): void {
     this.moveTarget.set(null);
     this.clearSelection();
-    void this.revalidate();
     this.refresh.bump();
   }
 
@@ -1010,7 +961,6 @@ export class FileExplorer {
       else await firstValueFrom(this.foldersApi.trash(d.id));
       this.toast.success(this.lang.translate('toast.movedToTrash'));
       this.dialog.set(null);
-      void this.revalidate();
       this.refresh.bump();
     } catch {
       this.toast.error(this.lang.translate('toast.actionFailed'));
@@ -1020,6 +970,10 @@ export class FileExplorer {
   }
 
   // --- Upload ---
+  // Trạng thái/tiến trình tải lên sống ở UploadQueueService (root) + hiện qua
+  // <app-upload-panel> đặt NGOÀI <router-outlet> ở main-layout — nhờ vậy khung
+  // tải lên KHÔNG biến mất khi chuyển sang mục khác ở sidebar giữa lúc đang tải.
+  // Trang này chỉ lo phần RIÊNG của nó: khu vực kéo-thả + tính thư mục đích.
   toggleUploadMenu(event: Event): void {
     event.stopPropagation();
     this.uploadMenuOpen.update((v) => !v);
@@ -1027,7 +981,7 @@ export class FileExplorer {
 
   onPick(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files) void this.uploadFileList(Array.from(input.files));
+    if (input.files) void this.uploadQueue.enqueue(Array.from(input.files), this.resolveUploadRootId());
     input.value = '';
     this.uploadMenuOpen.set(false);
   }
@@ -1064,6 +1018,7 @@ export class FileExplorer {
     this.dragOver.set(false);
     const dt = event.dataTransfer;
     if (!dt) return;
+    const rootId = this.resolveUploadRootId();
     // Duyệt CẢ CÂY thư mục khi kéo-thả folder (webkitGetAsEntry) — nếu không,
     // dataTransfer.files chỉ có mục cấp trên cùng, bỏ sót file (và .exe) bên trong.
     const items = dt.items;
@@ -1075,272 +1030,20 @@ export class FileExplorer {
       }
     }
     if (entries.length) {
-      const files = await this.collectDroppedEntries(entries);
-      if (files.length) void this.uploadFileList(files);
+      const files = await this.uploadQueue.collectDroppedEntries(entries);
+      if (files.length) void this.uploadQueue.enqueue(files, rootId);
       return;
     }
     const files = dt.files;
-    if (files && files.length) void this.uploadFileList(Array.from(files));
+    if (files && files.length) void this.uploadQueue.enqueue(Array.from(files), rootId);
   }
 
-  /**
-   * Đệ quy đọc mọi file trong các entry được kéo-thả (gồm thư mục con), gắn
-   * webkitRelativePath để runBatch tái tạo cấu trúc thư mục như khi chọn bằng
-   * hộp thoại chọn thư mục.
-   */
-  private async collectDroppedEntries(entries: FileSystemEntry[]): Promise<File[]> {
-    const out: File[] = [];
-    const walk = async (entry: FileSystemEntry, prefix: string): Promise<void> => {
-      if (entry.isFile) {
-        const file = await new Promise<File>((resolve, reject) =>
-          (entry as FileSystemFileEntry).file(resolve, reject),
-        );
-        const rel = prefix ? `${prefix}/${file.name}` : file.name;
-        try {
-          Object.defineProperty(file, 'webkitRelativePath', { value: rel, configurable: true });
-        } catch {
-          /* một số trình duyệt không cho ghi đè — vẫn upload được dạng file lẻ */
-        }
-        out.push(file);
-      } else if (entry.isDirectory) {
-        const reader = (entry as FileSystemDirectoryEntry).createReader();
-        const children: FileSystemEntry[] = [];
-        // readEntries trả theo lô, phải gọi lặp tới khi rỗng.
-        for (;;) {
-          const batch = await new Promise<FileSystemEntry[]>((resolve, reject) =>
-            reader.readEntries(resolve, reject),
-          );
-          if (!batch.length) break;
-          children.push(...batch);
-        }
-        const dirPrefix = prefix ? `${prefix}/${entry.name}` : entry.name;
-        for (const child of children) await walk(child, dirPrefix);
-      }
-    };
-    for (const entry of entries) await walk(entry, '');
-    return out;
-  }
-
-  /**
-   * Upload: gộp mỗi thư mục thành 1 "mục" hiện "X trong số N", mỗi file lẻ 1 mục.
-   * Giữ cấu trúc thư mục qua webkitRelativePath (mục 2.1).
-   */
-  private async uploadFileList(files: File[]): Promise<void> {
-    // Cảnh báo tệp thực thi (.exe…) — kể cả khi nằm bên trong thư mục kéo-thả.
-    // Người dùng phải xác nhận; các tệp này sẽ được quét virus khi tải lên.
-    const execNames = files
-      .filter((f) => this.virusScan.isExecutable(f.name))
-      .map((f) => (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name);
-    if (execNames.length > 0) {
-      const proceed = await this.warnExecutables(execNames);
-      if (!proceed) return;
-    }
-
-    // Đang xem đúng 1 thư mục cụ thể → tải vào đó. Ngược lại (gốc "Kho của
-    // tôi", hoặc các lăng kính không phải thư mục như Gắn sao/Thẻ/Tìm kiếm)
-    // → dùng "Thư mục tải lên mặc định" đã cấu hình ở Cài đặt, nếu có.
+  /** Thư mục đích khi tải lên: đang xem đúng 1 thư mục cụ thể → tải vào đó.
+   * Ngược lại (gốc "Kho của tôi", hoặc các lăng kính không phải thư mục như
+   * Gắn sao/Thẻ/Tìm kiếm) → dùng "Thư mục tải lên mặc định" ở Cài đặt, nếu có. */
+  private resolveUploadRootId(): string | null {
     const explicitFolderId = this.isFolderLens() ? this.folderId() : null;
-    const rootId = explicitFolderId ?? this.settingsApi.defaultUploadFolderId();
-
-    // Nhóm theo thư mục gốc; file lẻ đứng riêng.
-    const folderGroups = new Map<string, File[]>();
-    const loose: File[] = [];
-    for (const file of files) {
-      const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath ?? '';
-      if (rel && rel.includes('/')) {
-        const top = rel.split('/')[0];
-        const arr = folderGroups.get(top) ?? [];
-        arr.push(file);
-        folderGroups.set(top, arr);
-      } else {
-        loose.push(file);
-      }
-    }
-
-    const batches: UploadBatch[] = [];
-    for (const [name, groupFiles] of folderGroups) {
-      batches.push(this.makeBatch(name, true, groupFiles));
-    }
-    for (const f of loose) {
-      batches.push(this.makeBatch(f.name, false, [f]));
-    }
-
-    this.uploadBatches.update((list) => [...batches, ...list]);
-    this.uploadsCollapsed.set(false);
-    for (const batch of batches) void this.runBatch(batch, rootId);
-  }
-
-  private makeBatch(label: string, isFolder: boolean, files: File[]): UploadBatch {
-    return {
-      id: crypto.randomUUID(),
-      label,
-      isFolder,
-      total: files.length,
-      done: signal(0),
-      failed: signal(0),
-      status: signal<'uploading' | 'done' | 'error' | 'canceled'>('uploading'),
-      firstTask: signal<UploadTask | null>(null),
-      tasks: [],
-      files,
-      canceled: false,
-    };
-  }
-
-  private async runBatch(batch: UploadBatch, rootId: string | null): Promise<void> {
-    const folderCache = new Map<string, string | null>();
-    folderCache.set('', rootId);
-
-    for (const file of batch.files) {
-      if (batch.canceled) break;
-      const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath ?? '';
-      let targetFolderId = rootId;
-      if (rel && rel.includes('/')) {
-        const segments = rel.split('/').slice(0, -1);
-        targetFolderId = await this.ensureFolderPath(segments, rootId, folderCache);
-      }
-      const task = this.uploadService.createTask(file);
-      batch.tasks.push(task);
-      if (!batch.isFolder) batch.firstTask.set(task);
-
-      // Quét virus tệp thực thi TRƯỚC khi lưu — chặn nếu phát hiện mã độc.
-      if (this.virusScan.isExecutable(file.name)) {
-        const blocked = await this.scanBeforeUpload(task, file);
-        if (blocked) {
-          batch.failed.update((v) => v + 1);
-          continue;
-        }
-      }
-
-      const result = await this.uploadService.run(task, file, targetFolderId, (c) =>
-        this.askConflict(c),
-      );
-      if (result) batch.done.update((v) => v + 1);
-      else if (task.status() !== 'canceled') batch.failed.update((v) => v + 1);
-    }
-
-    // NẠP LẠI danh sách TRƯỚC khi đánh dấu xong — để tệp đã THẬT SỰ hiện trong
-    // kho đúng lúc mục tải lên chuyển sang trạng thái "xong" (tick ✓), tránh
-    // khoảng hở lúc trước: tick 100% + tệp đã hiện nhưng panel vẫn còn hiện
-    // "đang tải lên" (vì revalidate còn đang chạy phía sau, chưa xong).
-    if (!batch.canceled) await this.revalidate();
-    this.refresh.bump();
-
-    if (batch.canceled) batch.status.set('canceled');
-    else if (batch.failed() > 0) batch.status.set('error');
-    else batch.status.set('done');
-  }
-
-  /**
-   * Quét virus 1 tệp thực thi trước khi lưu. Trả TRUE nếu bị chặn (mã độc) →
-   * caller bỏ qua tệp này. Trả FALSE nếu an toàn/không xác định → cho tải tiếp.
-   */
-  private async scanBeforeUpload(task: UploadTask, file: File): Promise<boolean> {
-    task.status.set('scanning');
-    let result: ScanResult | null = null;
-    try {
-      result = await this.virusScan.scan(file);
-    } catch {
-      result = null; // lỗi quét → không chặn, để người dùng vẫn tải được
-    }
-    if (result && (result.verdict === 'malicious' || result.verdict === 'suspicious')) {
-      // Hiện CHI TIẾT kết quả quét rồi để người dùng tự quyết định có tải lên không.
-      const proceed = await this.showScanResult(file.name, result);
-      if (!proceed) {
-        const n = result.malicious || result.suspicious;
-        task.status.set('error');
-        task.error.set(this.lang.translate('scan.blocked', { n }));
-        this.toast.error(
-          this.lang.translate('scan.blockedToast', { name: file.name, n, total: result.total }),
-        );
-        return true; // người dùng chọn KHÔNG tải lên → chặn
-      }
-      return false; // người dùng chấp nhận rủi ro → vẫn tải lên
-    }
-    if (result && result.verdict === 'clean') {
-      this.toast.success(
-        this.lang.translate('scan.clean', { name: file.name, total: result.total }),
-      );
-    }
-    return false;
-  }
-
-  /** Mở hộp thoại CHI TIẾT kết quả quét (mã độc) và đợi người dùng quyết định. */
-  private showScanResult(fileName: string, result: ScanResult): Promise<boolean> {
-    return new Promise((resolve) => {
-      this.scanResultResolver = resolve;
-      this.scanResult.set({ fileName, result });
-    });
-  }
-
-  resolveScanResult(proceed: boolean): void {
-    this.scanResult.set(null);
-    this.scanResultResolver?.(proceed);
-    this.scanResultResolver = null;
-  }
-
-  /** Mở cảnh báo tệp thực thi và đợi người dùng quyết định (tiếp tục/huỷ). */
-  private warnExecutables(names: string[]): Promise<boolean> {
-    return new Promise((resolve) => {
-      this.exeWarnResolver = resolve;
-      this.exeWarn.set({ names });
-    });
-  }
-
-  resolveExeWarn(proceed: boolean): void {
-    this.exeWarn.set(null);
-    this.exeWarnResolver?.(proceed);
-    this.exeWarnResolver = null;
-  }
-
-  /** Mở hộp thoại "Trùng tên file" và đợi người dùng chọn (mục Cài đặt — Hỏi lại). */
-  private askConflict(c: UploadConflict): Promise<ConflictResolution> {
-    return new Promise((resolve) => {
-      this.conflictResolver = resolve;
-      this.conflictPrompt.set(c);
-    });
-  }
-
-  resolveConflict(choice: ConflictResolution): void {
-    this.conflictPrompt.set(null);
-    this.conflictResolver?.(choice);
-    this.conflictResolver = null;
-  }
-
-  cancelBatch(batch: UploadBatch): void {
-    batch.canceled = true;
-    for (const t of batch.tasks) t.cancel();
-    batch.status.set('canceled');
-  }
-
-  toggleUploadsCollapse(): void {
-    this.uploadsCollapsed.update((v) => !v);
-  }
-
-  /** Tạo/tìm chuỗi thư mục lồng nhau, trả id thư mục lá. */
-  private async ensureFolderPath(
-    segments: string[],
-    rootId: string | null,
-    cache: Map<string, string | null>,
-  ): Promise<string | null> {
-    let parentId = rootId;
-    let pathKey = '';
-    for (const seg of segments) {
-      pathKey = pathKey ? `${pathKey}/${seg}` : seg;
-      if (cache.has(pathKey)) {
-        parentId = cache.get(pathKey)!;
-        continue;
-      }
-      const children = await firstValueFrom(this.foldersApi.listChildren(parentId));
-      const existing = children.find((c) => c.name === seg);
-      const folder = existing ?? (await firstValueFrom(this.foldersApi.create(seg, parentId)));
-      cache.set(pathKey, folder.id);
-      parentId = folder.id;
-    }
-    return parentId;
-  }
-
-  dismissUploads(): void {
-    this.uploadBatches.set([]);
+    return explicitFolderId ?? this.settingsApi.defaultUploadFolderId();
   }
 
   /** Tra file trong danh sách hiện tại theo id (dùng cho menu download). */
