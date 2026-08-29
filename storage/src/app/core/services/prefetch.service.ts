@@ -9,6 +9,11 @@ import { Lens, ViewParams, buildListQuery, viewKey } from '../util/list-query';
 /** Trần thời gian hiện splash khi mới vào app (ms) — không vượt quá 5 giây. */
 const MAX_SPLASH_MS = 5000;
 
+/** Số lượt tải view chạy song song tối đa khi prefetch. Backend free-tier
+ * (512MB RAM) không chịu nổi ~10 request cùng lúc (mọi lăng kính + category)
+ * mỗi lần vào app/tải lại trang — từng gây OOM-crash-loop thật sự. */
+const PREFETCH_CONCURRENCY = 3;
+
 /** Gói dữ liệu 1 khung nhìn (folders + files + breadcrumb). */
 export interface ViewBundle {
   folders: Folder[];
@@ -69,12 +74,30 @@ export class PrefetchService {
       ...CATEGORIES.map((c) => ({ mode: 'type' as Lens, params: this.defParams({ category: c.key }) })),
     ];
 
-    const jobs: Promise<unknown>[] = lenses.map((l) => this.fetchView(l.mode, l.params));
+    const jobs = this.runLimited(lenses, PREFETCH_CONCURRENCY, (l) =>
+      this.fetchView(l.mode, l.params),
+    );
     // Ẩn splash NGAY khi prefetch xong, NHƯNG tối đa 5 giây — nếu quá thì vào app
     // luôn, các job còn lại chạy nền tiếp tục lấp cache.
     const cap = new Promise<void>((r) => setTimeout(r, MAX_SPLASH_MS));
-    await Promise.race([Promise.allSettled(jobs), cap]);
+    await Promise.race([jobs, cap]);
     this._ready.set(true);
+  }
+
+  /** Chạy `items` qua `fn` với tối đa `limit` job cùng lúc thay vì bắn hết 1 lần. */
+  private async runLimited<T>(
+    items: T[],
+    limit: number,
+    fn: (item: T) => Promise<void>,
+  ): Promise<void> {
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+      while (cursor < items.length) {
+        const item = items[cursor++];
+        await fn(item).catch(() => undefined);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
   }
 
   /** Nạp 1 khung nhìn vào cache (dùng cho prefetch). */
